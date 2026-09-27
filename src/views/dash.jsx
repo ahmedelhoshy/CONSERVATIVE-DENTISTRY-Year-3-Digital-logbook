@@ -10,14 +10,24 @@ import { RUBRICS, rubricById } from '../data/rubrics.js';
 function useStats() {
   const [st, setSt] = useState(null);
   const [err, setErr] = useState(null);
+  const [local, setLocal] = useState(false);
   const agg = useDoc('reports', 'latest');
   const load = async () => {
     const S = store();
     const [students, sessions, attendance, entries, cfg] = await Promise.all([S.query('users', [['role', '==', 'student']]), S.query('sessions', []), S.query('attendance', []), S.query('entries', []), S.get('config', 'course')]);
     setSt(computeStats({ students, sessions, attendance, entries, weeks: PRACTICAL_WEEKS, config: cfg || {}, today: today() }));
+    setLocal(true);
   };
   useEffect(() => { if (isDemo()) load().catch((e) => setErr(e.message)); }, []);
-  if (!isDemo()) return { st: agg ? agg.stats : agg === null ? null : undefined, refresh: async () => { try { await store().call('refreshStats', {}); toast('Dashboard refreshed'); } catch (e) { toast('Refresh failed: ' + e.message); } }, err };
+  // Live: use the nightly aggregate; if there is none yet, compute it on this device.
+  useEffect(() => { if (!isDemo() && agg === null && !local) load().catch((e) => setErr(e.message)); }, [agg]);
+  if (!isDemo()) {
+    const use = local && st ? st : agg ? agg.stats : agg === null ? (st || null) : undefined;
+    return { st: use, err, refresh: async () => {
+      try { await store().call('refreshStats', {}); setLocal(false); toast('Dashboard refreshed'); }
+      catch (e) { try { await load(); toast('Dashboard refreshed on this device'); } catch (x) { toast('Refresh failed: ' + x.message); } }
+    } };
+  }
   return { st, refresh: () => load().then(() => toast('Dashboard refreshed')), err };
 }
 
