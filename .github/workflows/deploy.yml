@@ -17,21 +17,22 @@ jobs:
       - name: Build web app
         run: npm run build
       - name: Prepare functions
-        run: |
-          node scripts/sync-shared.mjs
-          cd functions && npm ci
-          printf "SMTP_USER=%s\nSITE_URL=%s\nGEMINI_MODEL=%s\n" "${{ vars.SMTP_USER }}" "${{ vars.SITE_URL || 'https://digitallogbook-dfc3e.web.app' }}" "${{ vars.GEMINI_MODEL || 'gemini-flash-lite-latest' }}" > .env
-      - name: Service account
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
-      - name: Store AI and email secrets
-        continue-on-error: true
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
         run: |
-          printf "%s" "$GEMINI_API_KEY" | npx -y firebase-tools@13 functions:secrets:set GEMINI_API_KEY --data-file=- --project "$FB_PROJECT_ID" --force --non-interactive || true
-          printf "%s" "${SMTP_PASS:-unset}" | npx -y firebase-tools@13 functions:secrets:set SMTP_PASS --data-file=- --project "$FB_PROJECT_ID" --force --non-interactive || true
+          node scripts/sync-shared.mjs
+          cd functions && npm ci
+          {
+            echo "GEMINI_API_KEY=${GEMINI_API_KEY}"
+            echo "SMTP_PASS=${SMTP_PASS}"
+            echo "SMTP_USER=${{ vars.SMTP_USER }}"
+            echo "SMTP_HOST=${{ vars.SMTP_HOST || 'smtp.gmail.com' }}"
+            echo "SITE_URL=${{ vars.SITE_URL || 'https://digitallogbook-dfc3e.web.app' }}"
+            echo "GEMINI_MODEL=${{ vars.GEMINI_MODEL || 'gemini-flash-lite-latest' }}"
+          } > .env
+      - name: Service account
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
       - name: Deploy website, database rules and storage rules
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
@@ -46,6 +47,11 @@ jobs:
         continue-on-error: true
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
-        run: npx -y firebase-tools@13 deploy --project "$FB_PROJECT_ID" --only functions --force --non-interactive
+        run: |
+          set -o pipefail
+          npx -y firebase-tools@13 deploy --project "$FB_PROJECT_ID" --only functions --force --non-interactive 2>&1 | tee fn.log || {
+            grep -iE "error|failed|denied|permission" fn.log | tail -15 | while IFS= read -r l; do echo "::warning title=Functions deploy::$l"; done
+            exit 1
+          }
       - if: always()
-        run: rm -f "$RUNNER_TEMP/sa.json"
+        run: rm -f "$RUNNER_TEMP/sa.json" functions/.env

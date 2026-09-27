@@ -9,7 +9,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import { defineSecret, defineString } from 'firebase-functions/params';
+import { defineString } from 'firebase-functions/params';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import nodemailer from 'nodemailer';
 import * as XLSX from 'xlsx';
@@ -22,8 +22,9 @@ initializeApp();
 const db = getFirestore();
 setGlobalOptions({ region: 'europe-west1', maxInstances: 10 });
 
-const GEMINI_API_KEY = defineSecret('GEMINI_API_KEY');
-const SMTP_PASS = defineSecret('SMTP_PASS');
+// Keys are provided by the deploy workflow in functions/.env (from GitHub secrets); never committed.
+const GEMINI_API_KEY = defineString('GEMINI_API_KEY', { default: '' });
+const SMTP_PASS = defineString('SMTP_PASS', { default: '' });
 const GEMINI_MODEL = defineString('GEMINI_MODEL', { default: 'gemini-flash-lite-latest' });
 const SMTP_HOST = defineString('SMTP_HOST', { default: 'smtp.gmail.com' });
 const SMTP_USER = defineString('SMTP_USER', { default: '' });
@@ -56,6 +57,7 @@ async function takeQuota(kind, limit, perUser) {
 }
 
 async function gemini(parts, { json = false, system, temperature = 0.2 } = {}) {
+  if (!GEMINI_API_KEY.value()) throw new HttpsError('failed-precondition', 'The AI key is not configured yet.');
   const body = { contents: [{ role: 'user', parts }], generationConfig: { temperature, ...(json ? { responseMimeType: 'application/json' } : {}) } };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL.value()}:generateContent`;
@@ -83,7 +85,7 @@ Rules:
 Return JSON only: {"criteria":[{"id":"...","assessable":true,"band":"A","comment":"..."}],"image_issues":["..."],"summary":"one or two sentences for the student","overall_score":7.5}`;
 }
 
-export const prepLens = onCall({ secrets: [GEMINI_API_KEY], timeoutSeconds: 120, memory: '512MiB' }, async (req) => {
+export const prepLens = onCall({ timeoutSeconds: 120, memory: '512MiB' }, async (req) => {
   const u = await caller(req);
   const entryId = String(req.data?.entryId || '');
   const ref = db.doc(`entries/${entryId}`);
@@ -125,7 +127,7 @@ export const prepLens = onCall({ secrets: [GEMINI_API_KEY], timeoutSeconds: 120,
 });
 
 let KNOWLEDGE = null;
-export const assistant = onCall({ secrets: [GEMINI_API_KEY], timeoutSeconds: 60 }, async (req) => {
+export const assistant = onCall({ timeoutSeconds: 60 }, async (req) => {
   const u = await caller(req);
   const hist = Array.isArray(req.data?.history) ? req.data.history.slice(-8) : [];
   if (!hist.length) throw new HttpsError('invalid-argument', 'Ask a question.');
@@ -175,11 +177,11 @@ function mailer() {
 }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-export const dailyReport = onSchedule({ schedule: '0 9 * * *', timeZone: 'Africa/Cairo', secrets: [SMTP_PASS], timeoutSeconds: 300, memory: '1GiB' }, async () => {
+export const dailyReport = onSchedule({ schedule: '0 9 * * *', timeZone: 'Africa/Cairo', timeoutSeconds: 300, memory: '1GiB' }, async () => {
   const { st, all } = await buildStats();
   const cfg = all.config;
   const to = (cfg.reportRecipients || []).filter(Boolean);
-  if (!to.length || !SMTP_USER.value()) return;
+  if (!to.length || !SMTP_USER.value() || !SMTP_PASS.value()) return;
   const y = cairoDate(new Date(Date.now() - 86400e3));
   const yAtt = all.attendance.filter((a) => a.date === y);
   const ySess = all.sessions.filter((s) => s.date === y);
@@ -204,10 +206,10 @@ ${SITE_URL.value() ? `<p><a href="${esc(SITE_URL.value())}" style="background:#0
   await db.doc('config/course').set({ lastReportAt: Date.now() }, { merge: true });
 });
 
-export const weeklyReport = onSchedule({ schedule: '0 9 * * 5', timeZone: 'Africa/Cairo', secrets: [SMTP_PASS], timeoutSeconds: 300, memory: '1GiB' }, async () => {
+export const weeklyReport = onSchedule({ schedule: '0 9 * * 5', timeZone: 'Africa/Cairo', timeoutSeconds: 300, memory: '1GiB' }, async () => {
   const all = await loadAll();
   const to = (all.config.reportRecipients || []).filter(Boolean);
-  if (!to.length || !SMTP_USER.value()) return;
+  if (!to.length || !SMTP_USER.value() || !SMTP_PASS.value()) return;
   const since = Date.now() - 7 * 86400e3;
   const rows = all.students.map((s) => {
     const mine = all.entries.filter((e) => e.uid === s.uid && e.status !== 'draft');
