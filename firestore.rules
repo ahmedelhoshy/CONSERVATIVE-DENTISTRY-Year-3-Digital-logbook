@@ -113,6 +113,13 @@ service cloud.firestore {
       allow create: if isTeacher() && request.resource.data.by == myUid();
       allow update, delete: if false;
     }
+    match /jobs/{id} {
+      allow create: if known() && request.resource.data.email == em()
+        && request.resource.data.type in ['prepLens', 'assistant', 'refreshStats']
+        && request.resource.data.status == 'queued';
+      allow read: if known() && resource.data.email == em();
+      allow update, delete: if false;
+    }
     match /usage/{id} {
       allow read, write: if false;
     }

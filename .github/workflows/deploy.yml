@@ -48,10 +48,11 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
         run: |
-          set -o pipefail
-          npx -y firebase-tools@13 deploy --project "$FB_PROJECT_ID" --only functions --force --non-interactive 2>&1 | tee fn.log || {
-            grep -iE "error|failed|denied|permission" fn.log | tail -15 | while IFS= read -r l; do echo "::warning title=Functions deploy::$l"; done
-            exit 1
-          }
+          set +e
+          npx -y firebase-tools@13 deploy --project "$FB_PROJECT_ID" --only functions --force --non-interactive > fn.log 2>&1
+          rc=$?
+          cat fn.log
+          sed 's/\x1b\[[0-9;]*m//g' fn.log | grep -iE "error|failed|denied|permission|invoker|warn|⚠" | grep -viE "node.js 20|deprecat|outdated|breaking changes" | tail -20 | while IFS= read -r l; do echo "::warning title=Functions deploy::$l"; done
+          exit $rc
       - if: always()
         run: rm -f "$RUNNER_TEMP/sa.json" functions/.env

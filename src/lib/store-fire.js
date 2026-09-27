@@ -33,6 +33,19 @@ function q(col, filters = [], opts = {}) {
 }
 const rows = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+async function queueJob(type, data) {
+  const email = (auth.currentUser?.email || '').toLowerCase();
+  const ref = await addDoc(collection(fs, 'jobs'), { type, data: data || {}, email, status: 'queued', at: Date.now() });
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => { off(); reject(Object.assign(new Error('The server did not answer in time. Try again.'), { code: 'deadline-exceeded' })); }, 150000);
+    const off = onSnapshot(ref, (s) => {
+      const d = s.data(); if (!d || d.status === 'queued') return;
+      clearTimeout(t); off();
+      if (d.status === 'done') resolve(d.result); else reject(Object.assign(new Error(d.error || 'Request failed'), { code: d.code }));
+    }, (e) => { clearTimeout(t); reject(e); });
+  });
+}
+
 export const fireStore = {
   mode: 'live',
   now: () => Date.now(),
@@ -65,7 +78,15 @@ export const fireStore = {
   },
   async putFile(path, blob) { const r = ref(st, path); await uploadBytes(r, blob, { contentType: blob.type || 'image/jpeg' }); return getDownloadURL(r); },
   async fileUrl(path) { try { return await getDownloadURL(ref(st, path)); } catch (e) { return null; } },
-  async call(name, data) { const r = await httpsCallable(fn, name, { timeout: 120000 })(data); return r.data; },
+  // Try the direct call first; if the organisation blocks it, fall back to the request queue.
+  async call(name, data) {
+    try { const r = await httpsCallable(fn, name, { timeout: 120000 })(data); return r.data; }
+    catch (e) {
+      // A blocked call (organisation policy / no public access) surfaces as 'internal' or 'unavailable'.
+      if (!/internal|unavailable/.test(String(e.code || ''))) throw e;
+      return queueJob(name, data);
+    }
+  },
   auth: {
     onChange: (cb) => onAuthStateChanged(auth, cb),
     async sendLink(email) {

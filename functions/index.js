@@ -9,6 +9,7 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { defineString } from 'firebase-functions/params';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import nodemailer from 'nodemailer';
@@ -33,8 +34,9 @@ const PROMPT_VERSION = 'prep-lens-v1';
 
 const cairoDate = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(d);
 
-async function caller(req) {
-  const email = (req.auth?.token?.email || '').toLowerCase();
+async function caller(req) { return userByEmail(req.auth?.token?.email); }
+async function userByEmail(rawEmail) {
+  const email = (rawEmail || '').toLowerCase();
   if (!email) throw new HttpsError('unauthenticated', 'Sign in first.');
   const snap = await db.doc(`roster/${email}`).get();
   if (!snap.exists) throw new HttpsError('permission-denied', 'Not on the course roster.');
@@ -85,9 +87,8 @@ Rules:
 Return JSON only: {"criteria":[{"id":"...","assessable":true,"band":"A","comment":"..."}],"image_issues":["..."],"summary":"one or two sentences for the student","overall_score":7.5}`;
 }
 
-export const prepLens = onCall({ timeoutSeconds: 120, memory: '512MiB' }, async (req) => {
-  const u = await caller(req);
-  const entryId = String(req.data?.entryId || '');
+async function doPrepLens(u, data) {
+  const entryId = String(data?.entryId || '');
   const ref = db.doc(`entries/${entryId}`);
   const snap = await ref.get();
   if (!snap.exists) throw new HttpsError('not-found', 'Record not found.');
@@ -124,12 +125,11 @@ export const prepLens = onCall({ timeoutSeconds: 120, memory: '512MiB' }, async 
   const score = typeof out.overall_score === 'number' && out.overall_score >= 0 && out.overall_score <= 10 ? out.overall_score : null;
   await db.doc(`research/${entryId}`).set({ entryId, uid: e.uid, section: e.section, rubricId: e.rubricId, week: e.week, score, criteria, model, promptVersion: PROMPT_VERSION, at });
   return { ok: true };
-});
+}
 
 let KNOWLEDGE = null;
-export const assistant = onCall({ timeoutSeconds: 60 }, async (req) => {
-  const u = await caller(req);
-  const hist = Array.isArray(req.data?.history) ? req.data.history.slice(-8) : [];
+async function doAssistant(u, data) {
+  const hist = Array.isArray(data?.history) ? data.history.slice(-8) : [];
   if (!hist.length) throw new HttpsError('invalid-argument', 'Ask a question.');
   const ok = await takeQuota('assistant', 6000, { uid: u.uid, limit: 60 });
   if (!ok) throw new HttpsError('resource-exhausted', 'Daily question limit reached. Ask your demonstrator.');
@@ -141,7 +141,7 @@ export const assistant = onCall({ timeoutSeconds: 60 }, async (req) => {
   const transcript = hist.map((m) => `${m.role === 'user' ? 'Student' : 'Assistant'}: ${String(m.text).slice(0, 1500)}`).join('\n');
   const { text } = await gemini([{ text: `${transcript}\nAssistant:` }], { system: KNOWLEDGE + `\nThe person asking is a ${u.role}.`, temperature: 0.3 });
   return { text: text.trim().slice(0, 3000) };
-});
+}
 
 // ---------------- statistics & reports ----------------
 async function loadAll() {
@@ -164,11 +164,32 @@ async function buildStats() {
   return { st, all };
 }
 
-export const refreshStats = onCall({ timeoutSeconds: 300, memory: '1GiB' }, async (req) => {
-  const u = await caller(req);
+async function doRefresh(u) {
   if (!['director', 'admin', 'hod'].includes(u.role)) throw new HttpsError('permission-denied', 'Not allowed.');
   await buildStats();
   return { ok: true };
+}
+
+// Direct calls (used when the platform allows public invocation).
+export const prepLens = onCall({ timeoutSeconds: 120, memory: '512MiB', invoker: 'public' }, async (req) => doPrepLens(await caller(req), req.data));
+export const assistant = onCall({ timeoutSeconds: 60, invoker: 'public' }, async (req) => doAssistant(await caller(req), req.data));
+export const refreshStats = onCall({ timeoutSeconds: 300, memory: '1GiB', invoker: 'public' }, async (req) => doRefresh(await caller(req)));
+
+// Request queue: the website writes jobs/{id}; this trigger runs it and writes the result back.
+// Needs no public access, so it works under strict organisation policies.
+const HANDLERS = { prepLens: doPrepLens, assistant: doAssistant, refreshStats: doRefresh };
+export const runJob = onDocumentCreated({ document: 'jobs/{id}', timeoutSeconds: 300, memory: '1GiB' }, async (event) => {
+  const snap = event.data; if (!snap) return;
+  const j = snap.data();
+  try {
+    const fn = HANDLERS[j.type];
+    if (!fn) throw new HttpsError('invalid-argument', 'Unknown request.');
+    const u = await userByEmail(j.email);
+    const result = await fn(u, j.data || {});
+    await snap.ref.update({ status: 'done', result: result || null, doneAt: Date.now() });
+  } catch (e) {
+    await snap.ref.update({ status: 'error', error: String(e.message || e).slice(0, 300), code: e.code || 'internal', doneAt: Date.now() });
+  }
 });
 export const nightlyStats = onSchedule({ schedule: '0 19 * * *', timeZone: 'Africa/Cairo', timeoutSeconds: 300, memory: '1GiB' }, async () => { await buildStats(); });
 
