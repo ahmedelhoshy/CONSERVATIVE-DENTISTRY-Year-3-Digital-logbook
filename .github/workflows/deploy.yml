@@ -24,6 +24,7 @@ jobs:
       - name: Service account
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
       - name: Store AI and email secrets
+        continue-on-error: true
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -31,15 +32,20 @@ jobs:
         run: |
           printf "%s" "$GEMINI_API_KEY" | npx -y firebase-tools@13 functions:secrets:set GEMINI_API_KEY --data-file=- --project "$FB_PROJECT_ID" --force --non-interactive || true
           printf "%s" "${SMTP_PASS:-unset}" | npx -y firebase-tools@13 functions:secrets:set SMTP_PASS --data-file=- --project "$FB_PROJECT_ID" --force --non-interactive || true
-      - name: Deploy to Firebase
+      - name: Deploy website, database rules and storage rules
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
-        run: npx -y firebase-tools@13 deploy --project "$FB_PROJECT_ID" --only hosting,firestore,storage,functions --force --non-interactive
+        run: npx -y firebase-tools@13 deploy --project "$FB_PROJECT_ID" --only hosting,firestore,storage --force --non-interactive
       - name: First-time setup (director account, default settings)
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
           OWNER_EMAIL: ${{ vars.OWNER_EMAIL }}
           OWNER_NAME: ${{ vars.OWNER_NAME }}
         run: cd functions && node bootstrap.mjs
+      - name: Deploy AI, reports and scheduled jobs (Cloud Functions)
+        continue-on-error: true
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: npx -y firebase-tools@13 deploy --project "$FB_PROJECT_ID" --only functions --force --non-interactive
       - if: always()
         run: rm -f "$RUNNER_TEMP/sa.json"
