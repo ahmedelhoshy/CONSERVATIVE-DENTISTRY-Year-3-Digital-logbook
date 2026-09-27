@@ -37,20 +37,20 @@ export const LECTURES = [
 // Practical weeks. `tasks` = exercises with their rubric; `req` = number of requirements (teeth) for the week.
 export const PRACTICAL_WEEKS = [
   { w: 1, from: '2026-09-19', to: '2026-09-24', topic: 'Introduction to lab rules and instruments · Orientation (manual-control exercises)', orientation: true, req: 0, tasks: [] },
-  { w: 2, from: '2026-09-26', to: '2026-09-30', topic: 'Class I cavity preparation for resin composite (demo/videos)', req: 1, tasks: [{ rubric: 'c1_comp_prep', teeth: ['36'] }] },
-  { w: 3, from: '2026-10-03', to: '2026-10-07', topic: 'Compound Class II for composite (demo/videos)', req: 2, tasks: [{ rubric: 'c2_comp_prep', teeth: ['37', '16'] }] },
-  { w: 4, from: '2026-10-10', to: '2026-10-14', topic: 'Compound Class II for composite', req: 2, tasks: [{ rubric: 'c2_comp_prep', teeth: ['36', '16'] }] },
-  { w: 5, from: '2026-10-17', to: '2026-10-21', topic: 'First practical exam · Matricing systems and instrumentation', exam: true, req: 0, tasks: [] },
-  { w: 6, from: '2026-10-24', to: '2026-10-28', topic: 'Class III, IV, V for composite (demo/videos) · Class III & V preparation', req: 2, tasks: [{ rubric: 'c3_comp_prep', teeth: ['11'] }, { rubric: 'c5_comp_prep', teeth: ['11'] }] },
-  { w: 7, from: '2026-10-31', to: '2026-11-04', topic: 'Class III, IV & V for composite', req: 6, tasks: [{ rubric: 'c3_comp_prep', teeth: ['11', '21'] }, { rubric: 'c4_comp_prep', teeth: ['11', '21'] }, { rubric: 'c5_comp_prep', teeth: ['11', '21'] }] },
-  { w: 8, from: '2026-11-07', to: '2026-11-11', topic: 'Direct resin composite veneer (demo/videos + preparation)', req: 2, tasks: [{ rubric: null, label: 'Direct composite veneer preparation', teeth: ['11', '12'] }] },
-  { w: 9, from: '2026-11-14', to: '2026-11-18', topic: 'Simple Class I for amalgam', req: 2, tasks: [{ rubric: 'c1_amal_prep', teeth: ['47', '36'] }] },
-  { w: 10, from: '2026-11-21', to: '2026-11-25', topic: 'Compound Class II for amalgam', req: 2, tasks: [{ rubric: 'c2_amal_prep', teeth: ['47', '36'] }] },
+  { w: 2, from: '2026-09-26', to: '2026-09-30', topic: 'Demo/videos: Class I for resin composite · Simple Class I preparation (tooth 36)', req: 2, tasks: [{ rubric: 'c1_comp_prep', teeth: ['36'] }] },
+  { w: 3, from: '2026-10-03', to: '2026-10-07', topic: 'Demo/videos: Class II for resin composite · Compound Class II preparation (teeth 37 & 16)', req: 3, tasks: [{ rubric: 'c2_comp_prep', teeth: ['37', '16'] }] },
+  { w: 4, from: '2026-10-10', to: '2026-10-14', topic: 'Compound Class II preparation for resin composite (teeth 36 & 16)', req: 3, tasks: [{ rubric: 'c2_comp_prep', teeth: ['36', '16'] }] },
+  { w: 5, from: '2026-10-17', to: '2026-10-21', topic: 'First practical exam · Matricing systems and instrumentation for direct resin composite', exam: true, req: 0, tasks: [] },
+  { w: 6, from: '2026-10-24', to: '2026-10-28', topic: 'Demo/videos: Class III, IV & V for resin composite · Class III & V preparation (tooth 11)', req: 4, tasks: [{ rubric: 'c3_comp_prep', teeth: ['11'] }, { rubric: 'c5_comp_prep', teeth: ['11'] }] },
+  { w: 7, from: '2026-10-31', to: '2026-11-04', topic: 'Class III, IV & V preparation for resin composite (teeth 11 & 21)', req: 6, tasks: [{ rubric: 'c3_comp_prep', teeth: ['11', '21'] }, { rubric: 'c4_comp_prep', teeth: ['11', '21'] }, { rubric: 'c5_comp_prep', teeth: ['11', '21'] }] },
+  { w: 8, from: '2026-11-07', to: '2026-11-11', topic: 'Demo/videos: direct resin composite veneer · Veneer preparation (teeth 11 & 12)', req: 4, tasks: [{ rubric: null, label: 'Direct composite veneer preparation', teeth: ['11', '12'] }] },
+  { w: 9, from: '2026-11-14', to: '2026-11-18', topic: 'Demo/video: simple Class I for amalgam · Preparation (teeth 47 & 36)', req: 3, tasks: [{ rubric: 'c1_amal_prep', teeth: ['47', '36'] }] },
+  { w: 10, from: '2026-11-21', to: '2026-11-25', topic: 'Demo/video: compound Class II for amalgam · Preparation (47 & 36 OM)', req: 3, tasks: [{ rubric: 'c2_amal_prep', teeth: ['47', '36'] }] },
   { w: 11, from: '2026-11-28', to: '2026-12-02', topic: 'Second practical exam · Prevention project orientation', exam: true, req: 0, tasks: [] },
-  { w: 12, from: '2026-12-05', to: '2026-12-09', topic: 'Caries removal, liner & base (demo) · Preparation & excavation on posterior teeth', req: 1, tasks: [{ rubric: null, label: 'Cavity preparation & excavation (posterior)', teeth: [] }] },
+  { w: 12, from: '2026-12-05', to: '2026-12-09', topic: 'Demo/video: caries removal, liner & base · Preparation & excavation on posterior teeth', req: 1, tasks: [{ rubric: null, label: 'Cavity preparation & excavation (posterior)', teeth: [] }] },
   { w: 13, from: '2026-12-12', to: '2026-12-16', topic: 'Preparation & excavation on posterior teeth · Liner & base application', req: 2, tasks: [{ rubric: null, label: 'Excavation + liner & base', teeth: [] }] },
-  { w: 14, from: '2026-12-19', to: '2026-12-23', topic: 'Indirect preparation (inlay & onlay)', req: 2, tasks: [{ rubric: 'indirect_prep', teeth: ['36'] }] },
-  { w: 15, from: '2026-12-26', to: '2026-12-30', topic: 'Digital workflow · Digital lab', req: 1, tasks: [{ rubric: null, label: 'Digital workflow', teeth: ['36'] }] },
+  { w: 14, from: '2026-12-19', to: '2026-12-23', topic: 'Demo/video: indirect preparation · Inlay (tooth 37) & onlay (tooth 46)', req: 2, tasks: [{ rubric: 'indirect_prep', teeth: ['37', '46'] }] },
+  { w: 15, from: '2026-12-26', to: '2026-12-30', topic: 'Demo on digital workflow · Digital lab (teeth 37 & 46)', req: 2, tasks: [{ rubric: null, label: 'Digital workflow', teeth: ['37', '46'] }] },
 ];
 
 // Operative lab slots per section (from the Year-3 main timetable). Day index: 6=Sat,0=Sun,1=Mon,2=Tue,3=Wed,4=Thu.
