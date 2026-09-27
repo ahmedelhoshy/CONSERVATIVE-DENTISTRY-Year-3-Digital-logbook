@@ -42,19 +42,12 @@ In the GitHub repository → **Settings → Secrets and variables → Actions**.
 | `GEMINI_API_KEY` | the Gemini key |
 | `SMTP_PASS` | the Gmail app password |
 
-**Variables**:
+**Variables** (the Firebase web settings are already in the code):
 | Name | Value |
 |---|---|
-| `FB_PROJECT_ID` | `projectId` from firebaseConfig |
-| `FB_API_KEY` | `apiKey` |
-| `FB_AUTH_DOMAIN` | `authDomain` |
-| `FB_STORAGE_BUCKET` | `storageBucket` |
-| `FB_SENDER_ID` | `messagingSenderId` |
-| `FB_APP_ID` | `appId` |
-| `OWNER_EMAIL` | your university email — becomes the Course Director account |
+| `OWNER_EMAIL` | the email that becomes the Course Director account |
 | `OWNER_NAME` | `Prof. Ahmed El-Hoshy` |
 | `SMTP_USER` | the sending Gmail address |
-| `SITE_URL` | `https://<FB_PROJECT_ID>.web.app` |
 | `GEMINI_MODEL` | optional; default `gemini-flash-lite-latest` |
 
 ## 5. Publish
