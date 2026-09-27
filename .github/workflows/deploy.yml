@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      FB_PROJECT_ID: ${{ vars.FB_PROJECT_ID }}
+      FB_PROJECT_ID: ${{ vars.FB_PROJECT_ID || 'digitallogbook-dfc3e' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,18 +16,11 @@ jobs:
       - run: npm ci
       - name: Build web app
         run: npm run build
-        env:
-          VITE_FB_API_KEY: ${{ vars.FB_API_KEY }}
-          VITE_FB_AUTH_DOMAIN: ${{ vars.FB_AUTH_DOMAIN }}
-          VITE_FB_PROJECT_ID: ${{ vars.FB_PROJECT_ID }}
-          VITE_FB_STORAGE_BUCKET: ${{ vars.FB_STORAGE_BUCKET }}
-          VITE_FB_SENDER_ID: ${{ vars.FB_SENDER_ID }}
-          VITE_FB_APP_ID: ${{ vars.FB_APP_ID }}
       - name: Prepare functions
         run: |
           node scripts/sync-shared.mjs
           cd functions && npm ci
-          printf "SMTP_USER=%s\nSITE_URL=%s\nGEMINI_MODEL=%s\n" "${{ vars.SMTP_USER }}" "${{ vars.SITE_URL }}" "${{ vars.GEMINI_MODEL || 'gemini-flash-lite-latest' }}" > .env
+          printf "SMTP_USER=%s\nSITE_URL=%s\nGEMINI_MODEL=%s\n" "${{ vars.SMTP_USER }}" "${{ vars.SITE_URL || 'https://digitallogbook-dfc3e.web.app' }}" "${{ vars.GEMINI_MODEL || 'gemini-flash-lite-latest' }}" > .env
       - name: Service account
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
       - name: Store AI and email secrets

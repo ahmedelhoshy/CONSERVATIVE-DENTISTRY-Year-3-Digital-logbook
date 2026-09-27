@@ -13,13 +13,11 @@ import { Today, ReviewQueue, Students } from './views/staff.jsx';
 import { SessionsAdmin, Content, Announcements, People, Settings, AuditLog } from './views/admin.jsx';
 import { Dashboard, Reports } from './views/dash.jsx';
 import { Login } from './views/login.jsx';
+import { firebaseConfig } from './firebase-config.js';
 
-const cfg = {
-  apiKey: import.meta.env.VITE_FB_API_KEY, authDomain: import.meta.env.VITE_FB_AUTH_DOMAIN, projectId: import.meta.env.VITE_FB_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FB_STORAGE_BUCKET, messagingSenderId: import.meta.env.VITE_FB_SENDER_ID, appId: import.meta.env.VITE_FB_APP_ID,
-};
+const cfg = firebaseConfig;
 const params = new URLSearchParams(location.search);
-const wantDemo = !cfg.apiKey || params.has('demo');
+const wantDemo = !cfg.apiKey || params.has('demo') || window.__DEMO === true;
 
 
 const NAV = {
