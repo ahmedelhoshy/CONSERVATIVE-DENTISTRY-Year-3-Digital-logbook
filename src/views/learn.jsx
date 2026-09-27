@@ -39,6 +39,8 @@ function Practical() {
   </div>;
 }
 
+const atlasSrc = (id) => (window.__ATLAS && window.__ATLAS[id]) || `./atlas/${id}.jpg`;
+
 export function Atlas() {
   const cats = [...new Set(ATLAS.map((a) => a.category))];
   const [cat, setCat] = useState('all');
@@ -47,8 +49,8 @@ export function Atlas() {
   return <section class="stack">
     <p class="muted">{L('Faculty-validated reference photographs. Match each example to your assigned tooth and preparation design. The atlas shows approved examples; it does not grade work.', 'صور مرجعية معتمدة من الكلية. طابق كل مثال مع السن والتحضير المطلوب. الأطلس لا يعطي درجات.')}</p>
     <div class="row"><select id="atlas-cat" value={cat} onChange={(e) => setCat(e.target.value)} style={{ maxWidth: 320 }}><option value="all">{L('All categories', 'كل الفئات')} ({ATLAS.length})</option>{cats.map((c) => <option value={c}>{c} ({ATLAS.filter((a) => a.category === c).length})</option>)}</select></div>
-    <div class="atlas">{list.map((a) => <figure onClick={() => setBig(a)}><img loading="lazy" src={`./atlas/${a.id}.jpg`} alt={`${a.caption} — ${a.category}`} /><figcaption><b class="mono">{a.id}</b><span class="faint">{a.caption}</span></figcaption></figure>)}</div>
-    {big && <div class="lightbox" onClick={() => setBig(null)} role="dialog" aria-label={big.caption}><div><img src={`./atlas/${big.id}.jpg`} alt={big.caption} /><div class="cap"><b>{big.id}</b> · {big.caption} · {big.category}</div></div></div>}
+    <div class="atlas">{list.map((a) => <figure onClick={() => setBig(a)}><img loading="lazy" src={atlasSrc(a.id)} alt={`${a.caption} — ${a.category}`} /><figcaption><b class="mono">{a.id}</b><span class="faint">{a.caption}</span></figcaption></figure>)}</div>
+    {big && <div class="lightbox" onClick={() => setBig(null)} role="dialog" aria-label={big.caption}><div><img src={atlasSrc(big.id)} alt={big.caption} /><div class="cap"><b>{big.id}</b> · {big.caption} · {big.category}</div></div></div>}
   </section>;
 }
 
