@@ -1,0 +1,182 @@
+[
+ {
+  "id": "REF-001",
+  "category": "Annotated reference",
+  "caption": "Original dimensional annotations"
+ },
+ {
+  "id": "REF-002",
+  "category": "Views with measuring probe",
+  "caption": "Probe positioned within preparation"
+ },
+ {
+  "id": "REF-003",
+  "category": "Views with measuring probe",
+  "caption": "Occlusal view with probe"
+ },
+ {
+  "id": "REF-004",
+  "category": "Views with measuring probe",
+  "caption": "Oblique view with probe"
+ },
+ {
+  "id": "REF-005",
+  "category": "Views with measuring probe",
+  "caption": "Probe positioned within preparation"
+ },
+ {
+  "id": "REF-006",
+  "category": "Views with measuring probe",
+  "caption": "Occlusal view with probe"
+ },
+ {
+  "id": "REF-007",
+  "category": "Views with measuring probe",
+  "caption": "Oblique view with probe"
+ },
+ {
+  "id": "REF-008",
+  "category": "Views with measuring probe",
+  "caption": "Oblique view with probe"
+ },
+ {
+  "id": "REF-009",
+  "category": "Separate preparation designs",
+  "caption": "Separate occlusal preparations"
+ },
+ {
+  "id": "REF-010",
+  "category": "Separate preparation designs",
+  "caption": "Separate occlusal preparations"
+ },
+ {
+  "id": "REF-011",
+  "category": "Separate preparation designs",
+  "caption": "Separate occlusal preparations"
+ },
+ {
+  "id": "REF-012",
+  "category": "Occlusal outlines",
+  "caption": "Connected occlusal outline"
+ },
+ {
+  "id": "REF-013",
+  "category": "Occlusal outlines",
+  "caption": "Enlarged model - occlusal outline"
+ },
+ {
+  "id": "REF-014",
+  "category": "Occlusal outlines",
+  "caption": "Connected occlusal outline"
+ },
+ {
+  "id": "REF-015",
+  "category": "Occlusal outlines",
+  "caption": "Occlusal views of multiple preparations"
+ },
+ {
+  "id": "REF-016",
+  "category": "Occlusal outlines",
+  "caption": "Connected occlusal outline"
+ },
+ {
+  "id": "REF-017",
+  "category": "Occlusal outlines",
+  "caption": "Occlusal views of multiple preparations"
+ },
+ {
+  "id": "REF-018",
+  "category": "Occlusal outlines",
+  "caption": "Connected occlusal outline"
+ },
+ {
+  "id": "REF-019",
+  "category": "Occlusal outlines",
+  "caption": "Occlusal views of multiple preparations"
+ },
+ {
+  "id": "REF-020",
+  "category": "Occlusal outlines",
+  "caption": "Connected occlusal outlines"
+ },
+ {
+  "id": "REF-021",
+  "category": "Occlusal outlines",
+  "caption": "Occlusal views of multiple preparations"
+ },
+ {
+  "id": "REF-022",
+  "category": "Occlusal outlines",
+  "caption": "Connected occlusal outline"
+ },
+ {
+  "id": "REF-023",
+  "category": "Occlusal outlines",
+  "caption": "Connected occlusal outline"
+ },
+ {
+  "id": "REF-024",
+  "category": "Oblique and additional references",
+  "caption": "Oblique views of multiple preparations"
+ },
+ {
+  "id": "REF-025",
+  "category": "Oblique and additional references",
+  "caption": "Oblique views of multiple preparations"
+ },
+ {
+  "id": "REF-026",
+  "category": "Oblique and additional references",
+  "caption": "Oblique views along the arch"
+ },
+ {
+  "id": "REF-027",
+  "category": "Oblique and additional references",
+  "caption": "Oblique views of multiple preparations"
+ },
+ {
+  "id": "REF-028",
+  "category": "Oblique and additional references",
+  "caption": "Oblique views along the arch"
+ },
+ {
+  "id": "REF-029",
+  "category": "Oblique and additional references",
+  "caption": "Oblique views of multiple preparations"
+ },
+ {
+  "id": "REF-030",
+  "category": "Oblique and additional references",
+  "caption": "Mirror view of preparation"
+ },
+ {
+  "id": "REF-031",
+  "category": "Oblique and additional references",
+  "caption": "Oblique views along the arch"
+ },
+ {
+  "id": "REF-032",
+  "category": "Oblique and additional references",
+  "caption": "Oblique views of multiple preparations"
+ },
+ {
+  "id": "REF-033",
+  "category": "Oblique and additional references",
+  "caption": "Additional faculty-validated reference"
+ },
+ {
+  "id": "REF-034",
+  "category": "Oblique and additional references",
+  "caption": "Additional faculty-validated reference"
+ },
+ {
+  "id": "REF-035",
+  "category": "Oblique and additional references",
+  "caption": "Additional faculty-validated reference"
+ },
+ {
+  "id": "REF-036",
+  "category": "Oblique and additional references",
+  "caption": "Additional faculty-validated reference"
+ }
+]

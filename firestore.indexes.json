@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    { "collectionGroup": "attendance", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "uid", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" }] },
+    { "collectionGroup": "entries", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "uid", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "entries", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "section", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "entries", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "ASCENDING" }] },
+    { "collectionGroup": "messages", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "uid", "order": "ASCENDING" }, { "fieldPath": "at", "order": "ASCENDING" }] },
+    { "collectionGroup": "messages", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "section", "order": "ASCENDING" }, { "fieldPath": "at", "order": "DESCENDING" }] },
+    { "collectionGroup": "announcements", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "audience", "order": "ASCENDING" }, { "fieldPath": "publishAt", "order": "DESCENDING" }] },
+    { "collectionGroup": "sessions", "queryScope": "COLLECTION", "fields": [{ "fieldPath": "section", "order": "ASCENDING" }, { "fieldPath": "date", "order": "ASCENDING" }] }
+  ],
+  "fieldOverrides": []
+}

@@ -1,0 +1,120 @@
+rules_version = '2';
+// Security rules for the CU Conservative Dentistry logbook.
+// People are authorised by the course roster: roster/{email} holds role, code, section(s).
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email != null
+        && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider != 'password');
+    }
+    function em() { return request.auth.token.email.lower(); }
+    function rosterPath() { return /databases/$(db)/documents/roster/$(em()); }
+    function known() { return signedIn() && exists(rosterPath()); }
+    function prof() { return get(rosterPath()).data; }
+    function role() { return prof().role; }
+    function isStudent() { return known() && role() == 'student'; }
+    function isStaff() { return known() && role() in ['demonstrator', 'lecturer', 'director', 'hod', 'vicedean', 'admin']; }
+    function isTeacher() { return known() && role() in ['demonstrator', 'lecturer', 'director', 'admin']; }
+    function isEditor() { return known() && role() in ['director', 'admin']; }
+    function isLeader() { return known() && role() in ['director', 'admin', 'hod', 'vicedean']; }
+    function myUid() { return role() == 'student' ? string(prof().code) : em(); }
+    function covers(section) {
+      return role() in ['director', 'admin'] || (prof().get('sections', []) is list && section in prof().get('sections', []));
+    }
+    function unchanged(keys) { return !request.resource.data.diff(resource.data).affectedKeys().hasAny(keys); }
+
+    match /roster/{email} {
+      allow get: if signedIn() && (email == em() || isStaff());
+      allow list: if isStaff();
+      allow create, delete: if isEditor();
+      allow update: if isEditor()
+        || (signedIn() && email == em() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'authUid']));
+    }
+
+    match /sessions/{sid} {
+      allow read: if known();
+      allow create, delete: if isEditor();
+      allow update: if isEditor()
+        || (isTeacher() && resource.data.type == 'lab' && covers(resource.data.section) && unchanged(['type', 'section', 'date']))
+        || (isTeacher() && resource.data.type == 'lecture' && role() == 'lecturer'
+            && resource.data.lectureNo in prof().get('lectures', []) && unchanged(['type', 'lectureNo', 'date']));
+    }
+
+    // Rotating attendance codes: never readable by students.
+    match /codes/{sid} {
+      allow read, write: if isTeacher();
+    }
+
+    match /attendance/{id} {
+      function sess() { return get(/databases/$(db)/documents/sessions/$(request.resource.data.sid)).data; }
+      function code() { return get(/databases/$(db)/documents/codes/$(request.resource.data.sid)).data; }
+      function validCheckIn() {
+        let d = request.resource.data;
+        let s = sess();
+        let c = code();
+        return isStudent()
+          && id == d.sid + '_' + myUid()
+          && d.uid == myUid() && d.code == string(prof().code) && d.section == prof().section
+          && d.status == 'recorded' && d.method == 'qr'
+          && s.status == 'open' && request.time.toMillis() < s.closesAt
+          && (s.type == 'lecture' || s.section == prof().section)
+          && (d.submittedCode == c.cur || d.submittedCode == c.get('prev', 'none'))
+          && d.type == s.type && d.date == s.date;
+      }
+      allow create: if validCheckIn() || isTeacher();
+      allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
+      allow update, delete: if isTeacher();
+    }
+
+    match /entries/{id} {
+      allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
+      allow create: if isStudent() && request.resource.data.uid == myUid()
+        && request.resource.data.section == prof().section
+        && request.resource.data.status == 'draft' && request.resource.data.review == null && request.resource.data.ai == null;
+      allow update: if (isStudent() && resource.data.uid == myUid() && resource.data.status in ['draft', 'redo']
+          && request.resource.data.status in ['draft', 'redo', 'submitted']
+          && unchanged(['uid', 'code', 'section', 'review', 'ai', 'rubricId', 'week']))
+        || (isTeacher() && covers(resource.data.section) && unchanged(['uid', 'code', 'section', 'ai']));
+      allow delete: if isEditor() || (isStudent() && resource.data.uid == myUid() && resource.data.status == 'draft');
+    }
+
+    // Prep Lens numeric scores for research — leadership only.
+    match /research/{id} {
+      allow read: if isLeader();
+      allow write: if false;
+    }
+
+    match /messages/{id} {
+      allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
+      allow create: if known() && request.resource.data.from == myUid() && request.resource.data.read == false
+        && ((isStudent() && request.resource.data.uid == myUid() && request.resource.data.section == prof().section) || isTeacher());
+      allow update: if ((isStudent() && resource.data.uid == myUid()) || isTeacher())
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+    }
+
+    match /announcements/{id} {
+      allow read: if isStaff() || (isStudent() && resource.data.audience in ['students', 'all', 'sections']);
+      allow write: if isEditor();
+    }
+    match /materials/{id} {
+      allow read: if known();
+      allow write: if isEditor();
+    }
+    match /config/{id} {
+      allow read: if known();
+      allow write: if isEditor();
+    }
+    match /reports/{id} {
+      allow read: if isLeader();
+      allow write: if false;
+    }
+    match /audit/{id} {
+      allow read: if isLeader();
+      allow create: if isTeacher() && request.resource.data.by == myUid();
+      allow update, delete: if false;
+    }
+    match /usage/{id} {
+      allow read, write: if false;
+    }
+  }
+}

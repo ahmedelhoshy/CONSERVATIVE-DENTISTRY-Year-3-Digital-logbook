@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function roster() { return firestore.get(/databases/(default)/documents/roster/$(request.auth.token.email.lower())).data; }
+    function known() { return request.auth != null && request.auth.token.email != null
+      && firestore.exists(/databases/(default)/documents/roster/$(request.auth.token.email.lower())); }
+    function isStaff() { return known() && roster().role != 'student'; }
+
+    // Prep Lens photos: photos/{studentCode}/{entryId}/{file}
+    match /photos/{code}/{entryId}/{file} {
+      allow read: if isStaff() || (known() && string(roster().code) == code);
+      allow create: if known() && roster().role == 'student' && string(roster().code) == code
+        && request.resource.size < 3 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+      allow delete: if isStaff();
+    }
+    match /{all=**} { allow read, write: if false; }
+  }
+}
