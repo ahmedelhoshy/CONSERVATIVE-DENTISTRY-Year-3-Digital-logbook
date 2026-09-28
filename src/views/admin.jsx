@@ -155,21 +155,25 @@ export function People() {
     e.target.value = '';
   };
   const importNow = async () => {
-    const S = store(); let n = 0;
+    const S = store(); let n = 0, noSec = 0;
+    const existing = new Set((counts.rows || []).map((x) => x.email));
     for (const s of preview.students) {
       if (!s.email) continue;
-      await S.set('users', s.email, { uid: s.code, code: s.code, name: s.name, email: s.email, section: s.section, status: s.status, role: 'student' }, { merge: true }); n++;
+      const rec = { uid: s.code, code: s.code, name: s.name, email: s.email, status: s.status, role: 'student' };
+      // A blank section never erases one already set; new students without a section start as "not assigned".
+      if (s.section) rec.section = s.section; else if (!existing.has(s.email)) { rec.section = null; noSec++; }
+      await S.set('users', s.email, rec, { merge: true }); n++;
     }
-    await audit('roster.import', 'students', null, `${n} students`, 'Roster import');
-    toast(`${n} students imported`); setPreview(null);
+    await audit('roster.import', 'students', null, `${n} students (${noSec} without section)`, 'Roster import');
+    toast(`${n} students imported${noSec ? ` · ${noSec} without a section yet` : ''}`); setPreview(null);
   };
   const byRole = (r) => (staff.rows || []).filter((x) => x.role === r);
   return <>
     <section class="hero"><h1>People and permissions</h1><p class="muted">Only emails on this list can sign in. Students see only their own records; each staff role sees what it needs.</p></section>
-    <section class="card"><div class="row between"><div><h2>Students</h2><p class="faint">{(counts.rows || []).length} on the roster</p></div>
+    <section class="card"><div class="row between"><div><h2>Students</h2><p class="faint">{(counts.rows || []).length} on the roster{(counts.rows || []).some((x) => !x.section) ? ` · ${(counts.rows || []).filter((x) => !x.section).length} without a section` : ''}</p></div>
       <label class="btn primary">Import roster (Excel)<input id="roster-file" type="file" accept=".xlsx,.xls,.csv" hidden onChange={onFile} /></label></div>
-      <p class="faint">Columns needed: student number (الكود), name (الاسم), university email, and section (1–18). Arabic or English headers are recognised. The file stays on your computer; only the rows are saved.</p>
-      {preview && <div class="stack"><div class="state info"><b>{preview.students.length} students found</b><p>{preview.problems.length ? `${preview.problems.length} rows need attention (missing email or section) and will be skipped: ${preview.problems.slice(0, 6).join('; ')}${preview.problems.length > 6 ? '…' : ''}` : 'All rows have email and section.'}</p></div>
+      <p class="faint">Columns needed: student number (الكود), name (الاسم), university email, and section (1–18; may be left blank for now). Arabic or English headers are recognised. The file stays on your computer; only the rows are saved.</p>
+      {preview && <div class="stack"><div class="state info"><b>{preview.students.length} students found</b><p>{(() => { const noEm = preview.students.filter((s) => !s.email), noSec = preview.students.filter((s) => s.email && !s.section); return <>{noEm.length ? `${noEm.length} rows have no email and will be skipped: ${noEm.slice(0, 6).map((s) => s.code).join(', ')}${noEm.length > 6 ? '…' : ''}. ` : ''}{noSec.length ? `${noSec.length} students have no section yet: they can sign in, check in to lectures and use the library now; lab check-in and tooth submissions open once you re-import the file with sections (a blank section never erases one already set).` : ''}{!noEm.length && !noSec.length ? 'All rows have email and section.' : ''}</>; })()}</p></div>
         <div class="row"><button class="btn primary" disabled={!preview.students.some((s) => s.email)} onClick={importNow}>Import {preview.students.filter((s) => s.email).length} students</button><button class="btn" onClick={() => setPreview(null)}>Cancel</button></div></div>}
     </section>
     <section class="card"><div class="row between"><h2>Staff</h2><button class="btn" onClick={() => setEdit({ role: 'demonstrator', sections: [], lectures: [] })}>+ Add staff</button></div>

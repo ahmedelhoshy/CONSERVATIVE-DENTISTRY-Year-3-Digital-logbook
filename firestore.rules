@@ -17,6 +17,7 @@ service cloud.firestore {
     function isTeacher() { return known() && role() in ['demonstrator', 'lecturer', 'director', 'admin']; }
     function isEditor() { return known() && role() in ['director', 'admin']; }
     function isLeader() { return known() && role() in ['director', 'admin', 'hod', 'vicedean']; }
+    function mySec() { return prof().get('section', null); }
     function myUid() { return role() == 'student' ? string(prof().code) : em(); }
     function covers(section) {
       return role() in ['director', 'admin'] || (prof().get('sections', []) is list && section in prof().get('sections', []));
@@ -54,10 +55,10 @@ service cloud.firestore {
         let c = code();
         return isStudent()
           && id == d.sid + '_' + myUid()
-          && d.uid == myUid() && d.code == string(prof().code) && d.section == prof().section
+          && d.uid == myUid() && d.code == string(prof().code) && d.section == mySec()
           && d.status == 'recorded' && d.method == 'qr'
           && s.status == 'open' && request.time.toMillis() < s.closesAt
-          && (s.type == 'lecture' || s.section == prof().section)
+          && (s.type == 'lecture' || (mySec() != null && s.section == mySec()))
           && (d.submittedCode == c.cur || d.submittedCode == c.get('prev', 'none'))
           && d.type == s.type && d.date == s.date;
       }
@@ -69,7 +70,7 @@ service cloud.firestore {
     match /entries/{id} {
       allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
       allow create: if isStudent() && request.resource.data.uid == myUid()
-        && request.resource.data.section == prof().section
+        && mySec() != null && request.resource.data.section == mySec()
         && request.resource.data.status == 'draft' && request.resource.data.review == null && request.resource.data.ai == null;
       allow update: if (isStudent() && resource.data.uid == myUid() && resource.data.status in ['draft', 'redo']
           && request.resource.data.status in ['draft', 'redo', 'submitted']
@@ -87,7 +88,7 @@ service cloud.firestore {
     match /messages/{id} {
       allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
       allow create: if known() && request.resource.data.from == myUid() && request.resource.data.read == false
-        && ((isStudent() && request.resource.data.uid == myUid() && request.resource.data.section == prof().section) || isTeacher());
+        && ((isStudent() && request.resource.data.uid == myUid() && request.resource.data.section == mySec()) || isTeacher());
       allow update: if ((isStudent() && resource.data.uid == myUid()) || isTeacher())
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
     }
