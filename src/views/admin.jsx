@@ -1,8 +1,9 @@
 import { useState } from 'preact/hooks';
-import { me, store, today, audit, isDemo, currentWeek } from '../lib/logic.js';
+import { me, store, today, audit, isDemo, currentWeek, compressImage } from '../lib/logic.js';
 import { L, useQuery, useDoc, Pill, Sheet, Empty, Confirm, fmtDate, fmtDT, toast } from '../lib/ui.jsx';
 import { exportXlsx, readRosterFile, parseRoster } from '../lib/export.js';
 import { LECTURES, PRACTICAL_WEEKS, LAB_SLOTS, LAB_SLOT_NOTES } from '../data/course.js';
+import { SECTION_OF, PTYPE_OF, ATLAS_CATS } from '../lib/materials.js';
 import { labDatesForWeek } from '../lib/demo-seed.js';
 import { SessionPanel } from './staff.jsx';
 
@@ -69,19 +70,38 @@ function AddSession({ onClose }) {
 }
 
 // ---------------- Materials ----------------
+// Four sections, each shown to students in its own tab: lectures, practical (by week), helpful links, atlas pictures.
+const PTYPES = { video: 'Demonstration video', guide: 'Practical guide / handout', link: 'Practical link' };
+const weekLabel = (w) => { const x = PRACTICAL_WEEKS.find((p) => p.w === Number(w)); return x ? `Week ${x.w} — ${x.topic}` : 'General (all weeks)'; };
+
 export function Content() {
-  const q = useQuery('materials', [], { orderBy: 'order' });
+  const q = useQuery('materials', []);
   const [edit, setEdit] = useState(null);
+  const [upload, setUpload] = useState(false);
   const rows = q.rows || [];
-  const lecNos = new Set(rows.filter((m) => m.kind === 'lecture').map((m) => m.lectureNo));
+  const by = (s) => rows.filter((m) => SECTION_OF(m) === s);
+  const lecNos = new Set(by('lecture').map((m) => m.lectureNo));
   const t = today();
   const missing = LECTURES.filter((l) => l.date <= t && !lecNos.has(l.n));
+  const lec = by('lecture').sort((a, b) => (a.lectureNo || 0) - (b.lectureNo || 0) || (a.order || 0) - (b.order || 0));
+  const prac = by('practical').sort((a, b) => (a.week || 99) - (b.week || 99) || (a.order || 0) - (b.order || 0));
+  const links = by('link').sort((a, b) => (a.order || 0) - (b.order || 0));
+  const atlas = by('atlas').sort((a, b) => ATLAS_CATS.indexOf(a.category) - ATLAS_CATS.indexOf(b.category) || (a.order || 0) - (b.order || 0));
+  const item = (m, sub) => <div class="item"><div class="grow"><b dir="auto">{m.title}</b><div class="faint">{sub} · updated {fmtDate(m.updatedAt, { day: 'numeric', month: 'short' })}</div>{m.url ? <a class="faint" href={m.url} target="_blank" rel="noopener">{m.url.slice(0, 70)}</a> : !m.body && <Pill kind="bad">No link</Pill>}</div><button class="btn sm" onClick={() => setEdit(m)}>Edit</button></div>;
+  const head = (title, sub, btn, onAdd) => <div class="row between"><div><h2>{title}</h2><p class="faint">{sub}</p></div><button class="btn primary" onClick={onAdd}>{btn}</button></div>;
   return <>
-    <section class="hero"><h1>Learning materials</h1><p class="muted">Paste the share link of each file (Google Drive, OneDrive, YouTube). Replacing a link keeps the same entry, so students never see a broken item.</p></section>
+    <section class="hero"><h1>Learning materials</h1><p class="muted">Students see four separate tabs: <b>Lectures</b>, <b>Practical</b> (by week), <b>Helpful links</b> and the <b>Atlas</b>. Paste share links (Google Drive, OneDrive, YouTube); replacing a link keeps the same entry, so students never see a broken item. If something is in the wrong section, open it and change “Section”.</p></section>
     {missing.length > 0 && <div class="state pending"><b>{missing.length} past lecture(s) without slides</b><p>{missing.map((l) => `Lecture ${l.n}`).join(', ')}</p></div>}
-    <button class="btn primary" style={{ alignSelf: 'flex-start' }} onClick={() => setEdit({ kind: 'lecture', order: rows.length + 1 })}>+ Add material</button>
-    <section class="card"><div class="list">{rows.map((m) => <div class="item"><div class="grow"><b>{m.title}</b><div class="faint">{m.kind}{m.lectureNo ? ` · lecture ${m.lectureNo}` : ''}{m.qbank ? ' · question bank' : ''} · updated {fmtDate(m.updatedAt, { day: 'numeric', month: 'short' })}</div>{m.url ? <a class="faint" href={m.url} target="_blank" rel="noopener">{m.url.slice(0, 70)}</a> : m.kind !== 'skill' && <Pill kind="bad">No link</Pill>}</div><button class="btn sm" onClick={() => setEdit(m)}>Edit</button></div>)}</div></section>
+    <section class="card">{head('1 · Lectures', 'Slides and question bank for each lecture.', '+ Add lecture material', () => setEdit({ kind: 'lecture' }))}
+      <div class="list">{lec.length ? lec.map((m) => item(m, m.lectureNo ? `Lecture ${m.lectureNo}${m.qbank ? ' · question bank' : ''}` : 'Course-wide lecture material')) : <Empty>No lecture material yet.</Empty>}</div></section>
+    <section class="card">{head('2 · Practical', 'Demonstration videos, lab guides and links, filed under the practical week.', '+ Add practical material', () => setEdit({ kind: 'practical', ptype: 'video', week: currentWeek().w }))}
+      <div class="list">{prac.length ? prac.map((m) => item(m, `${PTYPES[PTYPE_OF(m)]} · ${m.week ? 'week ' + m.week : 'all weeks'}`)) : <Empty>No practical material yet.</Empty>}</div></section>
+    <section class="card">{head('3 · Helpful links', 'Textbooks, references and websites for the whole course.', '+ Add helpful link', () => setEdit({ kind: 'link' }))}
+      <div class="list">{links.length ? links.map((m) => item(m, 'Helpful link')) : <Empty>No links yet.</Empty>}</div></section>
+    <section class="card">{head('4 · Atlas pictures', `Reference photos students see in the Atlas tab, grouped by cavity class. ${atlas.length} uploaded + 36 faculty atlas images.`, '+ Upload pictures', () => setUpload(true))}
+      {atlas.length ? <div class="atlas">{atlas.map((a) => <figure onClick={() => setEdit(a)}><img loading="lazy" src={a.url} alt={a.title} /><figcaption><b>{a.category}</b><span class="faint" dir="auto">{a.title}</span></figcaption></figure>)}</div> : <Empty>No pictures uploaded yet. Upload several at once and choose the cavity class.</Empty>}</section>
     {edit && <MaterialSheet m={edit} onClose={() => setEdit(null)} />}
+    {upload && <AtlasUpload onClose={() => setUpload(false)} />}
   </>;
 }
 export function driveFix(url) {
@@ -90,26 +110,68 @@ export function driveFix(url) {
   return m ? `https://drive.google.com/file/d/${m[1]}/preview` : url;
 }
 function MaterialSheet({ m, onClose }) {
-  const [f, setF] = useState({ kind: 'lecture', title: '', url: '', qbank: '', body: '', lectureNo: '', order: 1, ...m });
+  const init = { title: '', url: '', qbank: '', body: '', lectureNo: '', order: 0, week: '', category: ATLAS_CATS[0], ...m };
+  init.section = SECTION_OF(init); init.ptype = PTYPE_OF(init);
+  const [f, setF] = useState(init);
   const [del, setDel] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const sec = f.section;
   const save = async () => {
-    if (f.url && !/^https:\/\//.test(f.url)) { toast('Links must start with https://'); return; }
-    const data = { kind: f.kind, title: f.title.trim(), url: driveFix(f.url.trim()), qbank: f.qbank || '', body: f.body || '', lectureNo: f.kind === 'lecture' ? Number(f.lectureNo) || null : null, order: Number(f.order) || 0, updatedAt: Date.now(), updatedBy: me().name };
+    if (sec !== 'atlas' && f.url && !/^https:\/\//.test(f.url)) { toast('Links must start with https://'); return; }
+    const base = { title: f.title.trim(), order: Number(f.order) || 0, updatedAt: Date.now(), updatedBy: me().name };
+    let data;
+    if (sec === 'atlas') data = { ...base, kind: 'atlas', category: f.category };
+    else data = { ...base, kind: sec, url: driveFix((f.url || '').trim()), body: f.body || '',
+      qbank: sec === 'lecture' ? f.qbank || '' : '', lectureNo: sec === 'lecture' ? Number(f.lectureNo) || null : null,
+      week: sec === 'practical' ? Number(f.week) || null : null, ptype: sec === 'practical' ? f.ptype : null };
     if (m.id) await store().update('materials', m.id, data); else await store().add('materials', data);
-    await audit('materials.save', m.id || data.title, m.url || null, data.url, '');
+    await audit('materials.save', m.id || data.title, m.url || null, data.url || data.category, sec);
     toast('Saved — students see it now'); onClose();
   };
   return <Sheet onClose={onClose}><h2>{m.id ? 'Edit material' : 'Add material'}</h2>
-    <div class="grid2"><label class="fld">Kind<select id="mt-kind" value={f.kind} onChange={set('kind')}><option value="lecture">Lecture slides</option><option value="video">Demonstration video</option><option value="link">Helpful link</option><option value="skill">Practical skill</option></select></label>
-      {f.kind === 'lecture' ? <label class="fld">Lecture number<select id="mt-lec" value={f.lectureNo} onChange={(e) => { const l = LECTURES.find((x) => x.n === Number(e.target.value)); setF({ ...f, lectureNo: e.target.value, title: f.title || (l ? `Lecture ${l.n} — ${l.title}` : '') }); }}><option value="">Choose</option>{LECTURES.map((l) => <option value={l.n}>Lecture {l.n} — {l.title}</option>)}</select></label> : <label class="fld">Order<input id="mt-order" type="number" value={f.order} onInput={set('order')} /></label>}</div>
-    <label class="fld">Title<input id="mt-title" value={f.title} onInput={set('title')} /></label>
-    <label class="fld">Link (https://…)<input id="mt-url" type="url" value={f.url} onInput={set('url')} placeholder="https://drive.google.com/file/d/…/view" /></label>
-    <p class="faint">Google Drive: set sharing to “Anyone with the link — Viewer”. View links are converted to preview links automatically.</p>
-    {f.kind === 'lecture' && <label class="fld">Question bank (one question per line)<textarea id="mt-qbank" value={f.qbank} onInput={set('qbank')} dir="auto" /></label>}
-    {f.kind === 'skill' && <label class="fld">Instructions<textarea id="mt-body" value={f.body} onInput={set('body')} dir="auto" /></label>}
-    <div class="row"><button class="btn primary" disabled={!f.title.trim()} onClick={save}>Save</button><button class="btn" onClick={onClose}>Cancel</button>{m.id && <button class="btn danger" onClick={() => setDel(true)}>Delete</button>}</div>
-    {del && <Confirm text={`Delete “${f.title}”? Students will no longer see it.`} yes="Delete" onNo={() => setDel(false)} onYes={async () => { await store().del('materials', m.id); await audit('materials.delete', m.id, f.title, null, ''); onClose(); }} />}
+    {sec === 'atlas' ? <><img src={f.url} alt="" style={{ maxWidth: '100%', borderRadius: 12 }} />
+      <label class="fld">Cavity class<select id="mt-cat" value={f.category} onChange={set('category')}>{ATLAS_CATS.map((c) => <option>{c}</option>)}</select></label>
+      <label class="fld">Caption<input id="mt-title" value={f.title} onInput={set('title')} dir="auto" /></label></>
+    : <>
+      <div class="grid2"><label class="fld">Section (student tab)<select id="mt-sec" value={sec} onChange={set('section')}><option value="lecture">Lectures</option><option value="practical">Practical</option><option value="link">Helpful links</option></select></label>
+        {sec === 'lecture' && <label class="fld">Lecture<select id="mt-lec" value={f.lectureNo || ''} onChange={(e) => { const l = LECTURES.find((x) => x.n === Number(e.target.value)); setF({ ...f, lectureNo: e.target.value, title: f.title || (l ? `Lecture ${l.n} — ${l.title}` : '') }); }}><option value="">Course-wide (not one lecture)</option>{LECTURES.map((l) => <option value={l.n}>Lecture {l.n} — {l.title}</option>)}</select></label>}
+        {sec === 'practical' && <label class="fld">Practical week<select id="mt-week" value={f.week || ''} onChange={set('week')}><option value="">All weeks (general)</option>{PRACTICAL_WEEKS.map((w) => <option value={w.w}>Week {w.w} — {w.topic.slice(0, 60)}</option>)}</select></label>}
+        {sec === 'link' && <label class="fld">Order<input id="mt-order" type="number" value={f.order} onInput={set('order')} /></label>}</div>
+      {sec === 'practical' && <label class="fld">Type<select id="mt-ptype" value={f.ptype} onChange={set('ptype')}>{Object.entries(PTYPES).map(([k, v]) => <option value={k}>{v}</option>)}</select></label>}
+      <label class="fld">Title<input id="mt-title" value={f.title} onInput={set('title')} dir="auto" /></label>
+      <label class="fld">Link (https://…)<input id="mt-url" type="url" value={f.url} onInput={set('url')} placeholder="https://drive.google.com/file/d/…/view" /></label>
+      <p class="faint">Google Drive: set sharing to “Anyone with the link — Viewer”. View links are converted to preview links automatically.</p>
+      {sec === 'lecture' && <label class="fld">Question bank (one question per line)<textarea id="mt-qbank" value={f.qbank} onInput={set('qbank')} dir="auto" /></label>}
+      {sec !== 'lecture' && <label class="fld">Short note for students (optional)<textarea id="mt-body" value={f.body} onInput={set('body')} dir="auto" /></label>}
+    </>}
+    <div class="row"><button class="btn primary" disabled={!f.title.trim() && sec !== 'atlas'} onClick={save}>Save</button><button class="btn" onClick={onClose}>Cancel</button>{m.id && <button class="btn danger" onClick={() => setDel(true)}>Delete</button>}</div>
+    {del && <Confirm text={`Delete “${f.title || 'this picture'}”? Students will no longer see it.`} yes="Delete" onNo={() => setDel(false)} onYes={async () => { await store().del('materials', m.id); await audit('materials.delete', m.id, f.title, null, ''); onClose(); }} />}
+  </Sheet>;
+}
+function AtlasUpload({ onClose }) {
+  const [files, setFiles] = useState([]);
+  const [cat, setCat] = useState(ATLAS_CATS[0]);
+  const [caps, setCaps] = useState({});
+  const [busy, setBusy] = useState(0);
+  const go = async () => {
+    const S = store();
+    for (let i = 0; i < files.length; i++) {
+      setBusy(i + 1);
+      const f = files[i];
+      const { blob } = await compressImage(f, 1600, 0.85);
+      const path = `atlas/${Date.now()}_${i}.jpg`;
+      const url = await S.putFile(path, blob);
+      await S.add('materials', { kind: 'atlas', category: cat, title: (caps[i] ?? f.name.replace(/\.[^.]+$/, '')).trim(), url, path, order: Date.now() + i, updatedAt: Date.now(), updatedBy: me().name });
+    }
+    await audit('atlas.upload', cat, null, `${files.length} picture(s)`, '');
+    toast(`${files.length} picture(s) added to the Atlas`); onClose();
+  };
+  return <Sheet onClose={onClose}><h2>Upload Atlas pictures</h2>
+    <p class="muted">Choose one or more photos (JPG/PNG). They are resized on this computer before upload. Students see them in Learn → Atlas under the cavity class you choose.</p>
+    <label class="fld">Cavity class<select id="au-cat" value={cat} onChange={(e) => setCat(e.target.value)}>{ATLAS_CATS.map((c) => <option>{c}</option>)}</select></label>
+    <label class="btn" style={{ alignSelf: 'flex-start' }}>Choose pictures<input id="au-files" type="file" accept="image/*" multiple hidden onChange={(e) => { setFiles([...e.target.files]); setCaps({}); }} /></label>
+    {files.length > 0 && <div class="list">{files.map((f, i) => <div class="item"><div class="grow"><input value={caps[i] ?? f.name.replace(/\.[^.]+$/, '')} onInput={(e) => setCaps({ ...caps, [i]: e.target.value })} dir="auto" aria-label="Caption" /></div><span class="faint">{Math.round(f.size / 1024)} KB</span></div>)}</div>}
+    <div class="row"><button class="btn primary" disabled={!files.length || busy} onClick={go}>{busy ? `Uploading ${busy} of ${files.length}…` : `Upload ${files.length || ''} picture(s)`}</button><button class="btn" onClick={onClose} disabled={!!busy}>Cancel</button></div>
   </Sheet>;
 }
 

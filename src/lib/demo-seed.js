@@ -144,8 +144,8 @@ export function seedDemo() {
     { kind: 'lecture', lectureNo: 1, title: 'Lecture 1 — Course Orientation: Definition, Scope and Objectives', url: 'https://example.org/lecture-1.pdf', qbank: 'Define Operative Dentistry and state its scope and objectives.', order: 1 },
     { kind: 'lecture', lectureNo: 2, title: 'Lecture 2 — Hard Tooth Structure Defects (Non-carious lesions)', url: 'https://example.org/lecture-2.pdf', qbank: 'Classify non-carious lesions of hard tooth structure.\nCompare attrition, abrasion, erosion and abfraction.', order: 2 },
     { kind: 'lecture', lectureNo: 3, title: 'Lecture 3 — Dental Cariology (1)', url: 'https://example.org/lecture-3.pdf', qbank: '', order: 3 },
-    { kind: 'video', title: 'Class I cavity preparation for composite — demonstration', url: 'https://www.youtube.com/', order: 10 },
-    { kind: 'video', title: 'Compound Class II for composite — demonstration', url: 'https://www.youtube.com/', order: 11 },
+    { kind: 'practical', ptype: 'video', week: 2, title: 'Class I cavity preparation for composite — demonstration', url: 'https://www.youtube.com/', order: 10 },
+    { kind: 'practical', ptype: 'video', week: 3, title: 'Compound Class II for composite — demonstration', url: 'https://www.youtube.com/', order: 11 },
     { kind: 'skill', title: 'Orientation lab: manual-control exercises (name, lines, root shapes)', url: '', body: 'Write your Arabic name 10 times left to right; 10 line sets at 0.5/1.0/1.5/2.0 mm; 4 circles (3 mm) + 4 squares (3–4 mm) on two molar roots. No cavity preparation until verified.', order: 20 },
     { kind: 'link', title: 'Recommended: rubber dam and operator positioning (external video)', url: 'https://www.youtube.com/', order: 30 },
   ];

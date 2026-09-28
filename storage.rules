@@ -13,6 +13,13 @@ service firebase.storage {
         && request.resource.size < 3 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
       allow delete: if isStaff();
     }
+    // Atlas reference pictures uploaded by the Course Director; readable by everyone on the roster.
+    match /atlas/{file} {
+      allow read: if known();
+      allow create, update: if known() && roster().role in ['director', 'admin']
+        && request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+      allow delete: if known() && roster().role in ['director', 'admin'];
+    }
     match /{all=**} { allow read, write: if false; }
   }
 }

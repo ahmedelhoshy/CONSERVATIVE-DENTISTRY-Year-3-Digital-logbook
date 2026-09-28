@@ -1,56 +1,80 @@
 import { useState } from 'preact/hooks';
-import { today, me } from '../lib/logic.js';
+import { today, me, currentWeek } from '../lib/logic.js';
+import { SECTION_OF, PTYPE_OF, ATLAS_CATS } from '../lib/materials.js';
 import { L, useQuery, Pill, Empty, fmtDate, Band } from '../lib/ui.jsx';
-import { LECTURES, ORIENTATION_EXERCISES } from '../data/course.js';
+import { LECTURES, ORIENTATION_EXERCISES, PRACTICAL_WEEKS } from '../data/course.js';
 import { RUBRICS, GENERAL_GRADING, GRADING_NOTE } from '../data/rubrics.js';
 import ATLAS from '../data/atlas.json';
 
 export function Learn() {
   const [tab, setTab] = useState('lectures');
-  const tabs = [['lectures', L('Lectures', 'المحاضرات')], ['practical', L('Videos & skills', 'فيديوهات ومهارات')], ['atlas', L('Atlas', 'الأطلس')], ['rubrics', L('Rubrics', 'الروبركس')]];
+  const mats = useQuery('materials', []);
+  const rows = mats.rows || [];
+  const tabs = [['lectures', L('Lectures', 'المحاضرات')], ['practical', L('Practical', 'العملي')], ['links', L('Helpful links', 'روابط مفيدة')], ['atlas', L('Atlas', 'الأطلس')], ['rubrics', L('Rubrics', 'الروبركس')]];
   return <>
-    <section class="hero"><h1>{L('Learning resources', 'المواد التعليمية')}</h1><p class="muted">{L('Lecture slides, question banks, demonstration videos, the faculty-validated atlas and the official rubrics.', 'المحاضرات وبنوك الأسئلة وفيديوهات الشرح والأطلس المعتمد والروبركس الرسمية.')}</p></section>
+    <section class="hero"><h1>{L('Learning resources', 'المواد التعليمية')}</h1><p class="muted">{L('Lectures with their question banks, practical material by week, helpful links, the atlas of reference pictures and the official rubrics.', 'المحاضرات وبنوك الأسئلة، والعملي حسب الأسبوع، وروابط مفيدة، وأطلس الصور المرجعية، والروبركس الرسمية.')}</p></section>
     <div class="seg" role="tablist" style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>{tabs.map(([k, l]) => <button role="tab" class={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
-    {tab === 'lectures' && <Lectures />}
-    {tab === 'practical' && <Practical />}
-    {tab === 'atlas' && <Atlas />}
+    {tab === 'lectures' && <Lectures rows={rows.filter((m) => SECTION_OF(m) === 'lecture')} />}
+    {tab === 'practical' && <Practical rows={rows.filter((m) => SECTION_OF(m) === 'practical')} />}
+    {tab === 'links' && <Links rows={rows.filter((m) => SECTION_OF(m) === 'link')} />}
+    {tab === 'atlas' && <Atlas uploaded={rows.filter((m) => SECTION_OF(m) === 'atlas')} />}
     {tab === 'rubrics' && <Rubrics />}
   </>;
 }
 
-function Lectures() {
-  const mats = useQuery('materials', [['kind', '==', 'lecture']]);
+const openBtn = (m, label) => m.url && <a class="btn" href={m.url} target="_blank" rel="noopener">{label || L('Open', 'افتح')}</a>;
+
+function Lectures({ rows }) {
   const t = today();
-  const byNo = {}; for (const m of mats.rows || []) byNo[m.lectureNo] = m;
-  return <div class="stack">{LECTURES.map((l) => { const m = byNo[l.n]; const past = l.date <= t; return <section class="card">
-    <div class="row between"><div><span class="eyebrow">{L('Lecture', 'محاضرة')} {l.n} · {fmtDate(l.date)}</span><h3>{m?.title?.replace(/^Lecture \d+ — /, '') || l.title}</h3><p class="faint">{l.lecturer}</p></div>
-      {m?.url ? <a class="btn primary" href={m.url} target="_blank" rel="noopener">{L('Open slides', 'افتح المحاضرة')}</a> : <Pill>{past ? L('Slides not uploaded yet', 'لم تُرفع بعد') : L('Upcoming', 'قادمة')}</Pill>}</div>
-    {m?.qbank && <details><summary>{L('Question bank', 'بنك الأسئلة')}</summary><ol style={{ margin: '8px 0 0', paddingInlineStart: 20 }} dir="auto">{m.qbank.split('\n').filter(Boolean).map((q) => <li>{q}</li>)}</ol><p class="faint">{L('Answer in your notebook and bring unclear points to the next session.', 'أجب في كشكولك وناقش النقاط غير الواضحة في اللقاء التالي.')}</p></details>}
-    {l.note && <p class="faint">{l.note}</p>}
-  </section>; })}</div>;
+  const byNo = {}; for (const m of rows) (byNo[m.lectureNo || 0] = byNo[m.lectureNo || 0] || []).push(m);
+  const general = byNo[0] || [];
+  return <div class="stack">
+    {general.length > 0 && <section class="card"><h2>{L('Course material', 'مواد المقرر')}</h2><div class="list">{general.map((m) => <div class="item"><div class="grow"><b dir="auto">{m.title}</b>{m.body && <p class="muted" dir="auto">{m.body}</p>}</div>{openBtn(m)}</div>)}</div></section>}
+    {LECTURES.map((l) => { const ms = byNo[l.n] || []; const past = l.date <= t; const main = ms[0]; return <section class="card">
+      <div class="row between"><div><span class="eyebrow">{L('Lecture', 'محاضرة')} {l.n} · {fmtDate(l.date)}</span><h3>{main?.title?.replace(/^Lecture \d+ — /, '') || l.title}</h3><p class="faint">{l.lecturer}</p></div>
+        {main?.url ? <a class="btn primary" href={main.url} target="_blank" rel="noopener">{L('Open lecture', 'افتح المحاضرة')}</a> : <Pill>{past ? L('Slides not uploaded yet', 'لم تُرفع بعد') : L('Upcoming', 'قادمة')}</Pill>}</div>
+      {ms.slice(1).map((m) => <div class="row between"><span dir="auto">{m.title}</span>{openBtn(m)}</div>)}
+      {ms.filter((m) => m.qbank).map((m) => <details><summary>{L('Question bank', 'بنك الأسئلة')}</summary><ol style={{ margin: '8px 0 0', paddingInlineStart: 20 }} dir="auto">{m.qbank.split('\n').filter(Boolean).map((q) => <li>{q}</li>)}</ol><p class="faint">{L('Answer in your notebook and bring unclear points to the next session.', 'أجب في كشكولك وناقش النقاط غير الواضحة في اللقاء التالي.')}</p></details>)}
+      {l.note && <p class="faint">{l.note}</p>}
+    </section>; })}</div>;
 }
 
-function Practical() {
-  const mats = useQuery('materials', [['kind', 'in', ['video', 'link', 'skill']]]);
-  const rows = (mats.rows || []).sort((a, b) => (a.order || 0) - (b.order || 0));
+const PTYPE_L = () => ({ video: L('Demonstration video', 'فيديو شرح'), guide: L('Practical guide', 'دليل عملي'), link: L('Practical link', 'رابط عملي') });
+function Practical({ rows }) {
+  const cur = currentWeek().w;
+  const byW = {}; for (const m of rows.sort((a, b) => (a.order || 0) - (b.order || 0))) (byW[m.week || 0] = byW[m.week || 0] || []).push(m);
+  const pl = PTYPE_L();
+  const list = (ms) => <div class="list">{ms.map((m) => <div class="item"><div class="grow"><b dir="auto">{m.title}</b>{m.body && <p class="muted" style={{ fontSize: '.88rem' }} dir="auto">{m.body}</p>}<div class="faint">{pl[PTYPE_OF(m)]}</div></div>{openBtn(m)}</div>)}</div>;
+  const weeks = PRACTICAL_WEEKS.filter((w) => byW[w.w] || w.w === cur);
   return <div class="stack">
+    {(byW[0] || []).length > 0 && <section class="card"><h2>{L('For all practical weeks', 'لكل أسابيع العملي')}</h2>{list(byW[0])}</section>}
+    {weeks.map((w) => <section class={'card' + (w.w === cur ? ' lead' : '')}><span class="eyebrow">{L(`Week ${w.w}`, `الأسبوع ${w.w}`)} · {fmtDate(w.from, { day: 'numeric', month: 'short' })}{w.w === cur ? ' · ' + L('this week', 'هذا الأسبوع') : ''}</span><h3>{w.topic}</h3>
+      {byW[w.w] ? list(byW[w.w]) : <p class="faint">{L('No material added for this week yet.', 'لم تُضف مواد لهذا الأسبوع بعد.')}</p>}</section>)}
     <section class="card"><h2>{L('Orientation: manual-control exercises', 'التهيئة: تدريبات التحكم اليدوي')}</h2><ol class="steps">{ORIENTATION_EXERCISES.map((x) => <li><div><b>{x.title}</b><div class="faint">{L('Demonstrator checks', 'يتحقق المعيد من')}: {x.checks.join(' · ')}</div></div></li>)}</ol></section>
-    <section class="card"><h2>{L('Demonstration videos and links', 'فيديوهات الشرح والروابط')}</h2><div class="list">{rows.length ? rows.map((m) => <div class="item"><div class="grow"><b>{m.title}</b>{m.body && <p class="muted" style={{ fontSize: '.88rem' }}>{m.body}</p>}<div class="faint">{{ video: L('Demonstration video', 'فيديو شرح'), link: L('Recommended link', 'رابط مقترح'), skill: L('Practical skill', 'مهارة عملية') }[m.kind]}</div></div>{m.url && <a class="btn" href={m.url} target="_blank" rel="noopener">{L('Open', 'افتح')}</a>}</div>) : <Empty>{L('No videos added yet.', 'لم تُضف فيديوهات بعد.')}</Empty>}</div></section>
   </div>;
+}
+
+function Links({ rows }) {
+  const ms = rows.sort((a, b) => (a.order || 0) - (b.order || 0));
+  return <section class="card"><h2>{L('Helpful links', 'روابط مفيدة')}</h2><div class="list">{ms.length ? ms.map((m) => <div class="item"><div class="grow"><b dir="auto">{m.title}</b>{m.body && <p class="muted" style={{ fontSize: '.88rem' }} dir="auto">{m.body}</p>}</div>{openBtn(m)}</div>) : <Empty>{L('No links added yet.', 'لم تُضف روابط بعد.')}</Empty>}</div></section>;
 }
 
 const atlasSrc = (id) => (window.__ATLAS && window.__ATLAS[id]) || `./atlas/${id}.jpg`;
 
-export function Atlas() {
-  const cats = [...new Set(ATLAS.map((a) => a.category))];
+export function Atlas({ uploaded = [] }) {
+  const up = uploaded.map((m) => ({ id: m.id, src: m.url, caption: m.title, category: m.category, dept: true }))
+    .sort((a, b) => ATLAS_CATS.indexOf(a.category) - ATLAS_CATS.indexOf(b.category));
+  const fac = ATLAS.map((a) => ({ ...a, src: atlasSrc(a.id), category: L('Faculty atlas', 'أطلس الكلية') + ' · ' + a.category }));
+  const all = [...up, ...fac];
+  const cats = [...new Set(all.map((a) => a.category))];
   const [cat, setCat] = useState('all');
   const [big, setBig] = useState(null);
-  const list = ATLAS.filter((a) => cat === 'all' || a.category === cat);
+  const list = all.filter((a) => cat === 'all' || a.category === cat);
   return <section class="stack">
-    <p class="muted">{L('Faculty-validated reference photographs. Match each example to your assigned tooth and preparation design. The atlas shows approved examples; it does not grade work.', 'صور مرجعية معتمدة من الكلية. طابق كل مثال مع السن والتحضير المطلوب. الأطلس لا يعطي درجات.')}</p>
-    <div class="row"><select id="atlas-cat" value={cat} onChange={(e) => setCat(e.target.value)} style={{ maxWidth: 320 }}><option value="all">{L('All categories', 'كل الفئات')} ({ATLAS.length})</option>{cats.map((c) => <option value={c}>{c} ({ATLAS.filter((a) => a.category === c).length})</option>)}</select></div>
-    <div class="atlas">{list.map((a) => <figure onClick={() => setBig(a)}><img loading="lazy" src={atlasSrc(a.id)} alt={`${a.caption} — ${a.category}`} /><figcaption><b class="mono">{a.id}</b><span class="faint">{a.caption}</span></figcaption></figure>)}</div>
-    {big && <div class="lightbox" onClick={() => setBig(null)} role="dialog" aria-label={big.caption}><div><img src={atlasSrc(big.id)} alt={big.caption} /><div class="cap"><b>{big.id}</b> · {big.caption} · {big.category}</div></div></div>}
+    <p class="muted">{L('Reference pictures of each cavity class. Match each example to your assigned tooth and preparation design. The atlas shows approved examples; it does not grade work.', 'صور مرجعية لكل نوع من التحضيرات. طابق كل مثال مع السن والتحضير المطلوب. الأطلس لا يعطي درجات.')}</p>
+    <div class="row"><select id="atlas-cat" value={cat} onChange={(e) => setCat(e.target.value)} style={{ maxWidth: 360 }}><option value="all">{L('All pictures', 'كل الصور')} ({all.length})</option>{cats.map((c) => <option value={c}>{c} ({all.filter((a) => a.category === c).length})</option>)}</select></div>
+    <div class="atlas">{list.map((a) => <figure onClick={() => setBig(a)}><img loading="lazy" src={a.src} alt={`${a.caption} — ${a.category}`} /><figcaption><b class={a.dept ? '' : 'mono'}>{a.dept ? a.category : a.id}</b><span class="faint" dir="auto">{a.caption}</span></figcaption></figure>)}</div>
+    {big && <div class="lightbox" onClick={() => setBig(null)} role="dialog" aria-label={big.caption}><div><img src={big.src} alt={big.caption} /><div class="cap" dir="auto">{big.caption} · {big.category}</div></div></div>}
   </section>;
 }
 
