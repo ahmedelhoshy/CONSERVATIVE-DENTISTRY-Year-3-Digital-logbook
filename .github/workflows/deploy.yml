@@ -37,6 +37,11 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
         run: npx -y firebase-tools@13 deploy --project "$FB_PROJECT_ID" --only hosting,firestore,storage --force --non-interactive
+      - name: Allow storage rules to read the roster
+        continue-on-error: true
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: cd functions && node grant-rules-access.mjs
       - name: First-time setup (director account, default settings)
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json

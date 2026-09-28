@@ -209,24 +209,38 @@ function AtlasUpload({ onClose }) {
   const [cat, setCat] = useState(ATLAS_CATS[0]);
   const [caps, setCaps] = useState({});
   const [busy, setBusy] = useState(0);
+  const [errors, setErrors] = useState(null);
   const go = async () => {
-    const S = store();
+    setErrors(null);
+    const S = store(); let ok = 0; const bad = [];
     for (let i = 0; i < files.length; i++) {
       setBusy(i + 1);
       const f = files[i];
-      const { blob } = await compressImage(f, 1600, 0.85);
-      const path = `atlas/${Date.now()}_${i}.jpg`;
-      const url = await S.putFile(path, blob);
-      await S.add('materials', { kind: 'atlas', category: cat, title: (caps[i] ?? f.name.replace(/\.[^.]+$/, '')).trim(), url, path, order: Date.now() + i, updatedAt: Date.now(), updatedBy: me().name });
+      try {
+        if (/heic|heif/i.test(f.type) || /\.hei[cf]$/i.test(f.name)) throw Object.assign(new Error('iPhone HEIC format — export or save it as JPG first'), { code: 'heic' });
+        let blob;
+        try { blob = (await compressImage(f, 1600, 0.85)).blob; } catch (e) { throw new Error('this browser cannot open the picture — save it as JPG or PNG'); }
+        const path = `atlas/${Date.now()}_${i}.jpg`;
+        const url = await S.putFile(path, blob);
+        await S.add('materials', { kind: 'atlas', category: cat, title: (caps[i] ?? f.name.replace(/\.[^.]+$/, '')).trim(), url, path, order: Date.now() + i, updatedAt: Date.now(), updatedBy: me().name });
+        ok++;
+      } catch (e) {
+        const code = String(e.code || '');
+        const why = code.includes('unauthorized') ? 'storage refused the upload (permission)' : code.includes('quota') ? 'storage quota exceeded' : code.includes('retry-limit') || code.includes('network') ? 'network problem — try again' : e.message;
+        bad.push(`${f.name}: ${why}`); console.error('atlas upload', f.name, e);
+      }
     }
-    await audit('atlas.upload', cat, null, `${files.length} picture(s)`, '');
-    toast(`${files.length} picture(s) added to the Atlas`); onClose();
+    setBusy(0);
+    if (ok) await audit('atlas.upload', cat, null, `${ok} picture(s)`, '');
+    if (!bad.length) { toast(`${ok} picture(s) added to the Atlas`); onClose(); }
+    else setErrors({ ok, bad });
   };
   return <Sheet onClose={onClose}><h2>Upload Atlas pictures</h2>
     <p class="muted">Choose one or more photos (JPG/PNG). They are resized on this computer before upload. Students see them in Learn → Atlas under the cavity class you choose.</p>
     <label class="fld">Cavity class<select id="au-cat" value={cat} onChange={(e) => setCat(e.target.value)}>{ATLAS_CATS.map((c) => <option>{c}</option>)}</select></label>
     <label class="btn" style={{ alignSelf: 'flex-start' }}>Choose pictures<input id="au-files" type="file" accept="image/*" multiple hidden onChange={(e) => { setFiles([...e.target.files]); setCaps({}); }} /></label>
     {files.length > 0 && <div class="list">{files.map((f, i) => <div class="item"><div class="grow"><input value={caps[i] ?? f.name.replace(/\.[^.]+$/, '')} onInput={(e) => setCaps({ ...caps, [i]: e.target.value })} dir="auto" aria-label="Caption" /></div><span class="faint">{Math.round(f.size / 1024)} KB</span></div>)}</div>}
+    {errors && <div class="state failed"><b>{errors.ok} uploaded · {errors.bad.length} failed</b><ul style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>{errors.bad.map((x) => <li>{x}</li>)}</ul><p class="faint">Send a screenshot of this box to the course technical support if the reason is not clear.</p></div>}
     <div class="row"><button class="btn primary" disabled={!files.length || busy} onClick={go}>{busy ? `Uploading ${busy} of ${files.length}…` : `Upload ${files.length || ''} picture(s)`}</button><button class="btn" onClick={onClose} disabled={!!busy}>Cancel</button></div>
   </Sheet>;
 }
