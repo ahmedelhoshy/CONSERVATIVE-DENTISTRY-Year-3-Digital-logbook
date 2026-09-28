@@ -43,7 +43,12 @@ function ImportPast({ onClose }) {
     try {
       const students = await store().query('users', [['role', '==', 'student']]);
       const sheets = []; for (const f of files) sheets.push(...(await readAllSheets(f)).map((x) => ({ ...x, name: f.name + ' · ' + x.name })));
-      setRes(parsePastAttendance(sheets, students, weekForDate));
+      const r = parsePastAttendance(sheets, students, weekForDate);
+      // Never import weeks that have not started yet (e.g. marks typed into the wrong column).
+      const t = today(); const future = new Set();
+      r.records = r.records.filter((x) => { const w = PRACTICAL_WEEKS.find((p) => p.w === x.week); const ok = w && w.from <= t; if (!ok) future.add(`week ${x.week} · section ${x.section}`); return ok; });
+      r.future = [...future];
+      setRes(r);
     } catch (x) { toast('Could not read: ' + x.message); }
     setBusy(''); e.target.value = '';
   };
@@ -82,7 +87,7 @@ function ImportPast({ onClose }) {
     <label class="btn primary" style={{ alignSelf: 'flex-start' }}>Choose files<input id="past-files" type="file" accept=".xlsx,.xls,.csv" multiple hidden onChange={onFiles} /></label>
     {busy && <p class="faint">{busy}</p>}
     {res && <>
-      <div class="state info"><b>{res.records.filter((r) => r.present).length} present · {res.records.filter((r) => !r.present).length} absent · {list.length} section-weeks</b>{res.unmatched.length > 0 && <p>{res.unmatched.length} row(s) not matched to the roster and skipped: {res.unmatched.slice(0, 8).join('; ')}{res.unmatched.length > 8 ? '…' : ''}</p>}</div>
+      <div class="state info"><b>{res.records.filter((r) => r.present).length} present · {res.records.filter((r) => !r.present).length} absent · {list.length} section-weeks</b>{res.future?.length > 0 && <p>Skipped because the week has not started yet: {res.future.join('; ')}. Check that these marks are in the right column.</p>}{res.unmatched.length > 0 && <p>{res.unmatched.length} row(s) not matched to the roster and skipped: {res.unmatched.slice(0, 8).join('; ')}{res.unmatched.length > 8 ? '…' : ''}</p>}</div>
       <div class="tablewrap"><table><thead><tr><th>Week</th><th>Section</th><th>Present</th><th>Absent</th></tr></thead><tbody>{list.map((g) => <tr><td>{g.week}</td><td>{g.section}</td><td>{g.present}</td><td>{g.absent}</td></tr>)}</tbody></table></div>
       <div class="row"><button class="btn primary" disabled={!list.length || !!busy} onClick={run}>Import</button><button class="btn" onClick={onClose}>Cancel</button></div></>}
   </Sheet>;
