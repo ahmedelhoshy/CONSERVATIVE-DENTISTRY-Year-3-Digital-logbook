@@ -1,8 +1,8 @@
 import { useState } from 'preact/hooks';
 import { me, store, today, audit, isDemo, currentWeek, compressImage } from '../lib/logic.js';
 import { L, useQuery, useDoc, Pill, Sheet, Empty, Confirm, fmtDate, fmtDT, toast } from '../lib/ui.jsx';
-import { exportXlsx, readRosterFile, parseRoster } from '../lib/export.js';
-import { LECTURES, PRACTICAL_WEEKS, LAB_SLOTS, LAB_SLOT_NOTES } from '../data/course.js';
+import { exportXlsx, readRosterFile, parseRoster, readAllSheets, parsePastAttendance } from '../lib/export.js';
+import { LECTURES, PRACTICAL_WEEKS, LAB_SLOTS, LAB_SLOT_NOTES, weekForDate } from '../data/course.js';
 import { SECTION_OF, PTYPE_OF, ATLAS_CATS } from '../lib/materials.js';
 import { labDatesForWeek } from '../lib/demo-seed.js';
 import { SessionPanel } from './staff.jsx';
@@ -15,11 +15,12 @@ export function SessionsAdmin() {
   const [open, setOpen] = useState(null);
   const [adding, setAdding] = useState(false);
   const [gen, setGen] = useState(false);
+  const [past, setPast] = useState(false);
   const rows = (q.rows || []).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
   return <>
     <section class="hero"><h1>Sessions</h1><p class="muted">Lectures and labs with their attendance windows. Generate the whole term from the timetable once, then adjust single sessions.</p></section>
     <div class="row"><label class="fld" style={{ maxWidth: 360 }}>Practical week<select id="sa-week" value={week} onChange={(e) => setWeek(e.target.value)}>{PRACTICAL_WEEKS.map((x) => <option value={x.w}>Week {x.w} · {fmtDate(x.from, { day: 'numeric', month: 'short' })} — {x.topic.slice(0, 48)}</option>)}</select></label>
-      <button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => setAdding(true)}>+ Add session</button><button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => setGen(true)}>Generate term from timetable</button></div>
+      <button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => setAdding(true)}>+ Add session</button><button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => setGen(true)}>Generate term from timetable</button><button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => setPast(true)}>Import past attendance</button></div>
     <p class="faint">{w.topic} · {w.req} requirement(s){w.exam ? ' · practical exam week' : ''}</p>
     <div class="tablewrap"><table><thead><tr><th>Date</th><th>Time</th><th>Session</th><th>Status</th></tr></thead><tbody>
       {rows.map((s) => <tr class="click" onClick={() => setOpen(s.id)}><td>{fmtDate(s.date)}</td><td class="mono">{s.start}–{s.end}</td><td>{s.type === 'lecture' ? `Lecture ${s.lectureNo} — ${s.title}` : `Lab · Section ${s.section}`}</td><td><Pill kind={s.status === 'open' ? 'good' : s.status === 'closed' ? '' : 'info'}>{s.status}</Pill></td></tr>)}
@@ -28,8 +29,63 @@ export function SessionsAdmin() {
     {LAB_SLOT_NOTES.map((n) => <p class="faint">⚠ {n}</p>)}
     {open && <SessionPanel id={open} onClose={() => setOpen(null)} />}
     {adding && <AddSession onClose={() => setAdding(false)} />}
+    {past && <ImportPast onClose={() => setPast(false)} />}
     {gen && <Confirm text="Create all lecture and lab sessions for term 1 from the curriculum and timetable? Existing sessions are kept." yes="Generate" onNo={() => setGen(false)} onYes={async () => { const n = await generateTerm(); setGen(false); toast(`${n} sessions created`); }} />}
   </>;
+}
+
+function ImportPast({ onClose }) {
+  const [res, setRes] = useState(null);
+  const [busy, setBusy] = useState('');
+  const onFiles = async (e) => {
+    const files = [...e.target.files]; if (!files.length) return;
+    setBusy('Reading…');
+    try {
+      const students = await store().query('users', [['role', '==', 'student']]);
+      const sheets = []; for (const f of files) sheets.push(...(await readAllSheets(f)).map((x) => ({ ...x, name: f.name + ' · ' + x.name })));
+      setRes(parsePastAttendance(sheets, students, weekForDate));
+    } catch (x) { toast('Could not read: ' + x.message); }
+    setBusy(''); e.target.value = '';
+  };
+  const groups = {};
+  for (const r of res?.records || []) { const k = `${r.section}|${r.week}`; const g = groups[k] = groups[k] || { section: r.section, week: r.week, present: 0, absent: 0 }; r.present ? g.present++ : g.absent++; }
+  const list = Object.values(groups).sort((a, b) => a.week - b.week || a.section - b.section);
+  const run = async () => {
+    const S = store(); let n = 0, sess = 0; const u = me();
+    for (const g of list) {
+      setBusy(`Week ${g.week} · section ${g.section}…`);
+      const w = PRACTICAL_WEEKS.find((x) => x.w === g.week); if (!w) continue;
+      const dates = labDatesForWeek(w, g.section); if (!dates.length) continue;
+      const recs = res.records.filter((r) => r.section === g.section && r.week === g.week);
+      const want = recs.find((r) => r.date)?.date;
+      const i = Math.max(0, dates.findIndex((d) => d.date === want));
+      const sid = `lab-w${w.w}-s${g.section}-${i + 1}`;
+      const d = dates[i];
+      const cur = await S.get('sessions', sid);
+      const endMs = new Date(`${d.date}T${d.end}:00+03:00`).getTime();
+      if (!cur) await S.set('sessions', sid, { type: 'lab', section: g.section, week: w.w, date: d.date, start: d.start, end: d.end, title: w.topic, status: 'closed', closesAt: endMs, req: w.req, source: 'paper' });
+      else if (cur.status !== 'closed') await S.update('sessions', sid, { status: 'closed', closesAt: cur.closesAt || endMs, source: 'paper' });
+      sess++;
+      for (const r of recs.filter((x) => x.present)) {
+        const id = `${sid}_${r.st.uid}`;
+        if (await S.get('attendance', id)) continue;
+        await S.set('attendance', id, { sid, uid: r.st.uid, code: r.st.code || '', name: r.st.name, section: g.section, type: 'lab', date: d.date, week: w.w, at: endMs, status: 'confirmed', method: 'paper', by: u.uid, byName: u.name, decidedAt: Date.now(), reason: 'Imported from paper register' });
+        n++;
+      }
+    }
+    await audit('attendance.import', 'past', null, `${n} present records in ${sess} lab sessions`, 'Imported from paper registers / previous platform');
+    toast(`${n} attendance records imported into ${sess} lab sessions`); onClose();
+  };
+  return <Sheet onClose={onClose}><h2>Import past attendance</h2>
+    <p class="muted">For labs held before the platform. Choose the faculty register (Excel with one tab per section and W1, W2… “Attend” columns: 1 = present, 0 = absent), sheets with “W1 Attend” columns, or exports from the previous platform (CSV). You can choose several files at once. Students are matched by student number, or by name within the section.</p>
+    <p class="faint">Each week's register is recorded in that section's first lab of the week, which is marked as held. Students marked 0 count as absent; blank cells are skipped. Existing records are never overwritten.</p>
+    <label class="btn primary" style={{ alignSelf: 'flex-start' }}>Choose files<input id="past-files" type="file" accept=".xlsx,.xls,.csv" multiple hidden onChange={onFiles} /></label>
+    {busy && <p class="faint">{busy}</p>}
+    {res && <>
+      <div class="state info"><b>{res.records.filter((r) => r.present).length} present · {res.records.filter((r) => !r.present).length} absent · {list.length} section-weeks</b>{res.unmatched.length > 0 && <p>{res.unmatched.length} row(s) not matched to the roster and skipped: {res.unmatched.slice(0, 8).join('; ')}{res.unmatched.length > 8 ? '…' : ''}</p>}</div>
+      <div class="tablewrap"><table><thead><tr><th>Week</th><th>Section</th><th>Present</th><th>Absent</th></tr></thead><tbody>{list.map((g) => <tr><td>{g.week}</td><td>{g.section}</td><td>{g.present}</td><td>{g.absent}</td></tr>)}</tbody></table></div>
+      <div class="row"><button class="btn primary" disabled={!list.length || !!busy} onClick={run}>Import</button><button class="btn" onClick={onClose}>Cancel</button></div></>}
+  </Sheet>;
 }
 
 async function generateTerm() {

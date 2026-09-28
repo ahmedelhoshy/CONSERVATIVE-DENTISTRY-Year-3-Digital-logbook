@@ -50,3 +50,79 @@ export function parseRoster(rows) {
   }
   return { students: out, columns: ci, problems };
 }
+
+// ---------- past attendance (paper registers / old platform exports) ----------
+// Accepts: the faculty register (one tab per section, W1…W15 with Attend/Req sub-columns),
+// a simple sheet with "W1 Attend" style columns, or the old platform CSV (code, session_date, status).
+const normName = (s) => String(s || '').replace(/[ً-ْـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه').replace(/\s+/g, '').toLowerCase();
+export async function readAllSheets(file) {
+  // raw: keep CSV dates like 2026-09-21 as text instead of converting them to Excel dates
+  const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', raw: /\.csv$/i.test(file.name || '') });
+  return wb.SheetNames.map((n) => ({ name: n, rows: XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: '' }) }));
+}
+export function parsePastAttendance(sheets, students, weekForDate) {
+  const byCode = {}, byName = {};
+  for (const s of students) { byCode[String(s.code)] = s; const k = normName(s.name); (byName[k] = byName[k] || []).push(s); }
+  const out = [], unmatched = [];
+  const val = (v) => { const t = String(v).trim().toLowerCase(); if (t === '') return null; if (['1', 'true', 'p', 'present', '✓', 'حاضر'].includes(t)) return true; if (['0', 'false', 'a', 'absent', '✗', 'غائب'].includes(t)) return false; return null; };
+  const find = (code, name, sec) => {
+    if (code && byCode[code]) return byCode[code];
+    const c = byName[normName(name)] || [];
+    const inSec = c.filter((s) => !sec || s.section === sec);
+    return inSec.length === 1 ? inSec[0] : c.length === 1 ? c[0] : null;
+  };
+  for (const sh of sheets) {
+    const R = sh.rows.map((r) => r.map((c) => String(c ?? '').trim()));
+    const low = R.map((r) => r.map((c) => c.toLowerCase()));
+    // Old platform export
+    const hc = low.findIndex((r) => r.includes('session_date') && r.includes('code'));
+    if (hc >= 0) {
+      const H = low[hc], ci = (k) => H.indexOf(k);
+      for (const r of R.slice(hc + 1)) {
+        if (!r[ci('code')]) continue;
+        if (ci('kind') >= 0 && r[ci('kind')] && r[ci('kind')] !== 'lab') continue;
+        const wk = weekForDate(r[ci('session_date')]); const st = find(r[ci('code')], r[ci('name')]);
+        if (!st || !wk) { unmatched.push(`${r[ci('code')]} ${r[ci('name')] || ''}`); continue; }
+        if (['confirmed', 'present', 'recorded'].includes((r[ci('status')] || '').toLowerCase())) out.push({ st, section: st.section, week: wk.w, present: true, source: sh.name, date: r[ci('session_date')] });
+      }
+      continue;
+    }
+    // Register-style sheets
+    let sheetSec = null;
+    for (const r of R.slice(0, 4)) for (const c of r) { const m = /section\s*(\d+)/i.exec(c); if (m) sheetSec = Number(m[1]); }
+    if (!sheetSec) { const m = /(\d+)/.exec(sh.name); if (m && Number(m[1]) <= 18) sheetSec = Number(m[1]); }
+    const hi = low.findIndex((r) => r.some((c) => /student ?id|^id$|^code|الكود|student ?name|^name|namear|الاسم/.test(c)));
+    if (hi < 0) continue;
+    const H = low[hi];
+    const codeC = H.findIndex((c) => /student ?id|^id$|^code|الكود/.test(c));
+    const nameC = H.findIndex((c) => /student ?name|^name|namear|الاسم/.test(c));
+    const secC = H.findIndex((c) => /^section|السكشن|^group/.test(c));
+    const cols = {}; let lastRow = hi;
+    const width = Math.max(...R.slice(hi, hi + 3).map((r) => r.length));
+    let curW = null;
+    for (let j = 0; j < width; j++) {
+      for (let k = hi; k < Math.min(hi + 3, low.length); k++) {
+        const c = low[k][j] || '';
+        const m1 = /^w\s*(\d+)\b.*attend/.exec(c); if (m1) { cols[j] = Number(m1[1]); lastRow = Math.max(lastRow, k); }
+        const m2 = /^w\s*(\d+)$/.exec(c); if (m2) curW = Number(m2[1]);
+        if (c === 'attend' && curW) { cols[j] = curW; lastRow = Math.max(lastRow, k); }
+      }
+    }
+    if (!Object.keys(cols).length) continue;
+    for (const r of R.slice(lastRow + 1)) {
+      const code = codeC >= 0 ? r[codeC].replace(/\D/g, '') : '';
+      const name = nameC >= 0 ? r[nameC] : '';
+      if (!code && !name) continue;
+      const sec = sheetSec || (secC >= 0 ? Number(r[secC]) || null : null);
+      const vals = Object.entries(cols).map(([j, w]) => [w, val(r[j])]).filter(([, v]) => v !== null);
+      if (!vals.length) continue;
+      const st = find(code, name, sec);
+      if (!st) { unmatched.push(`${code} ${name}${sec ? ' (section ' + sec + ')' : ''}`.trim()); continue; }
+      for (const [w, v] of vals) out.push({ st, section: st.section, week: w, present: v, source: sh.name });
+    }
+  }
+  // one value per student and week (a later "present" wins over "absent")
+  const m = {};
+  for (const o of out) { const k = o.st.uid + '|' + o.week; if (!m[k] || (o.present && !m[k].present)) m[k] = o; }
+  return { records: Object.values(m), unmatched: [...new Set(unmatched)] };
+}

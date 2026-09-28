@@ -13,7 +13,11 @@ export function computeStats({ students, sessions, attendance, entries, weeks, c
   for (let s = 1; s <= 18; s++) bySec[s] = { section: s, students: 0, labHeld: 0, labExpected: 0, labPresent: 0, lecPresent: 0, lecExpected: 0, reqDue: 0, reqDone: 0, grades: [], selfGap: [], aiGap: [], pending: 0, overdue: 0 };
   for (const st of students) if (bySec[st.section]) bySec[st.section].students++;
 
-  const pastSessions = sessions.filter((s) => s.date < today || (s.date === today && s.status === 'closed'));
+  // A session counts as held only if attendance was actually taken (opened/closed, or any record exists).
+  // Past sessions nobody opened are "not recorded" and never count as absences.
+  const withRecords = new Set(attendance.map((a) => a.sid));
+  const held = (s) => s.status === 'open' || s.status === 'closed' || withRecords.has(s.id);
+  const pastSessions = sessions.filter((s) => held(s) && (s.date < today || (s.date === today && s.status === 'closed')));
   const heldLectures = pastSessions.filter((s) => s.type === 'lecture' && s.attendanceRequired !== false);
   const heldLabs = pastSessions.filter((s) => s.type === 'lab');
 
