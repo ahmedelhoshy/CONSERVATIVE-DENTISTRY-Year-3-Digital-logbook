@@ -50,7 +50,11 @@ export async function closeSession(sid) { await S.update('sessions', sid, { stat
 const six = () => String(Math.floor(100000 + Math.random() * 900000));
 export async function rotateCode(sid) {
   const prev = await S.get('codes', sid);
-  const code = { cur: six(), prev: prev ? prev.cur : null, at: nowMs() };
+  const t = nowMs();
+  // Keep the codes of the last 5 minutes so a check-in saved on a phone during a Wi-Fi drop is still accepted when it syncs.
+  const hist = ((prev && prev.hist) || []).filter((x) => t - x.at < 5 * 60e3);
+  const cur = six(); hist.push({ c: cur, at: t });
+  const code = { cur, prev: prev ? prev.cur : null, at: t, hist, recent: hist.map((x) => x.c) };
   await S.set('codes', sid, code);
   return code;
 }
@@ -71,7 +75,7 @@ export async function checkIn(session, code) {
     const c = await S.get('codes', session.id);
     if (!sessionIsOpen(session)) throw fail('closed');
     if (session.type === 'lab' && session.section !== ME.section) throw fail('wrong-section');
-    if (!c || (rec.submittedCode !== c.cur && rec.submittedCode !== c.prev)) throw fail('bad-code');
+    if (!c || (rec.submittedCode !== c.cur && rec.submittedCode !== c.prev && !(c.recent || []).includes(rec.submittedCode))) throw fail('bad-code');
     await S.create('attendance', id, rec);
     return { state: 'recorded' };
   }

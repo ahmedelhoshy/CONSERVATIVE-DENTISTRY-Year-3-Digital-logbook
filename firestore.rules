@@ -57,9 +57,10 @@ service cloud.firestore {
           && id == d.sid + '_' + myUid()
           && d.uid == myUid() && d.code == string(prof().code) && d.section == mySec()
           && d.status == 'recorded' && d.method == 'qr'
-          && s.status == 'open' && request.time.toMillis() < s.closesAt
+          // 5-minute grace so check-ins saved offline during a Wi-Fi drop still count when they sync
+          && s.status in ['open', 'closed'] && request.time.toMillis() < s.closesAt + 300000
           && (s.type == 'lecture' || (mySec() != null && s.section == mySec()))
-          && (d.submittedCode == c.cur || d.submittedCode == c.get('prev', 'none'))
+          && (d.submittedCode == c.cur || d.submittedCode == c.get('prev', 'none') || d.submittedCode in c.get('recent', []))
           && d.type == s.type && d.date == s.date;
       }
       allow create: if validCheckIn() || isTeacher();
