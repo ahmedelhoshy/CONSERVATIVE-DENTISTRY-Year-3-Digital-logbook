@@ -3,7 +3,7 @@ import { me, store, today, audit, isDemo, currentWeek, compressImage } from '../
 import { L, useQuery, useDoc, Pill, Sheet, Empty, Confirm, fmtDate, fmtDT, toast } from '../lib/ui.jsx';
 import { exportXlsx, readRosterFile, parseRoster, readAllSheets, parsePastAttendance } from '../lib/export.js';
 import { LECTURES, PRACTICAL_WEEKS, LAB_SLOTS, LAB_SLOT_NOTES, weekForDate } from '../data/course.js';
-import { SECTION_OF, PTYPE_OF, ATLAS_CATS } from '../lib/materials.js';
+import { SECTION_OF, PTYPE_OF, ATLAS_CATS, CAT_LECTURE } from '../lib/materials.js';
 import { labDatesForWeek } from '../lib/demo-seed.js';
 import { SessionPanel } from './staff.jsx';
 
@@ -159,8 +159,8 @@ export function Content() {
       <div class="list">{prac.length ? prac.map((m) => item(m, `${PTYPES[PTYPE_OF(m)]} · ${m.week ? 'week ' + m.week : 'all weeks'}`)) : <Empty>No practical material yet.</Empty>}</div></section>
     <section class="card">{head('3 · Helpful links', 'Textbooks, references and websites for the whole course.', '+ Add helpful link', () => setEdit({ kind: 'link' }))}
       <div class="list">{links.length ? links.map((m) => item(m, 'Helpful link')) : <Empty>No links yet.</Empty>}</div></section>
-    <section class="card">{head('4 · Atlas pictures', `Reference photos students see in the Atlas tab, grouped by cavity class. ${atlas.length} uploaded + 36 faculty atlas images.`, '+ Upload pictures', () => setUpload(true))}
-      {atlas.length ? <div class="atlas">{atlas.map((a) => <figure onClick={() => setEdit(a)}><img loading="lazy" src={a.url} alt={a.title} /><figcaption><b>{a.category}</b><span class="faint" dir="auto">{a.title}</span></figcaption></figure>)}</div> : <Empty>No pictures uploaded yet. Upload several at once and choose the cavity class.</Empty>}</section>
+    <section class="card">{head('4 · Atlas pictures', `Reference pictures students see in the Atlas tab, grouped by topic or cavity class; pictures linked to a lecture also appear under that lecture. ${atlas.length} uploaded + 36 faculty atlas images.`, '+ Upload pictures', () => setUpload(true))}
+      {atlas.length ? <div class="atlas">{atlas.map((a) => <figure onClick={() => setEdit(a)}><img loading="lazy" src={a.url} alt={a.title} /><figcaption><b>{a.category}{a.lectureNo ? ` · L${a.lectureNo}` : ''}</b><span class="faint" dir="auto">{a.title}</span></figcaption></figure>)}</div> : <Empty>No pictures uploaded yet. Upload several at once and choose the cavity class.</Empty>}</section>
     {edit && <MaterialSheet m={edit} onClose={() => setEdit(null)} />}
     {upload && <AtlasUpload onClose={() => setUpload(false)} />}
   </>;
@@ -181,7 +181,7 @@ function MaterialSheet({ m, onClose }) {
     if (sec !== 'atlas' && f.url && !/^https:\/\//.test(f.url)) { toast('Links must start with https://'); return; }
     const base = { title: f.title.trim(), order: Number(f.order) || 0, updatedAt: Date.now(), updatedBy: me().name };
     let data;
-    if (sec === 'atlas') data = { ...base, kind: 'atlas', category: f.category };
+    if (sec === 'atlas') data = { ...base, kind: 'atlas', category: (f.category || 'Other').trim(), lectureNo: Number(f.lectureNo) || null };
     else data = { ...base, kind: sec, url: driveFix((f.url || '').trim()), body: f.body || '',
       qbank: sec === 'lecture' ? f.qbank || '' : '', lectureNo: sec === 'lecture' ? Number(f.lectureNo) || null : null,
       week: sec === 'practical' ? Number(f.week) || null : null, ptype: sec === 'practical' ? f.ptype : null };
@@ -191,7 +191,8 @@ function MaterialSheet({ m, onClose }) {
   };
   return <Sheet onClose={onClose}><h2>{m.id ? 'Edit material' : 'Add material'}</h2>
     {sec === 'atlas' ? <><img src={f.url} alt="" style={{ maxWidth: '100%', borderRadius: 12 }} />
-      <label class="fld">Cavity class<select id="mt-cat" value={f.category} onChange={set('category')}>{ATLAS_CATS.map((c) => <option>{c}</option>)}</select></label>
+      <label class="fld">Topic / cavity class<input id="mt-cat" list="atlas-cats" value={f.category} onInput={set('category')} /><datalist id="atlas-cats">{ATLAS_CATS.map((c) => <option value={c} />)}</datalist></label>
+      <label class="fld">Also show under lecture<select id="mt-alec" value={f.lectureNo || ''} onChange={set('lectureNo')}><option value="">No — Atlas only</option>{LECTURES.map((l) => <option value={l.n}>Lecture {l.n} — {l.title}</option>)}</select></label>
       <label class="fld">Caption<input id="mt-title" value={f.title} onInput={set('title')} dir="auto" /></label></>
     : <>
       <div class="grid2"><label class="fld">Section (student tab)<select id="mt-sec" value={sec} onChange={set('section')}><option value="lecture">Lectures</option><option value="practical">Practical</option><option value="link">Helpful links</option></select></label>
@@ -212,6 +213,7 @@ function MaterialSheet({ m, onClose }) {
 function AtlasUpload({ onClose }) {
   const [files, setFiles] = useState([]);
   const [cat, setCat] = useState(ATLAS_CATS[0]);
+  const [lec, setLec] = useState(String(CAT_LECTURE[ATLAS_CATS[0]] || ''));
   const [caps, setCaps] = useState({});
   const [busy, setBusy] = useState(0);
   const [errors, setErrors] = useState(null);
@@ -227,7 +229,7 @@ function AtlasUpload({ onClose }) {
         try { blob = (await compressImage(f, 1600, 0.85)).blob; } catch (e) { throw new Error('this browser cannot open the picture — save it as JPG or PNG'); }
         const path = `atlas/${Date.now()}_${i}.jpg`;
         const url = await S.putFile(path, blob);
-        await S.add('materials', { kind: 'atlas', category: cat, title: (caps[i] ?? f.name.replace(/\.[^.]+$/, '')).trim(), url, path, order: Date.now() + i, updatedAt: Date.now(), updatedBy: me().name });
+        await S.add('materials', { kind: 'atlas', category: (cat || 'Other').trim(), lectureNo: Number(lec) || null, title: (caps[i] ?? f.name.replace(/\.[^.]+$/, '')).trim(), url, path, order: Date.now() + i, updatedAt: Date.now(), updatedBy: me().name });
         ok++;
       } catch (e) {
         const code = String(e.code || '');
@@ -241,8 +243,9 @@ function AtlasUpload({ onClose }) {
     else setErrors({ ok, bad });
   };
   return <Sheet onClose={onClose}><h2>Upload Atlas pictures</h2>
-    <p class="muted">Choose one or more photos (JPG/PNG). They are resized on this computer before upload. Students see them in Learn → Atlas under the cavity class you choose.</p>
-    <label class="fld">Cavity class<select id="au-cat" value={cat} onChange={(e) => setCat(e.target.value)}>{ATLAS_CATS.map((c) => <option>{c}</option>)}</select></label>
+    <p class="muted">Choose one or more photos (JPG/PNG). They are resized on this computer before upload. Students see them in Learn → Atlas under the topic you choose, and under the lecture if you link one. Choose a topic from the list or type a new one.</p>
+    <label class="fld">Topic / cavity class<input id="au-cat" list="atlas-cats2" value={cat} onInput={(e) => { setCat(e.target.value); if (CAT_LECTURE[e.target.value]) setLec(String(CAT_LECTURE[e.target.value])); }} placeholder="Choose or type a topic" /><datalist id="atlas-cats2">{ATLAS_CATS.map((c) => <option value={c} />)}</datalist></label>
+    <label class="fld">Also show under lecture<select id="au-lec" value={lec || ''} onChange={(e) => setLec(e.target.value)}><option value="">No — Atlas only</option>{LECTURES.map((l) => <option value={l.n}>Lecture {l.n} — {l.title}</option>)}</select></label>
     <label class="btn" style={{ alignSelf: 'flex-start' }}>Choose pictures<input id="au-files" type="file" accept="image/*" multiple hidden onChange={(e) => { setFiles([...e.target.files]); setCaps({}); }} /></label>
     {files.length > 0 && <div class="list">{files.map((f, i) => <div class="item"><div class="grow"><input value={caps[i] ?? f.name.replace(/\.[^.]+$/, '')} onInput={(e) => setCaps({ ...caps, [i]: e.target.value })} dir="auto" aria-label="Caption" /></div><span class="faint">{Math.round(f.size / 1024)} KB</span></div>)}</div>}
     {errors && <div class="state failed"><b>{errors.ok} uploaded · {errors.bad.length} failed</b><ul style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>{errors.bad.map((x) => <li>{x}</li>)}</ul><p class="faint">Send a screenshot of this box to the course technical support if the reason is not clear.</p></div>}

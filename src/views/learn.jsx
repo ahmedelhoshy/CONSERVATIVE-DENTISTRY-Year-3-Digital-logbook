@@ -14,7 +14,7 @@ export function Learn() {
   return <>
     <section class="hero"><h1>{L('Learning resources', 'المواد التعليمية')}</h1><p class="muted">{L('Lectures with their question banks, practical material by week, helpful links, the atlas of reference pictures and the official rubrics.', 'المحاضرات وبنوك الأسئلة، والعملي حسب الأسبوع، وروابط مفيدة، وأطلس الصور المرجعية، والروبركس الرسمية.')}</p></section>
     <div class="seg" role="tablist" style={{ alignSelf: 'flex-start', flexWrap: 'wrap' }}>{tabs.map(([k, l]) => <button role="tab" class={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
-    {tab === 'lectures' && <Lectures rows={rows.filter((m) => SECTION_OF(m) === 'lecture')} />}
+    {tab === 'lectures' && <Lectures rows={rows.filter((m) => SECTION_OF(m) === 'lecture')} pics={rows.filter((m) => SECTION_OF(m) === 'atlas' && m.lectureNo)} />}
     {tab === 'practical' && <Practical rows={rows.filter((m) => SECTION_OF(m) === 'practical')} />}
     {tab === 'links' && <Links rows={rows.filter((m) => SECTION_OF(m) === 'link')} />}
     {tab === 'atlas' && <Atlas uploaded={rows.filter((m) => SECTION_OF(m) === 'atlas')} />}
@@ -24,8 +24,9 @@ export function Learn() {
 
 const openBtn = (m, label) => m.url && <a class="btn" href={m.url} target="_blank" rel="noopener">{label || L('Open', 'افتح')}</a>;
 
-function Lectures({ rows }) {
+function Lectures({ rows, pics = [] }) {
   const t = today();
+  const [big, setBig] = useState(null);
   const byNo = {}; for (const m of rows) (byNo[m.lectureNo || 0] = byNo[m.lectureNo || 0] || []).push(m);
   const general = byNo[0] || [];
   return <div class="stack">
@@ -35,8 +36,10 @@ function Lectures({ rows }) {
         {main?.url ? <a class="btn primary" href={main.url} target="_blank" rel="noopener">{L('Open lecture', 'افتح المحاضرة')}</a> : <Pill>{past ? L('Slides not uploaded yet', 'لم تُرفع بعد') : L('Upcoming', 'قادمة')}</Pill>}</div>
       {ms.slice(1).map((m) => <div class="row between"><span dir="auto">{m.title}</span>{openBtn(m)}</div>)}
       {ms.filter((m) => m.qbank).map((m) => <details><summary>{L('Question bank', 'بنك الأسئلة')}</summary><ol style={{ margin: '8px 0 0', paddingInlineStart: 20 }} dir="auto">{m.qbank.split('\n').filter(Boolean).map((q) => <li>{q}</li>)}</ol><p class="faint">{L('Answer in your notebook and bring unclear points to the next session.', 'أجب في كشكولك وناقش النقاط غير الواضحة في اللقاء التالي.')}</p></details>)}
+      {pics.some((p) => p.lectureNo === l.n) && <details open={l.date <= t}><summary>{L('Pictures', 'صور')} ({pics.filter((p) => p.lectureNo === l.n).length})</summary><div class="atlas" style={{ marginTop: 8 }}>{pics.filter((p) => p.lectureNo === l.n).map((p) => <figure onClick={() => setBig(p)}><img loading="lazy" src={p.url} alt={p.title} /><figcaption><b>{p.category}</b><span class="faint" dir="auto">{p.title}</span></figcaption></figure>)}</div></details>}
       {l.note && <p class="faint">{l.note}</p>}
-    </section>; })}</div>;
+    </section>; })}
+    {big && <div class="lightbox" onClick={() => setBig(null)} role="dialog" aria-label={big.title}><div><img src={big.url} alt={big.title} /><div class="cap" dir="auto">{big.title} · {big.category}</div></div></div>}</div>;
 }
 
 const PTYPE_L = () => ({ video: L('Demonstration video', 'فيديو شرح'), guide: L('Practical guide', 'دليل عملي'), link: L('Practical link', 'رابط عملي') });
