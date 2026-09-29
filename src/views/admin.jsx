@@ -155,7 +155,7 @@ export function Content() {
   const lec = by('lecture').sort((a, b) => (a.lectureNo || 0) - (b.lectureNo || 0) || (a.order || 0) - (b.order || 0));
   const prac = by('practical').sort((a, b) => (a.week || 99) - (b.week || 99) || (a.order || 0) - (b.order || 0));
   const links = by('link').sort((a, b) => (a.order || 0) - (b.order || 0));
-  const atlas = by('atlas').sort((a, b) => ATLAS_CATS.indexOf(a.category) - ATLAS_CATS.indexOf(b.category) || (a.order || 0) - (b.order || 0));
+  const atlas = by('atlas').sort((a, b) => (a.lectureNo || 99) - (b.lectureNo || 99) || ATLAS_CATS.indexOf(a.category) - ATLAS_CATS.indexOf(b.category) || (a.order || 0) - (b.order || 0));
   const item = (m, sub) => <div class="item"><div class="grow"><b dir="auto">{m.title}</b><div class="faint">{sub} · updated {fmtDate(m.updatedAt, { day: 'numeric', month: 'short' })}</div>{m.url ? <a class="faint" href={m.url} target="_blank" rel="noopener">{m.url.slice(0, 70)}</a> : !m.body && <Pill kind="bad">No link</Pill>}</div><button class="btn sm" onClick={() => setEdit(m)}>Edit</button></div>;
   const head = (title, sub, btn, onAdd) => <div class="row between"><div><h2>{title}</h2><p class="faint">{sub}</p></div><button class="btn primary" onClick={onAdd}>{btn}</button></div>;
   return <>
@@ -199,7 +199,7 @@ function MaterialSheet({ m, onClose }) {
   };
   return <Sheet onClose={onClose}><h2>{m.id ? 'Edit material' : 'Add material'}</h2>
     {sec === 'atlas' ? <><img src={f.url} alt="" style={{ maxWidth: '100%', borderRadius: 12 }} />
-      <label class="fld">Topic / cavity class<input id="mt-cat" list="atlas-cats" value={f.category} onInput={set('category')} /><datalist id="atlas-cats">{ATLAS_CATS.map((c) => <option value={c} />)}</datalist></label>
+      <TopicPicker id="mt-cat" category={f.category} lectureNo={f.lectureNo} onChange={(category, lectureNo) => setF({ ...f, category, lectureNo: lectureNo || '' })} />
       <label class="fld">Also show under lecture<select id="mt-alec" value={f.lectureNo || ''} onChange={set('lectureNo')}><option value="">No — Atlas only</option>{LECTURES.map((l) => <option value={l.n}>Lecture {l.n} — {l.title}</option>)}</select></label>
       <label class="fld">Caption<input id="mt-title" value={f.title} onInput={set('title')} dir="auto" /></label></>
     : <>
@@ -218,10 +218,35 @@ function MaterialSheet({ m, onClose }) {
     {del && <Confirm text={`Delete “${f.title || 'this picture'}”? Students will no longer see it.`} yes="Delete" onNo={() => setDel(false)} onYes={async () => { await store().del('materials', m.id); await audit('materials.delete', m.id, f.title, null, ''); onClose(); }} />}
   </Sheet>;
 }
+
+// Topic picker for atlas pictures: every lecture topic, then the practical cavity classes, then a free topic.
+const PRACT_CATS = ATLAS_CATS.filter((c) => !CAT_LECTURE[c]);
+function topicKey(category, lectureNo) {
+  const n = Number(lectureNo) || null;
+  if (n && (LECTURES.find((l) => l.n === n)?.title === category || CAT_LECTURE[category] === n)) return 'L:' + n;
+  if (PRACT_CATS.includes(category)) return 'P:' + category;
+  return category ? 'O' : 'L:2';
+}
+function TopicPicker({ id, category, lectureNo, onChange }) {
+  const [other, setOther] = useState(() => topicKey(category, lectureNo) === 'O');
+  const key = other ? 'O' : topicKey(category, lectureNo);
+  const pick = (v) => {
+    setOther(v === 'O');
+    if (v.startsWith('L:')) { const l = LECTURES.find((x) => x.n === Number(v.slice(2))); onChange(l.title, String(l.n)); }
+    else if (v.startsWith('P:')) onChange(v.slice(2), ''); // cavity classes: not linked to a lecture unless chosen below
+    else onChange('', '');
+  };
+  return <><label class="fld">Topic<select id={id} value={key} onChange={(e) => pick(e.target.value)}>
+      <optgroup label="Lecture topics">{LECTURES.map((l) => <option value={'L:' + l.n}>Lecture {l.n} — {l.title}</option>)}</optgroup>
+      <optgroup label="Practical — cavity preparations">{PRACT_CATS.map((c) => <option value={'P:' + c}>{c}</option>)}</optgroup>
+      <option value="O">Other topic (type below)…</option></select></label>
+    {key === 'O' && <label class="fld">Other topic<input id={id + '-other'} value={category} onInput={(e) => onChange(e.target.value, lectureNo)} placeholder="e.g. Rubber dam isolation" dir="auto" /></label>}</>;
+}
+
 function AtlasUpload({ onClose }) {
   const [files, setFiles] = useState([]);
-  const [cat, setCat] = useState(ATLAS_CATS[0]);
-  const [lec, setLec] = useState(String(CAT_LECTURE[ATLAS_CATS[0]] || ''));
+  const [cat, setCat] = useState(LECTURES.find((l) => l.n === 2).title);
+  const [lec, setLec] = useState('2');
   const [caps, setCaps] = useState({});
   const [busy, setBusy] = useState(0);
   const [errors, setErrors] = useState(null);
@@ -251,13 +276,13 @@ function AtlasUpload({ onClose }) {
     else setErrors({ ok, bad });
   };
   return <Sheet onClose={onClose}><h2>Upload Atlas pictures</h2>
-    <p class="muted">Choose one or more photos (JPG/PNG). They are resized on this computer before upload. Students see them in Learn → Atlas under the topic you choose, and under the lecture if you link one. Choose a topic from the list or type a new one.</p>
-    <label class="fld">Topic / cavity class<input id="au-cat" list="atlas-cats2" value={cat} onInput={(e) => { setCat(e.target.value); if (CAT_LECTURE[e.target.value]) setLec(String(CAT_LECTURE[e.target.value])); }} placeholder="Choose or type a topic" /><datalist id="atlas-cats2">{ATLAS_CATS.map((c) => <option value={c} />)}</datalist></label>
+    <p class="muted">Choose one or more photos (JPG/PNG). They are resized on this computer before upload. Students see them in Learn → Atlas under the topic you choose, and under the lecture if you link one. Choose a lecture topic or a cavity class; lecture topics also appear under that lecture.</p>
+    <TopicPicker id="au-cat" category={cat} lectureNo={lec} onChange={(category, lectureNo) => { setCat(category); setLec(lectureNo || ''); }} />
     <label class="fld">Also show under lecture<select id="au-lec" value={lec || ''} onChange={(e) => setLec(e.target.value)}><option value="">No — Atlas only</option>{LECTURES.map((l) => <option value={l.n}>Lecture {l.n} — {l.title}</option>)}</select></label>
     <label class="btn" style={{ alignSelf: 'flex-start' }}>Choose pictures<input id="au-files" type="file" accept="image/*" multiple hidden onChange={(e) => { setFiles([...e.target.files]); setCaps({}); }} /></label>
     {files.length > 0 && <div class="list">{files.map((f, i) => <div class="item"><div class="grow"><input value={caps[i] ?? f.name.replace(/\.[^.]+$/, '')} onInput={(e) => setCaps({ ...caps, [i]: e.target.value })} dir="auto" aria-label="Caption" /></div><span class="faint">{Math.round(f.size / 1024)} KB</span></div>)}</div>}
     {errors && <div class="state failed"><b>{errors.ok} uploaded · {errors.bad.length} failed</b><ul style={{ margin: '6px 0 0', paddingInlineStart: 18 }}>{errors.bad.map((x) => <li>{x}</li>)}</ul><p class="faint">Send a screenshot of this box to the course technical support if the reason is not clear.</p></div>}
-    <div class="row"><button class="btn primary" disabled={!files.length || busy} onClick={go}>{busy ? `Uploading ${busy} of ${files.length}…` : `Upload ${files.length || ''} picture(s)`}</button><button class="btn" onClick={onClose} disabled={!!busy}>Cancel</button></div>
+    <div class="row"><button class="btn primary" disabled={!files.length || busy || !String(cat || '').trim()} onClick={go}>{busy ? `Uploading ${busy} of ${files.length}…` : `Upload ${files.length || ''} picture(s)`}</button><button class="btn" onClick={onClose} disabled={!!busy}>Cancel</button></div>
   </Sheet>;
 }
 

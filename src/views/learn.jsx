@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { today, me, currentWeek } from '../lib/logic.js';
-import { SECTION_OF, PTYPE_OF, ATLAS_CATS } from '../lib/materials.js';
+import { SECTION_OF, PTYPE_OF, ATLAS_CATS, CAT_LECTURE } from '../lib/materials.js';
 import { L, useQuery, Pill, Empty, fmtDate, Band } from '../lib/ui.jsx';
 import { LECTURES, ORIENTATION_EXERCISES, PRACTICAL_WEEKS } from '../data/course.js';
 import { RUBRICS, GENERAL_GRADING, GRADING_NOTE } from '../data/rubrics.js';
@@ -65,8 +65,9 @@ function Links({ rows }) {
 const atlasSrc = (id) => (window.__ATLAS && window.__ATLAS[id]) || `./atlas/${id}.jpg`;
 
 export function Atlas({ uploaded = [] }) {
-  const up = uploaded.map((m) => ({ id: m.id, src: m.url, caption: m.title, category: m.category, dept: true }))
-    .sort((a, b) => ATLAS_CATS.indexOf(a.category) - ATLAS_CATS.indexOf(b.category));
+  const topic = (m) => (m.lectureNo && CAT_LECTURE[m.category] === m.lectureNo ? LECTURES.find((l) => l.n === m.lectureNo)?.title || m.category : m.category);
+  const up = uploaded.map((m) => ({ id: m.id, src: m.url, caption: m.title, category: topic(m), lectureNo: m.lectureNo, dept: true }))
+    .sort((a, b) => (a.lectureNo || 99) - (b.lectureNo || 99) || ATLAS_CATS.indexOf(a.category) - ATLAS_CATS.indexOf(b.category));
   const fac = ATLAS.map((a) => ({ ...a, src: atlasSrc(a.id), category: L('Faculty atlas', 'أطلس الكلية') + ' · ' + a.category }));
   const all = [...up, ...fac];
   const cats = [...new Set(all.map((a) => a.category))];
