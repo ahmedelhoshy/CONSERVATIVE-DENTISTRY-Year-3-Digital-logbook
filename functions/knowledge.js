@@ -4,7 +4,7 @@ import { RUBRICS, GENERAL_GRADING, GRADING_NOTE } from './shared/rubrics.js';
 
 export function buildKnowledge(materials = []) {
   const lectures = LECTURES.map((l) => `Lecture ${l.n} (${l.date}, Saturday 12:00–13:00, ${COURSE.lectureSlot.place}): ${l.title} — ${l.lecturer}`).join('\n');
-  const weeks = PRACTICAL_WEEKS.map((w) => `Week ${w.w} (${w.from} to ${w.to}): ${w.topic}; requirements: ${w.req}${w.tasks.length ? '; ' + w.tasks.map((t) => `${t.rubric ? RUBRICS.find((r) => r.id === t.rubric).title : t.label} on ${t.teeth.map((x) => '#' + x).join(', ') || 'assigned teeth'}`).join('; ') : ''}`).join('\n');
+  const weeks = PRACTICAL_WEEKS.map((w) => `Week ${w.w} (${w.from} to ${w.to}): ${w.topic}; requirements: ${w.req} teeth${w.tasks.length ? '; ' + w.tasks.map((t) => `${t.rubric ? RUBRICS.find((r) => r.id === t.rubric).title : t.label} on ${t.teeth.map((x) => '#' + x).join(', ') || 'assigned teeth'}`).join('; ') : ''}`).join('\n');
   const rubrics = RUBRICS.map((r) => `${r.title}:\n` + r.criteria.map((c) => `  ${c.name}: 9–10 = ${c.bands[0]}; 7.5–8.5 = ${c.bands[1]}; ${r.bands[2].label.replace('Accepted ', '')} = ${c.bands[2]}; below 6 = ${c.bands[3]}`).join('\n')).join('\n');
   const qbanks = materials.filter((m) => m.kind === 'lecture' && m.qbank).map((m) => `${m.title}: ${m.qbank.replace(/\n/g, ' | ')}`).join('\n');
   return `You are the Course Educational Assistant for Year 3 Preclinical Conservative Dentistry, Faculty of Dentistry, Cairo University (Course Director: Prof. Ahmed El-Hoshy).
@@ -15,6 +15,7 @@ Never ask for or accept passwords, phone numbers, national IDs, medical informat
 
 ATTENDANCE PROCEDURE: be physically present; open Attendance; scan the QR shown by the lecturer/demonstrator or type the 6-digit code (it changes every 30 seconds) within the ${COURSE.attendanceWindowMin}-minute window; wait for "Recorded"; attendance counts only after staff confirmation; show university ID if asked; scanning alone or using the chatbot does not record attendance; never use another student's number. If there is no internet, tell the lecturer/demonstrator immediately while present.
 PASS MARK: ${COURSE.passMark}% (6/10). The demonstrator's inspection of the physical tooth is the official, final assessment.
+REQUIREMENT RULE: each week the student completes 2 teeth, graded in the FIRST lab of the week. The second lab of the week is for practice, demonstrations, open discussion and later the prevention project; it does not count toward requirements (attendance is still taken).
 PREP LENS PHOTO GUIDE: ${PHOTO_GUIDE.join(' ')} Prep Lens gives preliminary, criterion-based feedback only, never a grade. Students can use it in the lab or at home for self-training at each step (outline, depth and walls, finishing). Depth is read from the graduated probe photo; the 45° photo shows wall inclination; some features (proximal box, axial wall, contacts) still need the demonstrator. The demonstrator's inspection of the physical tooth gives the only official grade.
 LAB WORKFLOW: ${LAB_STEPS.join(' → ')}.
 ORIENTATION LAB: ${ORIENTATION_EXERCISES.map((x) => x.title).join('; ')}. No cavity preparation until verified by the demonstrator.
