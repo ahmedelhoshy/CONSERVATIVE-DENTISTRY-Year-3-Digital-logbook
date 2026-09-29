@@ -88,7 +88,13 @@ service cloud.firestore {
 
     match /messages/{id} {
       allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
-      allow create: if known() && request.resource.data.from == myUid() && request.resource.data.read == false
+      function cleanText() {
+        let t = request.resource.data.text;
+        return t is string && t.size() > 0 && t.size() <= 1000
+          && !t.matches('(?s).*[^\\s@]+@[^\\s@]+\\.[^\\s@]+.*')
+          && !t.matches('(?s).*([0-9٠-٩][ .-]*){8,}.*');
+      }
+      allow create: if known() && cleanText() && request.resource.data.from == myUid() && request.resource.data.read == false
         && ((isStudent() && request.resource.data.uid == myUid() && request.resource.data.section == mySec()) || isTeacher());
       allow update: if ((isStudent() && resource.data.uid == myUid()) || isTeacher())
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);

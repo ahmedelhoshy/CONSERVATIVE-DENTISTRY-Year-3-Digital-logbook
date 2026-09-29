@@ -23,10 +23,10 @@ const wantDemo = !cfg.apiKey || params.has('demo') || window.__DEMO === true;
 const NAV = {
   student: [['home', 'Home', 'الرئيسية', 'home'], ['attend', 'Attendance', 'الحضور', 'qr'], ['learn', 'Learn', 'التعلم', 'book'], ['lab', 'My lab', 'اللاب', 'tooth'], ['chat', 'Help', 'مساعدة', 'chat']],
   demonstrator: [['today', 'Today'], ['review', 'Review queue'], ['students', 'My students'], ['messages', 'Messages'], ['learn', 'Materials'], ['assistant', 'Course assistant']],
-  lecturer: [['today', 'My sessions'], ['learn', 'Materials'], ['assistant', 'Course assistant']],
+  lecturer: [['today', 'My sessions'], ['messages', 'Messages'], ['learn', 'Materials'], ['assistant', 'Course assistant']],
   director: [['dash', 'Dashboard'], ['today', 'Today'], ['sessions', 'Sessions'], ['review', 'Reviews'], ['students', 'Students'], ['content', 'Materials'], ['announce', 'Announcements'], ['messages', 'Messages'], ['reports', 'Reports'], ['people', 'People'], ['settings', 'Settings'], ['audit', 'Audit log']],
-  hod: [['dash', 'Dashboard'], ['students', 'Students'], ['review', 'Reviews'], ['reports', 'Reports'], ['audit', 'Audit log']],
-  vicedean: [['dash', 'Dashboard'], ['reports', 'Reports']],
+  hod: [['dash', 'Dashboard'], ['students', 'Students'], ['review', 'Reviews'], ['messages', 'Messages'], ['reports', 'Reports'], ['audit', 'Audit log']],
+  vicedean: [['dash', 'Dashboard'], ['messages', 'Messages'], ['reports', 'Reports']],
 };
 NAV.admin = NAV.director;
 const ROLE_LABEL = { student: 'Student', demonstrator: 'Demonstrator', lecturer: 'Lecturer', director: 'Course Director', hod: 'Head of Department', vicedean: 'Vice Dean — Student Affairs', admin: 'Administrator' };
