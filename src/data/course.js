@@ -89,11 +89,32 @@ export const LAB_STEPS = [
 ];
 
 export const PHOTO_GUIDE = [
-  'Clean and secure the typodont; use good, even lighting.',
-  'Place a periodontal probe beside the tooth for scale.',
-  'Hold the phone about 15 cm away, at 90° to the occlusal surface.',
-  'Keep the image centred, sharp, bright and free of shadows.',
+  'Clean and dry the typodont; light directly into the cavity (lab light or phone ring light) — no shadows, no glare on the plastic.',
+  'Shot 1 — Occlusal: phone about 15 cm away, exactly 90° to the occlusal surface, tooth centred (outline, extensions, width, margins).',
+  'Shot 2 — Angled 45°: tilt from the mesial or distal side so the walls are visible (wall inclination/convergence, line angles, smoothness).',
+  'Shot 3 — Probe: graduated periodontal probe standing in the deepest part of the floor, markings readable (depth in mm).',
+  'Keep every photo sharp; retake if the check says dark or blurred.',
 ];
+export const PHOTO_GUIDE_AR = [
+  'نظّف وجفّف السن؛ وجّه الإضاءة داخل الكافيتي (لمبة اللاب أو رينج لايت) بدون ظلال أو لمعان.',
+  'الصورة ١ — أكلوزال: الموبايل على بعد ١٥ سم تقريبًا وبزاوية ٩٠° تمامًا على السطح الماضغ والسن في المنتصف (الـ outline والامتدادات والعرض والحواف).',
+  'الصورة ٢ — زاوية ٤٥°: أمِل الموبايل من الناحية الميزيال أو الديستال لتظهر الجدران (ميل/تقارب الجدران، الـ line angles، النعومة).',
+  'الصورة ٣ — البروب: البروب المدرّج واقف في أعمق نقطة في الأرضية والعلامات واضحة (العمق بالملّيمتر).',
+  'كل صورة يجب أن تكون واضحة؛ أعد التصوير إذا ظهر تنبيه "مظلمة" أو "غير واضحة".',
+];
+// Photo views used by Prep Lens (older records may also have 'proximal' or 'buccal/lingual').
+export const PHOTO_VIEWS = [['occlusal', 'Occlusal 90°', 'أكلوزال ٩٠°'], ['angled', 'Angled 45°', 'زاوية ٤٥°'], ['probe', 'Probe depth', 'البروب']];
+// Self-training stages: which rubric groups Prep Lens comments on at each step of the preparation.
+export const PREP_STAGES = [
+  ['outline', 'Step 1 · Outline', 'الخطوة ١ · الـ Outline', ['Outline Form', 'Adjacent Tooth Damage']],
+  ['depth', 'Step 2 · Depth & walls', 'الخطوة ٢ · العمق والجدران', ['Resistance and Retention Forms']],
+  ['finish', 'Step 3 · Finishing', 'الخطوة ٣ · التشطيب', ['Finishing of Cavity Walls and Margins', 'Adjacent Tooth Damage']],
+  ['full', 'Full check', 'مراجعة كاملة', null],
+];
+export function stageCriteria(rubric, stage) {
+  const st = PREP_STAGES.find((x) => x[0] === stage);
+  return !st || !st[3] ? rubric.criteria : rubric.criteria.filter((c) => st[3].includes(c.group));
+}
 
 export const TOOTH_STATUS = ['Completed', 'Incomplete', 'Not submitted'];
 

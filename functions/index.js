@@ -15,7 +15,7 @@ import { setGlobalOptions } from 'firebase-functions/v2';
 import nodemailer from 'nodemailer';
 import * as XLSX from 'xlsx';
 import { computeStats } from './shared/stats.js';
-import { PRACTICAL_WEEKS, COURSE } from './shared/course.js';
+import { PRACTICAL_WEEKS, COURSE, PREP_STAGES, stageCriteria } from './shared/course.js';
 import { rubricById } from './shared/rubrics.js';
 import { buildKnowledge } from './knowledge.js';
 
@@ -30,7 +30,7 @@ const GEMINI_MODEL = defineString('GEMINI_MODEL', { default: 'gemini-flash-lite-
 const SMTP_HOST = defineString('SMTP_HOST', { default: 'smtp.gmail.com' });
 const SMTP_USER = defineString('SMTP_USER', { default: '' });
 const SITE_URL = defineString('SITE_URL', { default: '' });
-const PROMPT_VERSION = 'prep-lens-v1';
+const PROMPT_VERSION = 'prep-lens-v2';
 
 const cairoDate = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(d);
 
@@ -70,21 +70,28 @@ async function gemini(parts, { json = false, system, temperature = 0.2 } = {}) {
   return { text, model: j.modelVersion || GEMINI_MODEL.value() };
 }
 
-function prepLensPrompt(rubric, tooth) {
-  const crit = rubric.criteria.map((c) => `- id "${c.id}" — ${c.name} (${c.group}). Visibility from a photo: ${c.photo}.\n  A (9–10): ${c.bands[0]}\n  B (7.5–8.5): ${c.bands[1]}\n  C (${rubric.bands[2].label.replace('Accepted ', '')}): ${c.bands[2]}\n  D (below 6): ${c.bands[3]}`).join('\n');
-  return `You give PRELIMINARY formative feedback to a third-year dental student on a preclinical preparation on an acrylic typodont tooth, using ONLY the photograph(s).
-Exercise: ${rubric.title}. Tooth (FDI): #${tooth}.
+function prepLensPrompt(rubric, tooth, stage, views) {
+  const focus = stageCriteria(rubric, stage).map((c) => c.id);
+  const st = PREP_STAGES.find((x) => x[0] === stage) || PREP_STAGES[3];
+  const crit = rubric.criteria.map((c) => `- id "${c.id}" — ${c.name} (${c.group}). Visibility from a photo: ${c.photo}.${focus.includes(c.id) ? '' : ' [NOT IN THIS STEP]'}\n  A (9–10): ${c.bands[0]}\n  B (7.5–8.5): ${c.bands[1]}\n  C (${rubric.bands[2].label.replace('Accepted ', '')}): ${c.bands[2]}\n  D (below 6): ${c.bands[3]}`).join('\n');
+  return `You give FORMATIVE self-training feedback to a third-year dental student on a preclinical preparation on an acrylic typodont tooth, using ONLY the photographs. The student may be practising alone at home; your comments must help them correct the preparation step by step.
+Exercise: ${rubric.title}. Tooth (FDI): #${tooth}. Preparation step: ${st[1]}.
+Photos provided (labelled): ${views.join(', ')}.
+- "occlusal" = 90° occlusal view: judge outline, extensions, width/isthmus, marginal ridges, cavosurface margins.
+- "angled" = about 45° view: judge wall inclination/convergence, line angles, wall smoothness.
+- "probe" = graduated periodontal probe standing in the cavity: read the millimetre markings to ESTIMATE DEPTH in mm and compare it with the rubric description.
 Official Cairo University rubric criteria:
 ${crit}
 
 Rules:
-1. Judge only what is clearly visible. If a criterion cannot be judged from the photo (depth without a readable probe, wall inclination, internal line angles, gingival floor, contacts), set "assessable": false and "band": null.
-2. Criteria marked "Visibility from a photo: no" are always not assessable.
-3. For assessable criteria choose the band A, B, C or D whose description best matches, and write one short, specific, encouraging comment (max 25 words) naming what to check or correct.
-4. Report image problems (angle not 90°, blur, shadows, no scale reference, tooth not centred).
-5. overall_score: your estimate on 0–10 using only assessable criteria, or null if fewer than half are assessable. It is for research and is NOT shown to the student.
-6. Never state a final grade. The demonstrator's inspection of the physical tooth is the official assessment.
-Return JSON only: {"criteria":[{"id":"...","assessable":true,"band":"A","comment":"..."}],"image_issues":["..."],"summary":"one or two sentences for the student","overall_score":7.5}`;
+1. Comment ONLY on criteria of this step. Criteria marked [NOT IN THIS STEP] must be returned with "assessable": false.
+2. Judge only what is clearly visible in the photo that shows it. Without a readable probe photo, depth is not assessable; without an angled photo, wall inclination and line angles are not assessable. Criteria with "Visibility from a photo: no" are never assessable.
+3. For assessable criteria choose the band A, B, C or D whose description best matches, and write one short, specific, actionable comment (max 25 words) telling the student what to check or correct next.
+4. If the probe markings are readable, report the estimated depth in mm in "depth_mm" (one decimal), otherwise null.
+5. Report photo problems (not 90°, blur, shadows, glare, probe markings unreadable, tooth not centred).
+6. overall_score: your 0–10 estimate for research only, using assessable criteria; null if fewer than half of this step's criteria are assessable. It is NEVER shown to the student.
+7. Never state or imply a grade, pass or fail. The demonstrator's inspection of the physical tooth is the only official assessment.
+Return JSON only: {"criteria":[{"id":"...","assessable":true,"band":"A","comment":"..."}],"depth_mm":1.5,"image_issues":["..."],"summary":"one or two encouraging sentences with the most important next correction","overall_score":7.5}`;
 }
 
 async function doPrepLens(u, data) {
@@ -99,12 +106,15 @@ async function doPrepLens(u, data) {
   if (!e.photos?.length) throw new HttpsError('failed-precondition', 'Add a photo first.');
   const cfg = (await db.doc('config/course').get()).data() || {};
   if (cfg.aiEnabled === false) throw new HttpsError('resource-exhausted', 'quota: Prep Lens is switched off.');
-  const ok = await takeQuota('preplens', cfg.aiDailyLimit ?? 1500, { uid: u.uid, limit: 12 });
+  const ok = await takeQuota('preplens', cfg.aiDailyLimit ?? 1500, { uid: u.uid, limit: cfg.aiPerStudentDaily ?? 20 });
   if (!ok) throw new HttpsError('resource-exhausted', 'quota: daily Prep Lens limit reached.');
 
   const bucket = getStorage().bucket();
-  const photos = e.photos.slice(-2); // latest one or two views
-  const parts = [{ text: prepLensPrompt(rubric, e.tooth) }];
+  // latest photo of each view (occlusal, angled, probe…), at most 3
+  const latest = {}; for (const p of e.photos) latest[p.view] = p;
+  const photos = Object.values(latest).slice(-3);
+  const stage = PREP_STAGES.some((x) => x[0] === e.stage) ? e.stage : 'full';
+  const parts = [{ text: prepLensPrompt(rubric, e.tooth, stage, photos.map((p) => p.view)) }];
   for (const p of photos) {
     const [buf] = await bucket.file(p.path).download();
     parts.push({ text: `View: ${p.view}` }, { inline_data: { mime_type: 'image/jpeg', data: buf.toString('base64') } });
@@ -121,9 +131,13 @@ async function doPrepLens(u, data) {
   const issues = Array.isArray(out.image_issues) ? out.image_issues.slice(0, 5).map(String) : [];
   const summary = (String(out.summary || '').slice(0, 400) + (issues.length ? ` Photo: ${issues.join('; ')}.` : '')).trim();
   const at = Date.now();
-  await ref.update({ ai: { criteria, summary, model, promptVersion: PROMPT_VERSION, at, views: photos.map((p) => p.view) }, updatedAt: at });
+  const depthMm = typeof out.depth_mm === 'number' && out.depth_mm > 0 && out.depth_mm < 8 ? Math.round(out.depth_mm * 10) / 10 : null;
+  const ai = { criteria, summary, model, promptVersion: PROMPT_VERSION, at, views: photos.map((p) => p.view), stage, depthMm };
+  const aiHistory = [...(e.aiHistory || []), { stage, at, depthMm, summary, bands: Object.fromEntries(Object.entries(criteria).map(([k, v]) => [k, v.band])) }].slice(-20);
+  await ref.update({ ai, aiHistory, updatedAt: at });
   const score = typeof out.overall_score === 'number' && out.overall_score >= 0 && out.overall_score <= 10 ? out.overall_score : null;
-  await db.doc(`research/${entryId}`).set({ entryId, uid: e.uid, section: e.section, rubricId: e.rubricId, week: e.week, score, criteria, model, promptVersion: PROMPT_VERSION, at });
+  // Research record: the latest full or finishing check of a lab tooth is what gets compared with the demonstrator.
+  await db.doc(`research/${entryId}`).set({ entryId, uid: e.uid, section: e.section, rubricId: e.rubricId, week: e.week, practice: !!e.practice, stage, score, depthMm, criteria, model, promptVersion: PROMPT_VERSION, at, checks: aiHistory.length });
   return { ok: true };
 }
 

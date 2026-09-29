@@ -80,6 +80,7 @@ export function Dashboard() {
         <p class="faint">Research indicator only. Prep Lens never assigns grades; the pilot showed limited agreement (Gemini within ±1 in 52 % of 23 photos).</p></section>
     </div>}
     {full && <CriterionVariation dist={st.critDist} />}
+    <PrepLensValidation />
   </>;
 }
 
@@ -112,8 +113,8 @@ export function Reports() {
   const reports = [
     ['lecture', '1. Lecture attendance by session and student', async () => { const a = (await S.query('attendance', [['type', '==', 'lecture']])).filter((x) => inRange(x.date) && secF(x)); return exportXlsx({ title: 'Lecture attendance by session and student', range, filters: filt, columns: [{ label: 'Date', key: 'date' }, { label: 'Session', key: 'sid' }, { label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 30 }, { label: 'Section', key: 'section' }, { label: 'Status', key: 'status' }, { label: 'Check-in', get: (r) => fmtDT(r.at) }, { label: 'Decided by', key: 'byName' }, { label: 'Reason', key: 'reason' }], rows: a.sort((x, y) => (x.date + x.code).localeCompare(y.date + y.code)), definitions: { status: 'recorded = submitted, awaiting staff; confirmed = counted; rejected = not counted. Students without a row have no check-in.' } }); }],
     ['lab', '2. Lab attendance by session and section', async () => { const a = (await S.query('attendance', [['type', '==', 'lab']])).filter((x) => inRange(x.date) && secF(x)); return exportXlsx({ title: 'Lab attendance by session and section', range, filters: filt, columns: [{ label: 'Date', key: 'date' }, { label: 'Week', key: 'week' }, { label: 'Section', key: 'section' }, { label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 30 }, { label: 'Status', key: 'status' }, { label: 'Method', key: 'method' }, { label: 'Confirmed by', key: 'byName' }], rows: a.sort((x, y) => (x.date + x.section + x.code).localeCompare(y.date + y.section + y.code)) }); }],
-    ['logbook', '3. Student longitudinal logbook', async () => { const e = (await S.query('entries', [])).filter((x) => x.status !== 'draft' && inRange(x.date) && secF(x)); return exportXlsx({ title: 'Student longitudinal logbook', range, filters: filt, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 30 }, { label: 'Section', key: 'section' }, { label: 'Week', key: 'week' }, { label: 'Date', key: 'date' }, { label: 'Exercise', get: (r) => rubricById[r.rubricId]?.title || r.taskLabel, w: 34 }, { label: 'Tooth', key: 'tooth' }, { label: 'Self grade', get: (r) => r.self?.grade }, { label: 'Official grade', get: (r) => r.review?.grade }, { label: 'Status', get: (r) => r.review?.status || r.status }, { label: 'Demonstrator', get: (r) => r.review?.byName }, { label: 'Feedback', get: (r) => r.review?.feedback, w: 40 }], rows: e.sort((x, y) => (x.code + x.week).localeCompare(y.code + y.week)) }); }],
-    ['completion', '4. Practical task completion and missing work', async () => { const [st, e] = await Promise.all([S.query('users', [['role', '==', 'student']]), S.query('entries', [])]); const due = PRACTICAL_WEEKS.filter((w) => w.to < to && w.to >= from).reduce((a, w) => a + w.req, 0); const rows = st.filter(secF).map((s) => { const mine = e.filter((x) => x.uid === s.uid && inRange(x.date)); const done = mine.filter((x) => x.review?.status === 'Completed').length; return { ...s, done, due, missing: Math.max(0, due - done), waiting: mine.filter((x) => x.status === 'submitted').length, redo: mine.filter((x) => x.status === 'redo').length }; }); return exportXlsx({ title: 'Practical task completion and missing work', range, filters: filt, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 30 }, { label: 'Section', key: 'section' }, { label: 'Completed', key: 'done' }, { label: 'Due', key: 'due' }, { label: 'Missing', key: 'missing' }, { label: 'Awaiting review', key: 'waiting' }, { label: 'To correct', key: 'redo' }], rows }); }],
+    ['logbook', '3. Student longitudinal logbook', async () => { const e = (await S.query('entries', [])).filter((x) => !x.practice && x.status !== 'draft' && inRange(x.date) && secF(x)); return exportXlsx({ title: 'Student longitudinal logbook', range, filters: filt, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 30 }, { label: 'Section', key: 'section' }, { label: 'Week', key: 'week' }, { label: 'Date', key: 'date' }, { label: 'Exercise', get: (r) => rubricById[r.rubricId]?.title || r.taskLabel, w: 34 }, { label: 'Tooth', key: 'tooth' }, { label: 'Self grade', get: (r) => r.self?.grade }, { label: 'Official grade', get: (r) => r.review?.grade }, { label: 'Status', get: (r) => r.review?.status || r.status }, { label: 'Demonstrator', get: (r) => r.review?.byName }, { label: 'Feedback', get: (r) => r.review?.feedback, w: 40 }], rows: e.sort((x, y) => (x.code + x.week).localeCompare(y.code + y.week)) }); }],
+    ['completion', '4. Practical task completion and missing work', async () => { const [st, e] = await Promise.all([S.query('users', [['role', '==', 'student']]), S.query('entries', [])]); const due = PRACTICAL_WEEKS.filter((w) => w.to < to && w.to >= from).reduce((a, w) => a + w.req, 0); const rows = st.filter(secF).map((s) => { const mine = e.filter((x) => x.uid === s.uid && !x.practice && inRange(x.date)); const done = mine.filter((x) => x.review?.status === 'Completed').length; return { ...s, done, due, missing: Math.max(0, due - done), waiting: mine.filter((x) => x.status === 'submitted').length, redo: mine.filter((x) => x.status === 'redo').length }; }); return exportXlsx({ title: 'Practical task completion and missing work', range, filters: filt, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 30 }, { label: 'Section', key: 'section' }, { label: 'Completed', key: 'done' }, { label: 'Due', key: 'due' }, { label: 'Missing', key: 'missing' }, { label: 'Awaiting review', key: 'waiting' }, { label: 'To correct', key: 'redo' }], rows }); }],
     ['rubric', '5. Rubric results and grade distribution', async () => { const e = (await S.query('entries', [])).filter((x) => x.review && inRange(x.date) && secF(x)); const rows = []; for (const x of e) for (const [cid, band] of Object.entries(x.review.picks || {})) rows.push({ code: x.code, section: x.section, week: x.week, rubric: rubricById[x.rubricId]?.title, criterion: rubricById[x.rubricId]?.criteria.find((c) => c.id === cid)?.name, self: x.self?.picks?.[cid] || '', ai: x.ai?.criteria?.[cid]?.band || (x.ai ? 'n/a' : ''), official: band, grade: x.review.grade }); return exportXlsx({ title: 'Rubric results and grade distribution', range, filters: filt, columns: [{ label: 'Student number', key: 'code' }, { label: 'Section', key: 'section' }, { label: 'Week', key: 'week' }, { label: 'Rubric', key: 'rubric', w: 34 }, { label: 'Criterion', key: 'criterion', w: 28 }, { label: 'Self band', key: 'self' }, { label: 'Prep Lens band', key: 'ai' }, { label: 'Official band', key: 'official' }, { label: 'Official grade', key: 'grade' }], rows, definitions: { self: 'A 9–10 · B 7.5–8.5 · C 6–7 · D below 6', ai: 'n/a = not assessable from photo' } }); }],
     ['workload', '6. Demonstrator workload and turnaround', async () => { const e = (await S.query('entries', [])).filter((x) => x.review && inRange(x.date) && secF(x)); const m = {}; for (const x of e) { const k = x.review.byName; m[k] = m[k] || { name: k, reviews: 0, hours: [], redo: 0 }; m[k].reviews++; if (x.status === 'redo') m[k].redo++; const sub = x.submittedAt || x.self?.at || x.createdAt; if (sub) m[k].hours.push((x.review.at - sub) / 3600e3); } const rows = Object.values(m).map((d) => { const hs = d.hours.sort((a, b) => a - b); return { ...d, median: hs.length ? Math.round(hs[Math.floor(hs.length / 2)] * 10) / 10 : '' }; }); return exportXlsx({ title: 'Demonstrator assessment workload and turnaround time', range, filters: filt, columns: [{ label: 'Demonstrator', key: 'name', w: 28 }, { label: 'Reviews', key: 'reviews' }, { label: 'Asked to correct', key: 'redo' }, { label: 'Median turnaround (h)', key: 'median' }], rows }); }],
     ['risk', '7. Students requiring follow-up', async () => { const [students, sessions, attendance, entries, cfg] = await Promise.all([S.query('users', [['role', '==', 'student']]), S.query('sessions', []), S.query('attendance', []), S.query('entries', []), S.get('config', 'course')]); const st = computeStats({ students, sessions, attendance, entries, weeks: PRACTICAL_WEEKS, config: cfg || {}, today: to }); return exportXlsx({ title: 'Students requiring follow-up', range, filters: filt, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 30 }, { label: 'Section', key: 'section' }, { label: 'Lecture att. %', key: 'lecAtt' }, { label: 'Lab att. %', key: 'labAtt' }, { label: 'Done', key: 'done' }, { label: 'Due', key: 'due' }, { label: 'Mean grade', key: 'meanGrade' }, { label: 'Reasons', get: (r) => r.reasons.join('; '), w: 50 }], rows: st.atRisk.filter(secF) }); }],
@@ -127,4 +128,76 @@ export function Reports() {
     <section class="card"><div class="list">{allowed.map(([k, label, fn]) => <div class="item"><div class="grow"><b>{label}</b></div><button class="btn sm" disabled={!!busy} onClick={() => run(k, fn)}>{busy === k ? 'Preparing…' : 'Excel'}</button></div>)}</div>
       <p class="faint">For a PDF, open the Dashboard and use your browser's Print → Save as PDF; navigation is hidden in print.</p></section>
   </>;
+}
+
+// ---------------- Prep Lens validation (research) ----------------
+// Agreement between Prep Lens, student self-assessment and the demonstrator's official grade, computed on demand.
+const BANDV = { A: 3, B: 2, C: 1, D: 0 };
+const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+function agree(pairs) { // [[x (rater), y (demonstrator)]]
+  const n = pairs.length; if (n < 2) return { n };
+  const d = pairs.map(([x, y]) => x - y); const bias = avg(d);
+  const sd = Math.sqrt(d.reduce((a, v) => a + (v - bias) ** 2, 0) / (n - 1));
+  const mx = avg(pairs.map((p) => p[0])), my = avg(pairs.map((p) => p[1]));
+  const vx = avg(pairs.map((p) => (p[0] - mx) ** 2)), vy = avg(pairs.map((p) => (p[1] - my) ** 2)), cov = avg(pairs.map((p) => (p[0] - mx) * (p[1] - my)));
+  const r = vx && vy ? cov / Math.sqrt(vx * vy) : null;
+  const ccc = (vx + vy + (mx - my) ** 2) ? (2 * cov) / (vx + vy + (mx - my) ** 2) : null;
+  const f = (x, k = 2) => (x == null ? null : Math.round(x * 10 ** k) / 10 ** k);
+  return { n, bias: f(bias), sd: f(sd), lo: f(bias - 1.96 * sd), hi: f(bias + 1.96 * sd), mae: f(avg(d.map(Math.abs))), r: f(r), ccc: f(ccc), within1: Math.round((d.filter((v) => Math.abs(v) <= 1).length / n) * 100) };
+}
+function kappaW(pairs) { // quadratic weighted kappa for 4 ordered bands
+  const n = pairs.length; if (n < 2) return null;
+  const O = Array.from({ length: 4 }, () => [0, 0, 0, 0]); for (const [a, b] of pairs) O[a][b]++;
+  const ra = O.map((r) => r.reduce((x, y) => x + y, 0)), cb = [0, 1, 2, 3].map((j) => O.reduce((x, r) => x + r[j], 0));
+  let num = 0, den = 0;
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const w = ((i - j) ** 2) / 9; num += w * O[i][j]; den += w * (ra[i] * cb[j]) / n; }
+  return den ? Math.round((1 - num / den) * 100) / 100 : null;
+}
+function PrepLensValidation() {
+  const [res, setRes] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    try {
+      const S = store();
+      const [entries, research] = await Promise.all([S.query('entries', []), S.query('research', []).catch(() => [])]);
+      const rs = {}; for (const r of research) rs[r.entryId || r.id] = r;
+      const lab = entries.filter((e) => !e.practice && e.review && typeof e.review.grade === 'number');
+      const aiScore = (e) => (rs[e.id]?.score ?? e.ai?.score ?? null);
+      const aiPairs = lab.filter((e) => aiScore(e) != null).map((e) => [aiScore(e), e.review.grade]);
+      const selfPairs = lab.filter((e) => typeof e.self?.grade === 'number').map((e) => [e.self.grade, e.review.grade]);
+      const crit = {}; const allBand = [];
+      for (const e of lab) {
+        const rub = rubricById[e.rubricId]; if (!rub || !e.review.picks) continue;
+        for (const c of rub.criteria) {
+          const k = `${rub.id}|${c.id}`; const x = crit[k] = crit[k] || { rubric: rub.title, name: c.name, n: 0, assessable: 0, exact: 0, adjacent: 0 };
+          const dem = e.review.picks[c.id]; if (!dem || !e.ai?.criteria) continue;
+          x.n++; const a = e.ai.criteria[c.id];
+          if (a?.assessable && a.band) { x.assessable++; const dv = Math.abs(BANDV[a.band] - BANDV[dem]); if (dv === 0) x.exact++; if (dv <= 1) x.adjacent++; allBand.push([BANDV[a.band], BANDV[dem]]); }
+        }
+      }
+      const practice = entries.filter((e) => e.practice);
+      const checks = entries.reduce((a, e) => a + ((e.aiHistory || []).length || (e.ai ? 1 : 0)), 0);
+      const rows = lab.map((e, i) => ({ case: i + 1, section: e.section, exercise: rubricById[e.rubricId]?.title || '', week: e.week, prompt: e.ai?.promptVersion || '', ai: aiScore(e), self: e.self?.grade ?? null, demonstrator: e.review.grade, depthMm: e.ai?.depthMm ?? null, checksBeforeSubmit: (e.aiHistory || []).length }));
+      setRes({ ai: agree(aiPairs), self: agree(selfPairs), kappa: kappaW(allBand), bandN: allBand.length, bandExact: allBand.length ? Math.round((allBand.filter(([a, b]) => a === b).length / allBand.length) * 100) : null,
+        crit: Object.values(crit).filter((x) => x.n), practiceTeeth: practice.length, practiceStudents: new Set(practice.map((e) => e.uid)).size, checks, rows, at: Date.now() });
+    } catch (e) { toast('Could not compute: ' + e.message); }
+    setBusy(false);
+  };
+  const A = res?.ai || {}, Sf = res?.self || {};
+  const line = (x) => (x.n >= 2 ? `n = ${x.n} · bias ${x.bias > 0 ? '+' : ''}${x.bias} (95 % limits ${x.lo} to ${x.hi}) · MAE ${x.mae} · r ${x.r ?? '–'} · Lin's CCC ${x.ccc ?? '–'} · within ±1: ${x.within1} %` : `n = ${x.n || 0} — not enough paired teeth yet`);
+  return <section class="card"><div class="row between"><div><h2>Prep Lens validation study</h2><p class="faint">Agreement of Prep Lens and student self-assessment with the demonstrator's official grade of the physical tooth, for publication and for stakeholders. Practice teeth are excluded from agreement. Student names and numbers are never included.</p></div>
+    <div class="row noprint"><button class="btn" disabled={busy} onClick={run}>{busy ? 'Calculating…' : res ? 'Recalculate' : 'Calculate'}</button>{res && <button class="btn" onClick={() => exportXlsx({ title: 'Prep Lens validation dataset (anonymised)', columns: [{ label: 'Case', key: 'case' }, { label: 'Section', key: 'section' }, { label: 'Exercise', key: 'exercise', w: 34 }, { label: 'Week', key: 'week' }, { label: 'Prompt version', key: 'prompt' }, { label: 'Prep Lens score (research, not shown to students)', key: 'ai' }, { label: 'Student self-grade', key: 'self' }, { label: 'Demonstrator official grade', key: 'demonstrator' }, { label: 'Depth from probe (mm)', key: 'depthMm' }, { label: 'Prep Lens checks before submission', key: 'checksBeforeSubmit' }], rows: res.rows, definitions: { ai: 'Prep Lens 0–10 estimate from photos, stored for research only.', demonstrator: 'Reference standard: demonstrator inspection of the physical tooth.' } })}>Export anonymised dataset</button>}</div></div>
+    {res && <>
+      <div class="kpis">
+        <Kpi label="Prep Lens vs demonstrator" value={A.n >= 2 ? `${A.within1}%` : '–'} kind="info" sub={A.n >= 2 ? `within ±1 point · ${A.n} teeth` : 'needs graded teeth'} />
+        <Kpi label="Self vs demonstrator" value={Sf.n >= 2 ? `${Sf.within1}%` : '–'} kind="info" sub={Sf.n >= 2 ? `within ±1 point · ${Sf.n} teeth` : 'needs graded teeth'} />
+        <Kpi label="Criterion band agreement" value={res.bandExact != null ? `${res.bandExact}%` : '–'} kind="info" sub={res.kappa != null ? `exact · weighted κ ${res.kappa} · ${res.bandN} ratings` : 'no paired ratings yet'} />
+        <Kpi label="Self-training use" value={res.checks} kind="good" sub={`Prep Lens checks · ${res.practiceTeeth} practice teeth by ${res.practiceStudents} students`} />
+      </div>
+      <p><b>Prep Lens:</b> {line(A)}</p><p><b>Self-assessment:</b> {line(Sf)}</p>
+      {res.crit.length > 0 && <div class="tablewrap"><table><thead><tr><th>Exercise · criterion</th><th class="n">Paired</th><th class="n">Assessable from photo</th><th class="n">Exact band</th><th class="n">Within 1 band</th></tr></thead><tbody>{res.crit.map((c) => <tr><td>{c.rubric} · <b>{c.name}</b></td><td class="n">{c.n}</td><td class="n">{Math.round((c.assessable / c.n) * 100)}%</td><td class="n">{c.assessable ? Math.round((c.exact / c.assessable) * 100) + '%' : '–'}</td><td class="n">{c.assessable ? Math.round((c.adjacent / c.assessable) * 100) + '%' : '–'}</td></tr>)}</tbody></table></div>}
+      <p class="faint">Bias = mean (rater − demonstrator); negative means the rater scores lower. Limits of agreement follow Bland–Altman. Lin's CCC measures agreement on the same scale (1 = perfect). Weighted κ uses quadratic weights over the four rubric bands. Calculated {fmtDT(res.at)}.</p>
+    </>}
+  </section>;
 }

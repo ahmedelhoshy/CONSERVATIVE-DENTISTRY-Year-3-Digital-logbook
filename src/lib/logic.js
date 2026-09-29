@@ -1,6 +1,6 @@
 // Business logic shared by all views. Works on either backend (demo or Firebase).
 import { DEMO_TODAY } from './demo-seed.js';
-import { PRACTICAL_WEEKS, COURSE } from '../data/course.js';
+import { PRACTICAL_WEEKS, COURSE, stageCriteria } from '../data/course.js';
 import { rubricById } from '../data/rubrics.js';
 
 const _qp = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
@@ -135,13 +135,15 @@ function imageQuality(canvas) {
   return { brightness: Math.round(mean), sharpness: Math.round(sharp), tooDark: mean < 60, tooBright: mean > 220, blurry: sharp < 60 };
 }
 
-export async function createEntry({ week, rubricId, tooth, label }) {
+export async function createEntry({ week, rubricId, tooth, label, practice, stage }) {
   const t = nowMs();
   return S.add('entries', {
     uid: ME.uid, code: ME.code || '', name: ME.name, section: ME.section || null, week, rubricId: rubricId || null, taskLabel: label || '',
     tooth: tooth || '', date: today(), status: 'draft', self: null, ai: null, review: null, photos: [], createdAt: t, updatedAt: t, history: [],
+    practice: !!practice, stage: stage || (practice ? 'outline' : 'full'),
   });
 }
+export async function setStage(entryId, stage) { await S.update('entries', entryId, { stage, updatedAt: nowMs() }); }
 export async function addPhoto(entryId, file, view = 'occlusal') {
   const { blob, quality } = await compressImage(file);
   const path = `photos/${ME.uid}/${entryId}/${Date.now()}.jpg`;
@@ -174,8 +176,13 @@ async function demoAI(entryId) {
     if (c.photo === 'no') criteria[c.id] = { assessable: false, band: null, comment: 'Not assessable from photo — check with demonstrator.' };
     else criteria[c.id] = { assessable: true, band: bands[(i + (e.tooth || '').length) % 4], comment: c.photo === 'partial' ? 'Partly visible — confirm on the tooth with your demonstrator.' : 'Looks consistent with the rubric description at this band. (Demo feedback)' };
   });
-  const ai = { criteria, summary: 'Demo mode: this is simulated feedback. In the live platform Prep Lens reads your photo against the official rubric.', model: 'demo', promptVersion: 'v1', at: nowMs(), score: null };
-  await S.update('entries', entryId, { ai, updatedAt: nowMs() });
+  const stage = e.stage || 'full';
+  const focus = stageCriteria(rub, stage).map((c) => c.id);
+  for (const k of Object.keys(criteria)) if (!focus.includes(k)) criteria[k] = { assessable: false, band: null, comment: 'Not part of this step.' };
+  const depthMm = focus.includes('depth') && (e.photos || []).some((p) => p.view === 'probe') ? 1.6 : null;
+  const ai = { criteria, summary: 'Demo mode: this is simulated feedback. In the live platform Prep Lens reads your photos against the official rubric.', model: 'demo', promptVersion: 'v2', at: nowMs(), score: null, stage, depthMm };
+  const aiHistory = [...(e.aiHistory || []), { stage, at: nowMs(), depthMm, summary: ai.summary }].slice(-20);
+  await S.update('entries', entryId, { ai, aiHistory, updatedAt: nowMs() });
   return ai;
 }
 

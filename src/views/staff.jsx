@@ -171,7 +171,7 @@ export function ReviewSheet({ id, onClose }) {
       <div class="row"><button class="btn primary" disabled={busy || grade === '' || !rub?.criteria.every((c) => picks?.[c.id]) || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
         <button class="btn danger" disabled={busy || grade === '' || !feedback.trim()} onClick={() => save(true)}>Save & ask to correct</button></div>
     </>}
-    {e.history?.length > 0 && <details><summary>History ({e.history.length})</summary><div class="list">{e.history.map((h) => <div class="item faint">{fmtDT(h.at)} · {h.event}{h.by ? ' · ' + h.by : ''}{h.reason ? ' · ' + h.reason : ''}</div>)}</div></details>}
+    {e.history?.length > 0 && <details><summary>History ({e.history.length})</summary><div class="list">{e.history.map((ev) => <div class="item faint">{fmtDT(ev.at)} · {ev.event}{ev.by ? ' · ' + ev.by : ''}{ev.reason ? ' · ' + ev.reason : ''}</div>)}</div></details>}
   </Sheet>;
 }
 

@@ -6,7 +6,9 @@ const r1 = (x) => (x == null ? null : Math.round(x * 10) / 10);
 const r2 = (x) => (x == null ? null : Math.round(x * 100) / 100);
 const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : null);
 
-export function computeStats({ students, sessions, attendance, entries, weeks, config = {}, today, nowMs = Date.now() }) {
+export function computeStats({ students, sessions, attendance, entries: allEntries, weeks, config = {}, today, nowMs = Date.now() }) {
+  // Home/lab self-training teeth never count as requirements or grades.
+  const entries = (allEntries || []).filter((e) => !e.practice);
   const absenceLimit = config.absenceLimitPct ?? 25;
   const passMark = 6; // 60 % of 10
   const bySec = {};

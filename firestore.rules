@@ -71,10 +71,12 @@ service cloud.firestore {
     match /entries/{id} {
       allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
       allow create: if isStudent() && request.resource.data.uid == myUid()
-        && mySec() != null && request.resource.data.section == mySec()
+        && request.resource.data.section == mySec() && (mySec() != null || request.resource.data.get('practice', false) == true)
         && request.resource.data.status == 'draft' && request.resource.data.review == null && request.resource.data.ai == null;
       allow update: if (isStudent() && resource.data.uid == myUid() && resource.data.status in ['draft', 'redo']
           && request.resource.data.status in ['draft', 'redo', 'submitted']
+          && !(resource.data.get('practice', false) == true && request.resource.data.status == 'submitted')
+          && request.resource.data.get('practice', false) == resource.data.get('practice', false)
           && unchanged(['uid', 'code', 'section', 'review', 'ai', 'rubricId', 'week']))
         || (isTeacher() && covers(resource.data.section) && unchanged(['uid', 'code', 'section', 'ai']));
       allow delete: if isEditor() || (isStudent() && resource.data.uid == myUid() && resource.data.status == 'draft');
