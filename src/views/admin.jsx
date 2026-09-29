@@ -46,14 +46,16 @@ function ImportPast({ onClose }) {
       const r = parsePastAttendance(sheets, students, weekForDate);
       // Never import weeks that have not started yet (e.g. marks typed into the wrong column).
       const t = today(); const future = new Set();
-      r.records = r.records.filter((x) => { const w = PRACTICAL_WEEKS.find((p) => p.w === x.week); const ok = w && w.from <= t; if (!ok) future.add(`week ${x.week} · section ${x.section}`); return ok; });
+      const started = (x) => { const w = PRACTICAL_WEEKS.find((p) => p.w === x.week); const ok = w && w.from <= t; if (!ok) future.add(`week ${x.week} · section ${x.section}`); return ok; };
+      r.records = r.records.filter(started); r.teeth = (r.teeth || []).filter(started);
       r.future = [...future];
       setRes(r);
     } catch (x) { toast('Could not read: ' + x.message); }
     setBusy(''); e.target.value = '';
   };
   const groups = {};
-  for (const r of res?.records || []) { const k = `${r.section}|${r.week}`; const g = groups[k] = groups[k] || { section: r.section, week: r.week, present: 0, absent: 0 }; r.present ? g.present++ : g.absent++; }
+  for (const r of res?.records || []) { const k = `${r.section}|${r.week}`; const g = groups[k] = groups[k] || { section: r.section, week: r.week, present: 0, absent: 0, teeth: 0, withTeeth: 0 }; r.present ? g.present++ : g.absent++; }
+  for (const r of res?.teeth || []) { const k = `${r.section}|${r.week}`; const g = groups[k] = groups[k] || { section: r.section, week: r.week, present: 0, absent: 0, teeth: 0, withTeeth: 0 }; g.teeth += r.teeth; g.withTeeth++; }
   const list = Object.values(groups).sort((a, b) => a.week - b.week || a.section - b.section);
   const run = async () => {
     const S = store(); let n = 0, sess = 0; const u = me();
@@ -62,6 +64,7 @@ function ImportPast({ onClose }) {
       const w = PRACTICAL_WEEKS.find((x) => x.w === g.week); if (!w) continue;
       const dates = labDatesForWeek(w, g.section); if (!dates.length) continue;
       const recs = res.records.filter((r) => r.section === g.section && r.week === g.week);
+      if (!recs.length) continue; // teeth counts only — no attendance for this section-week
       const want = recs.find((r) => r.date)?.date;
       const i = Math.max(0, dates.findIndex((d) => d.date === want));
       const sid = `lab-w${w.w}-s${g.section}-${i + 1}`;
@@ -78,17 +81,22 @@ function ImportPast({ onClose }) {
         n++;
       }
     }
-    await audit('attendance.import', 'past', null, `${n} present records in ${sess} lab sessions`, 'Imported from paper registers / previous platform');
-    toast(`${n} attendance records imported into ${sess} lab sessions`); onClose();
+    let tw = 0;
+    for (const r of res.teeth || []) {
+      setBusy(`Teeth counts… ${++tw}/${res.teeth.length}`);
+      await S.set('paperwork', `w${r.week}_${r.st.uid}`, { uid: r.st.uid, code: r.st.code || '', name: r.st.name, section: r.section, week: r.week, teeth: r.teeth, source: 'paper register', by: u.uid, byName: u.name, at: Date.now() });
+    }
+    await audit('attendance.import', 'past', null, `${n} present records in ${sess} lab sessions; ${tw} weekly teeth counts`, 'Imported from paper registers / previous platform');
+    toast(`${n} attendance records and ${tw} teeth counts imported`); onClose();
   };
   return <Sheet onClose={onClose}><h2>Import past attendance</h2>
     <p class="muted">For labs held before the platform. Choose the faculty register (Excel with one tab per section and W1, W2… “Attend” columns: 1 = present, 0 = absent), sheets with “W1 Attend” columns, or exports from the previous platform (CSV). You can choose several files at once. Students are matched by student number, or by name within the section.</p>
-    <p class="faint">Each week's register is recorded in that section's first lab of the week, which is marked as held. Students marked 0 count as absent; blank cells are skipped. Existing records are never overwritten.</p>
+    <p class="faint">Each week's register is recorded in that section's first lab of the week, which is marked as held. Students marked 0 count as absent; blank cells are skipped. The “Req” column is imported as the number of teeth each student completed that week and counts toward requirements. Existing attendance records are never overwritten; teeth counts are updated to the latest register.</p>
     <label class="btn primary" style={{ alignSelf: 'flex-start' }}>Choose files<input id="past-files" type="file" accept=".xlsx,.xls,.csv" multiple hidden onChange={onFiles} /></label>
     {busy && <p class="faint">{busy}</p>}
     {res && <>
       <div class="state info"><b>{res.records.filter((r) => r.present).length} present · {res.records.filter((r) => !r.present).length} absent · {list.length} section-weeks</b>{res.future?.length > 0 && <p>Skipped because the week has not started yet: {res.future.join('; ')}. Check that these marks are in the right column.</p>}{res.unmatched.length > 0 && <p>{res.unmatched.length} row(s) not matched to the roster and skipped: {res.unmatched.slice(0, 8).join('; ')}{res.unmatched.length > 8 ? '…' : ''}</p>}</div>
-      <div class="tablewrap"><table><thead><tr><th>Week</th><th>Section</th><th>Present</th><th>Absent</th></tr></thead><tbody>{list.map((g) => <tr><td>{g.week}</td><td>{g.section}</td><td>{g.present}</td><td>{g.absent}</td></tr>)}</tbody></table></div>
+      <div class="tablewrap"><table><thead><tr><th>Week</th><th>Section</th><th>Present</th><th>Absent</th><th>Teeth done (Req)</th></tr></thead><tbody>{list.map((g) => <tr><td>{g.week}</td><td>{g.section}</td><td>{g.present}</td><td>{g.absent}</td><td>{g.withTeeth ? `${g.teeth} by ${g.withTeeth} students` : '—'}</td></tr>)}</tbody></table></div>
       <div class="row"><button class="btn primary" disabled={!list.length || !!busy} onClick={run}>Import</button><button class="btn" onClick={onClose}>Cancel</button></div></>}
   </Sheet>;
 }

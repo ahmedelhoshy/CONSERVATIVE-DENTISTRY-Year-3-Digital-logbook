@@ -159,16 +159,16 @@ async function doAssistant(u, data) {
 
 // ---------------- statistics & reports ----------------
 async function loadAll() {
-  const [students, sessions, attendance, entries, research, cfg] = await Promise.all([
+  const [students, sessions, attendance, entries, research, cfg, paperwork] = await Promise.all([
     db.collection('roster').where('role', '==', 'student').get(), db.collection('sessions').get(), db.collection('attendance').get(),
-    db.collection('entries').get(), db.collection('research').get(), db.doc('config/course').get(),
+    db.collection('entries').get(), db.collection('research').get(), db.doc('config/course').get(), db.collection('paperwork').get(),
   ]);
   const rs = {}; research.docs.forEach((d) => { rs[d.id] = d.data().score; });
   const ents = entries.docs.map((d) => { const e = { id: d.id, ...d.data() }; if (e.ai && rs[d.id] != null) e.ai = { ...e.ai, score: rs[d.id] }; return e; });
   return {
     students: students.docs.map((d) => ({ id: d.id, ...d.data(), uid: String(d.data().code) })),
     sessions: sessions.docs.map((d) => ({ id: d.id, ...d.data() })), attendance: attendance.docs.map((d) => ({ id: d.id, ...d.data() })),
-    entries: ents, config: cfg.exists ? cfg.data() : {},
+    entries: ents, config: cfg.exists ? cfg.data() : {}, paperwork: paperwork.docs.map((d) => d.data()),
   };
 }
 async function buildStats() {

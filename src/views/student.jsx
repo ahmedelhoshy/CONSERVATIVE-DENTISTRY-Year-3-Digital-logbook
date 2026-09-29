@@ -17,13 +17,14 @@ export function StudentHome({ go }) {
   const entries = useQuery('entries', [['uid', '==', u.uid]]);
   const mine = (sessions.rows || []).filter((s) => s.type === 'lecture' || s.section === u.section).slice(0, 4);
   const visibleAnn = (ann.rows || []).filter((a) => (a.audience === 'students' || a.audience === 'all' || (a.audience === 'sections' && (a.sections || []).includes(u.section))) && (!a.publishAt || a.publishAt <= Date.now() || isDemo()));
-  const ents = (entries.rows || []).filter((e) => e.status !== 'draft');
+  const ents = (entries.rows || []).filter((e) => e.status !== 'draft' && !e.practice);
   const reviewed = ents.filter((e) => e.review);
   const mean = reviewed.length ? (reviewed.reduce((a, e) => a + e.review.grade, 0) / reviewed.length).toFixed(1) : '–';
   const confirmed = (att.rows || []).filter((a) => a.status === 'confirmed');
   const due = PRACTICAL_WEEKS.filter((w) => w.to < t).reduce((a, w) => a + w.req, 0);
   const pastWeeks = new Set(PRACTICAL_WEEKS.filter((w) => w.to < t).map((w) => w.w));
-  const done = reviewed.filter((e) => e.review.status === 'Completed' && pastWeeks.has(e.week)).length;
+  const paper = useQuery('paperwork', [['uid', '==', u.uid]]);
+  const done = reviewed.filter((e) => e.review.status === 'Completed' && !e.practice && pastWeeks.has(e.week)).length + (paper.rows || []).filter((p) => pastWeeks.has(p.week)).reduce((a, p) => a + (Number(p.teeth) || 0), 0);
   const fresh = reviewed.filter((e) => e.review.at > Date.now() - 7 * 86400e3 || isDemo()).sort((a, b) => b.review.at - a.review.at).slice(0, 3);
   return <>
     <section class="hero"><span class="eyebrow">{fmtDate(t, { weekday: 'long', day: 'numeric', month: 'long' })} · {L(`Practical week ${wk.w}`, `الأسبوع العملي ${wk.w}`)}</span>

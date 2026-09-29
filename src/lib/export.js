@@ -97,15 +97,17 @@ export function parsePastAttendance(sheets, students, weekForDate) {
     const codeC = H.findIndex((c) => /student ?id|^id$|^code|الكود/.test(c));
     const nameC = H.findIndex((c) => /student ?name|^name|namear|الاسم/.test(c));
     const secC = H.findIndex((c) => /^section|السكشن|^group/.test(c));
-    const cols = {}; let lastRow = hi;
+    const cols = {}; const reqCols = {}; let lastRow = hi;
     const width = Math.max(...R.slice(hi, hi + 3).map((r) => r.length));
     let curW = null;
     for (let j = 0; j < width; j++) {
       for (let k = hi; k < Math.min(hi + 3, low.length); k++) {
         const c = low[k][j] || '';
         const m1 = /^w\s*(\d+)\b.*attend/.exec(c); if (m1) { cols[j] = Number(m1[1]); lastRow = Math.max(lastRow, k); }
+        const m3 = /^w\s*(\d+)\b.*(req|teeth)/.exec(c); if (m3) { reqCols[j] = Number(m3[1]); lastRow = Math.max(lastRow, k); }
         const m2 = /^w\s*(\d+)$/.exec(c); if (m2) curW = Number(m2[1]);
         if (c === 'attend' && curW) { cols[j] = curW; lastRow = Math.max(lastRow, k); }
+        if ((c === 'req' || c === 'teeth') && curW) { reqCols[j] = curW; lastRow = Math.max(lastRow, k); }
       }
     }
     if (!Object.keys(cols).length) continue;
@@ -115,14 +117,20 @@ export function parsePastAttendance(sheets, students, weekForDate) {
       if (!code && !name) continue;
       const sec = sheetSec || (secC >= 0 ? Number(r[secC]) || null : null);
       const vals = Object.entries(cols).map(([j, w]) => [w, val(r[j])]).filter(([, v]) => v !== null);
-      if (!vals.length) continue;
+      const teeth = Object.entries(reqCols).map(([j, w]) => [w, String(r[j]).trim() === '' ? null : Number(r[j])]).filter(([, v]) => v !== null && Number.isFinite(v) && v >= 0 && v <= 20);
+      if (!vals.length && !teeth.length) continue;
       const st = find(code, name, sec);
       if (!st) { unmatched.push(`${code} ${name}${sec ? ' (section ' + sec + ')' : ''}`.trim()); continue; }
       for (const [w, v] of vals) out.push({ st, section: st.section, week: w, present: v, source: sh.name });
+      for (const [w, n] of teeth) out.push({ st, section: st.section, week: w, teeth: n, source: sh.name });
     }
   }
-  // one value per student and week (a later "present" wins over "absent")
-  const m = {};
-  for (const o of out) { const k = o.st.uid + '|' + o.week; if (!m[k] || (o.present && !m[k].present)) m[k] = o; }
-  return { records: Object.values(m), unmatched: [...new Set(unmatched)] };
+  // one attendance value per student and week (a later "present" wins over "absent"); teeth counts kept separately
+  const m = {}, tm = {};
+  for (const o of out) {
+    const k = o.st.uid + '|' + o.week;
+    if (o.teeth != null) { tm[k] = o; continue; }
+    if (!m[k] || (o.present && !m[k].present)) m[k] = o;
+  }
+  return { records: Object.values(m), teeth: Object.values(tm), unmatched: [...new Set(unmatched)] };
 }

@@ -6,7 +6,7 @@ const r1 = (x) => (x == null ? null : Math.round(x * 10) / 10);
 const r2 = (x) => (x == null ? null : Math.round(x * 100) / 100);
 const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : null);
 
-export function computeStats({ students, sessions, attendance, entries: allEntries, weeks, config = {}, today, nowMs = Date.now() }) {
+export function computeStats({ students, sessions, attendance, entries: allEntries, paperwork = [], weeks, config = {}, today, nowMs = Date.now() }) {
   // Home/lab self-training teeth never count as requirements or grades.
   const entries = (allEntries || []).filter((e) => !e.practice);
   const absenceLimit = config.absenceLimitPct ?? 25;
@@ -44,6 +44,13 @@ export function computeStats({ students, sessions, attendance, entries: allEntri
   const weekTrend = {};
   for (const w of weeks) weekTrend[w.w] = { week: w.w, from: w.from, labExp: 0, labPres: 0, teeth: 0, reviewed: 0, grades: [] };
   for (const L of heldLabs) { const n = students.filter((s) => s.section === L.section).length; const p = students.filter((s) => s.section === L.section && att[s.uid]?.has(L.id)).length; if (weekTrend[L.week]) { weekTrend[L.week].labExp += n; weekTrend[L.week].labPres += p; } }
+
+  // Teeth recorded on paper registers count as completed requirements for weeks that have ended.
+  for (const p of paperwork || []) {
+    const x = stu[p.uid]; const n = Number(p.teeth) || 0;
+    if (weekTrend[p.week]) weekTrend[p.week].teeth += n;
+    if (x && weeks.find((w) => w.w === p.week && w.to < today)) x.done += n;
+  }
 
   let aiWithin1 = 0, aiN = 0, selfWithin1 = 0, selfN = 0;
   const overdueList = [];

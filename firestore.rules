@@ -130,6 +130,11 @@ service cloud.firestore {
       allow read: if known() && resource.data.email == em();
       allow update, delete: if false;
     }
+    // Teeth completed per student and week, from paper registers (before/alongside the platform).
+    match /paperwork/{id} {
+      allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
+      allow write: if isEditor();
+    }
     match /usage/{id} {
       allow read, write: if false;
     }
