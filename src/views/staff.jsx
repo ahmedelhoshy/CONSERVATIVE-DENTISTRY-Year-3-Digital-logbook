@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'preact/hooks';
 import QRCode from 'qrcode';
 import { me, store, today, openSession, closeSession, extendSession, rotateCode, sessionIsOpen, setAttendance, confirmAllRecorded, reviewEntry, rubricFor, isDemo, canEditCourse, currentWeek } from '../lib/logic.js';
-import { L, useQuery, useDoc, useNow, Pill, Band, Kpi, Sheet, Empty, Confirm, fmtDate, fmtTime, fmtDT, ago, toast, Bar } from '../lib/ui.jsx';
+import { L, useQuery, useDoc, useNow, Pill, Band, Kpi, Sheet, Empty, Confirm, fmtDate, fmtTime, fmtDT, ago, toast, Bar , labTitle } from '../lib/ui.jsx';
 import { exportXlsx } from '../lib/export.js';
 import { suggestGrade } from '../data/rubrics.js';
 import { TOOTH_STATUS, PRACTICAL_WEEKS } from '../data/course.js';
@@ -37,7 +37,7 @@ export function Today() {
 function SessionRow({ s, onOpen }) {
   const now = useNow(10000);
   const st = sessionIsOpen(s, now) ? <Pill kind="good">Open</Pill> : s.status === 'closed' ? <Pill>Closed</Pill> : <Pill kind="info">Scheduled</Pill>;
-  return <div class="item click" onClick={onOpen}><div class="grow"><b>{s.type === 'lecture' ? `Lecture ${s.lectureNo}` : `Lab · Section ${s.section}`}</b> <span class="faint">{fmtDate(s.date)} · {s.start}–{s.end}</span><div class="muted" style={{ fontSize: '.86rem' }}>{s.title}</div></div>{st}</div>;
+  return <div class="item click" onClick={onOpen}><div class="grow"><b>{s.type === 'lecture' ? `Lecture ${s.lectureNo}` : labTitle(s)}</b> <span class="faint">{fmtDate(s.date)} · {s.start}–{s.end}</span><div class="muted" style={{ fontSize: '.86rem' }}>{s.title}</div></div>{st}</div>;
 }
 
 export function SessionPanel({ id, onClose }) {
@@ -59,9 +59,9 @@ export function SessionPanel({ id, onClose }) {
   const shown = studs.filter((st) => (filter === 'all' || (st.rec ? st.rec.status : 'none') === filter) && (!search || (st.name + st.code).toLowerCase().includes(search.toLowerCase()))).sort((a, b) => String(a.code).localeCompare(String(b.code)));
   const canManage = u.role !== 'hod' && u.role !== 'vicedean';
   const left = s.closesAt ? Math.max(0, Math.round((s.closesAt - now) / 1000)) : 0;
-  const register = () => exportXlsx({ title: `Attendance register — ${s.type === 'lecture' ? 'Lecture ' + s.lectureNo : 'Lab section ' + s.section}`, range: `${s.date} ${s.start}–${s.end}`, filters: `Session ${s.id}`, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 34 }, { label: 'Section', key: 'section' }, { label: 'Status', get: (r) => (r.rec ? r.rec.status : 'no record') }, { label: 'Check-in time', get: (r) => (r.rec ? fmtDT(r.rec.at) : '') }, { label: 'Method', get: (r) => r.rec?.method || '' }, { label: 'Decided by', get: (r) => r.rec?.byName || '' }, { label: 'Reason', get: (r) => r.rec?.reason || '' }], rows: studs, definitions: {}, fileName: `register_${s.id}` });
+  const register = () => exportXlsx({ title: `Attendance register — ${s.type === 'lecture' ? 'Lecture ' + s.lectureNo : labTitle(s)}`, range: `${s.date} ${s.start}–${s.end}`, filters: `Session ${s.id}`, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 34 }, { label: 'Section', key: 'section' }, { label: 'Status', get: (r) => (r.rec ? r.rec.status : 'no record') }, { label: 'Check-in time', get: (r) => (r.rec ? fmtDT(r.rec.at) : '') }, { label: 'Method', get: (r) => r.rec?.method || '' }, { label: 'Decided by', get: (r) => r.rec?.byName || '' }, { label: 'Reason', get: (r) => r.rec?.reason || '' }], rows: studs, definitions: {}, fileName: `register_${s.id}` });
   return <Sheet onClose={onClose} label="Session">
-    <div class="row between"><div><span class="eyebrow">{fmtDate(s.date)} · {s.start}–{s.end}</span><h2>{s.type === 'lecture' ? `Lecture ${s.lectureNo}` : `Lab · Section ${s.section}`}</h2><p class="muted">{s.title}</p></div><button class="btn sm" onClick={onClose}>Close</button></div>
+    <div class="row between"><div><span class="eyebrow">{fmtDate(s.date)} · {s.start}–{s.end}</span><h2>{s.type === 'lecture' ? `Lecture ${s.lectureNo}` : labTitle(s)}</h2><p class="muted">{s.title}</p></div><button class="btn sm" onClick={onClose}>Close</button></div>
     {canManage && <div class="card flat">
       {isOpen ? <><div class="row between"><div><Pill kind="good">Attendance open</Pill> <span class="mono">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span> left</div></div>
         <div class="row"><button class="btn primary" onClick={() => setProj(true)}>Show code & QR</button><button class="btn" onClick={() => extendSession(s.id, 5)}>+5 min</button><button class="btn danger" onClick={() => closeSession(s.id)}>Close attendance</button></div></>
@@ -98,7 +98,7 @@ export function Projector({ session, onClose }) {
   const cyc = code ? Math.max(0, 30 - Math.floor((now - code.at) / 1000)) : 30;
   const left = s.closesAt ? Math.max(0, Math.round((s.closesAt - now) / 1000)) : 0;
   return <div class="projector" role="dialog" aria-label="Attendance code">
-    <div style={{ opacity: .8 }}>{session.type === 'lecture' ? `Lecture ${session.lectureNo} · ${session.title}` : `Lab · Section ${session.section}`}</div>
+    <div style={{ opacity: .8 }}>{session.type === 'lecture' ? `Lecture ${session.lectureNo} · ${session.title}` : labTitle(session)}</div>
     {open ? <>
       <div class="qr">{qr ? <img src={qr} alt="Attendance QR code" /> : null}</div>
       <div class="big">{code ? code.cur : '······'}</div>
@@ -219,7 +219,7 @@ export function StudentSheet({ s, onClose }) {
     <div class="row between"><div><span class="eyebrow">Section {s.section} · {s.status || ''}</span><h2>{s.name}</h2><p class="mono faint">{s.code}</p></div><button class="btn sm" onClick={onClose}>Close</button></div>
     <div class="seg" style={{ alignSelf: 'flex-start' }}>{[['work', 'Logbook'], ['att', 'Attendance'], ['msg', 'Messages']].map(([k, l]) => <button class={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
     {tab === 'work' && <div class="tablewrap"><table><thead><tr><th>Wk</th><th>Exercise</th><th>Tooth</th><th class="n">Self</th><th class="n">AI</th><th class="n">Official</th><th>Status</th></tr></thead><tbody>{(ents.rows || []).map((e) => <tr class="click" onClick={() => setRev(e.id)}><td class="n">{e.week}</td><td>{rubricFor(e)?.title || e.taskLabel}</td><td class="mono">#{e.tooth}</td><td class="n">{e.self?.grade ?? '–'}</td><td class="n">{e.ai?.score ?? '–'}</td><td class="n">{e.review?.grade ?? '–'}</td><td>{e.review?.status || e.status}</td></tr>)}</tbody></table></div>}
-    {tab === 'att' && <div class="list">{(att.rows || []).map((a) => <div class="item"><div class="grow">{a.type === 'lecture' ? 'Lecture' : 'Lab'} · {fmtDate(a.date)} {fmtTime(a.at)}{a.reason && <div class="faint">{a.reason}</div>}</div><Pill kind={{ confirmed: 'good', recorded: 'warn', rejected: 'bad' }[a.status]}>{a.status}</Pill></div>)}</div>}
+    {tab === 'att' && <div class="list">{(att.rows || []).map((a) => <div class="item"><div class="grow">{a.type === 'lecture' ? 'Lecture' : labTitle(a, false)} · {fmtDate(a.date)} {fmtTime(a.at)}{a.reason && <div class="faint">{a.reason}</div>}</div><Pill kind={{ confirmed: 'good', recorded: 'warn', rejected: 'bad' }[a.status]}>{a.status}</Pill></div>)}</div>}
     {tab === 'msg' && <Thread studentUid={s.uid} section={s.section} />}
     {rev && <ReviewSheet id={rev} onClose={() => setRev(null)} />}
   </Sheet>;

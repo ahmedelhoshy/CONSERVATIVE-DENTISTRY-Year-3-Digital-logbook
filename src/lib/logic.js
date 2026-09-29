@@ -216,3 +216,13 @@ export async function askAssistant(history) {
 }
 
 export function rubricFor(entry) { return rubricById[entry.rubricId] || null; }
+
+// ---------- lab roles ----------
+// Each section has two labs a week: Lab 1 = requirement lab (2 teeth graded); Lab 2 = practice, demonstrations,
+// open discussion and later the project. Attendance is taken and counted in both.
+export function labNo(s) {
+  if (!s) return null;
+  if (s.labNo) return s.labNo;
+  const m = /^lab-w\d+-s\d+-(\d+)$/.exec(s.id || s.sid || '');
+  return m ? Number(m[1]) : null;
+}

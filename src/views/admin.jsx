@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { me, store, today, audit, isDemo, currentWeek, compressImage } from '../lib/logic.js';
-import { L, useQuery, useDoc, Pill, Sheet, Empty, Confirm, fmtDate, fmtDT, toast } from '../lib/ui.jsx';
+import { L, useQuery, useDoc, Pill, Sheet, Empty, Confirm, fmtDate, fmtDT, toast , labTitle } from '../lib/ui.jsx';
 import { exportXlsx, readRosterFile, parseRoster, readAllSheets, parsePastAttendance } from '../lib/export.js';
 import { LECTURES, PRACTICAL_WEEKS, LAB_SLOTS, LAB_SLOT_NOTES, weekForDate } from '../data/course.js';
 import { SECTION_OF, PTYPE_OF, ATLAS_CATS, CAT_LECTURE } from '../lib/materials.js';
@@ -23,7 +23,7 @@ export function SessionsAdmin() {
       <button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => setAdding(true)}>+ Add session</button><button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => setGen(true)}>Generate term from timetable</button><button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => setPast(true)}>Import past attendance</button></div>
     <p class="faint">{w.topic} · {w.req} requirement(s){w.exam ? ' · practical exam week' : ''}</p>
     <div class="tablewrap"><table><thead><tr><th>Date</th><th>Time</th><th>Session</th><th>Status</th></tr></thead><tbody>
-      {rows.map((s) => <tr class="click" onClick={() => setOpen(s.id)}><td>{fmtDate(s.date)}</td><td class="mono">{s.start}–{s.end}</td><td>{s.type === 'lecture' ? `Lecture ${s.lectureNo} — ${s.title}` : `Lab · Section ${s.section}`}</td><td><Pill kind={s.status === 'open' ? 'good' : s.status === 'closed' ? '' : 'info'}>{s.status}</Pill></td></tr>)}
+      {rows.map((s) => <tr class="click" onClick={() => setOpen(s.id)}><td>{fmtDate(s.date)}</td><td class="mono">{s.start}–{s.end}</td><td>{s.type === 'lecture' ? `Lecture ${s.lectureNo} — ${s.title}` : labTitle(s)}</td><td><Pill kind={s.status === 'open' ? 'good' : s.status === 'closed' ? '' : 'info'}>{s.status}</Pill></td></tr>)}
     </tbody></table></div>
     {!rows.length && <Empty>No sessions in this week yet. Use “Generate term from timetable”.</Empty>}
     {LAB_SLOT_NOTES.map((n) => <p class="faint">⚠ {n}</p>)}
@@ -111,7 +111,7 @@ async function generateTerm() {
     const dates = labDatesForWeek(w, sec);
     for (let i = 0; i < dates.length; i++) {
       const id = `lab-w${w.w}-s${sec}-${i + 1}`;
-      if (!(await S.get('sessions', id))) { await S.set('sessions', id, { type: 'lab', section: sec, week: w.w, date: dates[i].date, start: dates[i].start, end: dates[i].end, title: w.topic, status: 'scheduled', req: w.req }); n++; }
+      if (!(await S.get('sessions', id))) { await S.set('sessions', id, { type: 'lab', section: sec, week: w.w, date: dates[i].date, start: dates[i].start, end: dates[i].end, title: i === 0 ? w.topic : 'Practice, demonstration and open discussion (no requirement)', labNo: i + 1, status: 'scheduled', req: i === 0 ? w.req : 0 }); n++; }
     }
   }
   await audit('sessions.generate', 'term-1', null, `${n} created`, 'Generated from curriculum and timetable');

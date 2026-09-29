@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'preact/hooks';
 import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage } from '../lib/logic.js';
-import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow } from '../lib/ui.jsx';
+import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow , labTitle } from '../lib/ui.jsx';
 import { PRACTICAL_WEEKS, LECTURES, PHOTO_GUIDE, PHOTO_GUIDE_AR, PHOTO_VIEWS, PREP_STAGES, stageCriteria, ORIENTATION_EXERCISES, COURSE } from '../data/course.js';
 import { rubricById, suggestGrade, RUBRICS } from '../data/rubrics.js';
 
@@ -37,7 +37,7 @@ export function StudentHome({ go }) {
     </div>
     <div class="grid2">
       <section class="card"><div class="row between"><h2>{L('Coming up', 'القادم')}</h2><button class="btn ghost" onClick={() => go('attend')}>{L('Attendance', 'الحضور')}</button></div>
-        <div class="list">{mine.length ? mine.map((s) => <div class="item"><div class="grow"><b>{s.type === 'lecture' ? L(`Lecture ${s.lectureNo}`, `محاضرة ${s.lectureNo}`) : L(`Lab · Section ${s.section}`, `لاب · سكشن ${s.section}`)}</b><div class="faint">{fmtDate(s.date)} · {s.start}–{s.end}{s.type === 'lecture' ? ` · ${COURSE.lectureSlot.place}` : ''}</div><div class="muted" style={{ fontSize: '.86rem' }}>{s.title}</div></div>{sessionIsOpen(s) && <Pill kind="good">{L('Open now', 'مفتوح الآن')}</Pill>}</div>) : <Empty>{L('No upcoming sessions.', 'لا توجد جلسات قادمة.')}</Empty>}</div></section>
+        <div class="list">{mine.length ? mine.map((s) => <div class="item"><div class="grow"><b>{s.type === 'lecture' ? L(`Lecture ${s.lectureNo}`, `محاضرة ${s.lectureNo}`) : labTitle(s)}</b><div class="faint">{fmtDate(s.date)} · {s.start}–{s.end}{s.type === 'lecture' ? ` · ${COURSE.lectureSlot.place}` : ''}</div><div class="muted" style={{ fontSize: '.86rem' }}>{s.title}</div></div>{sessionIsOpen(s) && <Pill kind="good">{L('Open now', 'مفتوح الآن')}</Pill>}</div>) : <Empty>{L('No upcoming sessions.', 'لا توجد جلسات قادمة.')}</Empty>}</div></section>
       <section class="card"><h2>{L('Announcements', 'الإعلانات')}</h2>
         <div class="list">{visibleAnn.length ? visibleAnn.slice(0, 4).map((a) => <details class="item" open={a.pinned}><summary>{a.pinned && <Pill kind="gold">{L('Pinned', 'مثبت')}</Pill>} {a.title}{a.imageUrl ? ' 🖼' : ''}</summary>{a.imageUrl && <a href={a.imageUrl} target="_blank" rel="noopener"><img src={a.imageUrl} alt={a.title} loading="lazy" style={{ display: 'block', maxWidth: '100%', maxHeight: 420, objectFit: 'contain', borderRadius: 12, marginTop: 8 }} /></a>}{a.body && <p style={{ whiteSpace: 'pre-wrap', marginTop: 6 }} dir="auto">{a.body}</p>}<p class="faint">{a.byName} · {fmtDate(a.publishAt, { day: 'numeric', month: 'short' })}</p></details>) : <Empty>{L('No announcements.', 'لا توجد إعلانات.')}</Empty>}</div></section>
     </div>
@@ -84,7 +84,7 @@ export function Attend() {
     </div>}
     <form class="card lead" onSubmit={submit}>
       <h2>{L('Check in', 'تسجيل الحضور')}</h2>
-      {sessions.length ? <label class="fld">{L('Session', 'الجلسة')}<select id="att-session" value={sid} onChange={(e) => setSid(e.target.value)}><option value="">{L('Choose the announced session', 'اختر الجلسة المعلنة')}</option>{sessions.map((s) => <option value={s.id}>{s.type === 'lecture' ? `Lecture ${s.lectureNo} — ${s.title}` : `Lab · Section ${s.section} · ${s.start}`}</option>)}</select></label>
+      {sessions.length ? <label class="fld">{L('Session', 'الجلسة')}<select id="att-session" value={sid} onChange={(e) => setSid(e.target.value)}><option value="">{L('Choose the announced session', 'اختر الجلسة المعلنة')}</option>{sessions.map((s) => <option value={s.id}>{s.type === 'lecture' ? `Lecture ${s.lectureNo} — ${s.title}` : `${labTitle(s)} · ${s.start}`}</option>)}</select></label>
         : <div class="state info"><b>{L('No session is open right now', 'لا توجد جلسة مفتوحة الآن')}</b><p>{L('Attendance opens only when the lecturer or demonstrator starts it (15-minute window). Opening this page alone does not record attendance.', 'يفتح الحضور فقط عندما يبدأه المحاضر أو المعيد (١٥ دقيقة). فتح الصفحة وحده لا يسجل الحضور.')}</p></div>}
       <label class="fld">{L('Student number', 'الرقم الجامعي')}<input id="att-code-student" value={u.code} disabled class="mono" /></label>
       <label class="fld">{L('6-digit code shown now', 'الكود المعروض الآن (٦ أرقام)')}<input id="att-code" class="codebox" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" value={code} onInput={(e) => setCode(e.target.value.replace(/\D/g, ''))} /></label>
@@ -92,7 +92,7 @@ export function Attend() {
       <p class="faint">{L("Never enter another student's number or share the code. The course assistant cannot record attendance.", 'لا تُدخل رقم طالب آخر ولا تشارك الكود. المساعد التعليمي لا يسجل الحضور.')}</p>
     </form>
     <section class="card"><h2>{L('My attendance', 'سجل حضوري')}</h2>
-      <div class="list">{(hist.rows || []).length ? hist.rows.map((a) => { const [t, k] = attLabel(a.status); return <div class="item"><div class="grow"><b>{a.type === 'lecture' ? L('Lecture', 'محاضرة') : L('Lab', 'لاب')}</b> <span class="faint">{fmtDate(a.date)} · {fmtTime(a.at)}</span>{a.reason && <div class="faint">{a.reason}</div>}</div><Pill kind={a._pending ? 'warn' : k}>{a._pending ? L('Pending', 'قيد الإرسال') : t}</Pill></div>; }) : <Empty>{L('No attendance yet.', 'لا يوجد حضور بعد.')}</Empty>}</div></section>
+      <div class="list">{(hist.rows || []).length ? hist.rows.map((a) => { const [t, k] = attLabel(a.status); return <div class="item"><div class="grow"><b>{a.type === 'lecture' ? L('Lecture', 'محاضرة') : labTitle(a, false)}</b> <span class="faint">{fmtDate(a.date)} · {fmtTime(a.at)}</span>{a.reason && <div class="faint">{a.reason}</div>}</div><Pill kind={a._pending ? 'warn' : k}>{a._pending ? L('Pending', 'قيد الإرسال') : t}</Pill></div>; }) : <Empty>{L('No attendance yet.', 'لا يوجد حضور بعد.')}</Empty>}</div></section>
   </>;
 }
 
