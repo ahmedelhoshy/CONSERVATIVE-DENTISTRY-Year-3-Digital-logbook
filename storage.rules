@@ -20,6 +20,13 @@ service firebase.storage {
         && request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
       allow delete: if known() && roster().role in ['director', 'admin'];
     }
+    // Pictures attached to announcements (Course Director / administrators).
+    match /announcements/{file} {
+      allow read: if known();
+      allow create, update: if known() && roster().role in ['director', 'admin']
+        && request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*');
+      allow delete: if known() && roster().role in ['director', 'admin'];
+    }
     match /{all=**} { allow read, write: if false; }
   }
 }

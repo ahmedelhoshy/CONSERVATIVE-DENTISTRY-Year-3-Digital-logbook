@@ -183,3 +183,7 @@ details > summary { cursor: pointer; font-weight: 600; }
 @media print { .topbar, .staffnav, .tabbar, .demo-bar, .noprint { display: none !important; } main { padding: 0; } .card { break-inside: avoid; } }
 
 @media (max-width: 560px) { .demo-bar .demo-note { display: none; } .demo-bar { gap: 6px; } .demo-bar .btn.sm { min-height: 28px; padding: 2px 8px; } }
+
+/* Announcements and other expandable list items: stack the content under the title */
+details.item{display:block}
+details.item > summary{cursor:pointer}

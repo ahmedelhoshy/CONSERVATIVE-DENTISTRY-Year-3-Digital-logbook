@@ -260,18 +260,35 @@ export function Announcements() {
   return <>
     <section class="hero"><h1>Announcements</h1><p class="muted">Posted announcements appear on students' home screen immediately (or at the scheduled time).</p></section>
     <button class="btn primary" style={{ alignSelf: 'flex-start' }} onClick={() => setEdit({})}>+ New announcement</button>
-    <section class="card"><div class="list">{(q.rows || []).map((a) => <div class="item"><div class="grow"><b dir="auto">{a.title}</b> {a.pinned && <Pill kind="gold">Pinned</Pill>} {a.publishAt > Date.now() && !isDemo() && <Pill kind="info">Scheduled</Pill>}<div class="faint">{{ students: 'All students', staff: 'Staff only', all: 'Everyone', sections: `Sections ${(a.sections || []).join(', ')}` }[a.audience]} · {fmtDT(a.publishAt)} · {a.byName}</div><p class="muted" style={{ fontSize: '.88rem', whiteSpace: 'pre-wrap' }} dir="auto">{a.body}</p></div><button class="btn sm" onClick={() => setEdit(a)}>Edit</button></div>)}</div></section>
+    <section class="card"><div class="list">{(q.rows || []).map((a) => <div class="item"><div class="grow"><b dir="auto">{a.title}</b> {a.pinned && <Pill kind="gold">Pinned</Pill>} {a.imageUrl && <Pill>Picture</Pill>} {a.publishAt > Date.now() && !isDemo() && <Pill kind="info">Scheduled</Pill>}<div class="faint">{{ students: 'All students', staff: 'Staff only', all: 'Everyone', sections: `Sections ${(a.sections || []).join(', ')}` }[a.audience]} · {fmtDT(a.publishAt)} · {a.byName}</div><p class="muted" style={{ fontSize: '.88rem', whiteSpace: 'pre-wrap' }} dir="auto">{a.body}</p></div><button class="btn sm" onClick={() => setEdit(a)}>Edit</button></div>)}</div></section>
     {edit && <AnnSheet a={edit} onClose={() => setEdit(null)} />}
   </>;
 }
 function AnnSheet({ a, onClose }) {
   const [f, setF] = useState({ title: '', body: '', audience: 'students', sections: [], pinned: false, when: '', ...a });
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const [pic, setPic] = useState(null); // newly chosen picture (File)
+  const [busy, setBusy] = useState(false);
+  const preview = pic ? URL.createObjectURL(pic) : f.imageUrl;
   const save = async () => {
-    const publishAt = f.when ? new Date(f.when).getTime() : a.publishAt || Date.now();
-    const data = { title: f.title.trim(), body: f.body.trim(), audience: f.audience, sections: f.audience === 'sections' ? f.sections.map(Number) : [], pinned: !!f.pinned, publishAt, by: me().uid, byName: me().name };
-    if (a.id) await store().update('announcements', a.id, data); else await store().add('announcements', data);
-    toast('Announcement saved'); onClose();
+    setBusy(true);
+    try {
+      const publishAt = f.when ? new Date(f.when).getTime() : a.publishAt || Date.now();
+      const data = { title: f.title.trim(), body: f.body.trim(), audience: f.audience, sections: f.audience === 'sections' ? f.sections.map(Number) : [], pinned: !!f.pinned, publishAt, by: me().uid, byName: me().name, imageUrl: f.imageUrl || null, imagePath: f.imagePath || null };
+      if (pic) {
+        if (/heic|heif/i.test(pic.type) || /\.hei[cf]$/i.test(pic.name)) throw new Error('iPhone HEIC picture — save it as JPG first');
+        let blob; try { blob = (await compressImage(pic, 1600, 0.85)).blob; } catch (e) { throw new Error('this browser cannot open the picture — save it as JPG or PNG'); }
+        const path = `announcements/${Date.now()}.jpg`;
+        data.imageUrl = await store().putFile(path, blob); data.imagePath = path;
+      }
+      if (a.id) await store().update('announcements', a.id, data); else await store().add('announcements', data);
+      toast('Announcement saved'); onClose();
+    } catch (e) {
+      const code = String(e.code || '');
+      toast('Not saved: ' + (code.includes('unauthorized') ? 'storage refused the picture (permission)' : e.message));
+      console.error(e);
+    }
+    setBusy(false);
   };
   return <Sheet onClose={onClose}><h2>{a.id ? 'Edit announcement' : 'New announcement'}</h2>
     <label class="fld">Title<input id="an-title" value={f.title} onInput={set('title')} dir="auto" /></label>
@@ -279,8 +296,12 @@ function AnnSheet({ a, onClose }) {
     <div class="grid2"><label class="fld">Audience<select id="an-aud" value={f.audience} onChange={set('audience')}><option value="students">All students</option><option value="sections">Selected sections</option><option value="staff">Staff only</option><option value="all">Everyone</option></select></label>
       <label class="fld">Publish at (empty = now)<input id="an-when" type="datetime-local" value={f.when} onInput={set('when')} /></label></div>
     {f.audience === 'sections' && <div class="row">{Array.from({ length: 18 }, (_, i) => i + 1).map((s) => <label class="pill" style={{ cursor: 'pointer' }}><input type="checkbox" checked={f.sections.includes(s)} onChange={(e) => setF({ ...f, sections: e.target.checked ? [...f.sections, s] : f.sections.filter((x) => x !== s) })} /> S{s}</label>)}</div>}
+    <div class="stack"><span class="eyebrow">Picture (optional)</span>
+      {preview && <img src={preview} alt="" style={{ maxWidth: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 12, alignSelf: 'flex-start' }} />}
+      <div class="row"><label class="btn">{preview ? 'Change picture' : 'Add picture'}<input id="an-pic" type="file" accept="image/*" hidden onChange={(e) => { if (e.target.files[0]) setPic(e.target.files[0]); e.target.value = ''; }} /></label>
+        {preview && <button class="btn" onClick={() => { setPic(null); setF({ ...f, imageUrl: null, imagePath: null }); }}>Remove picture</button>}</div></div>
     <label class="row"><input id="an-pin" type="checkbox" checked={f.pinned} onChange={(e) => setF({ ...f, pinned: e.target.checked })} /> Pin to the top</label>
-    <div class="row"><button class="btn primary" disabled={!f.title.trim() || !f.body.trim()} onClick={save}>Publish</button><button class="btn" onClick={onClose}>Cancel</button>{a.id && <button class="btn danger" onClick={async () => { await store().del('announcements', a.id); onClose(); }}>Delete</button>}</div></Sheet>;
+    <div class="row"><button class="btn primary" disabled={busy || !f.title.trim() || !(f.body.trim() || preview)} onClick={save}>{busy ? 'Publishing…' : 'Publish'}</button><button class="btn" onClick={onClose}>Cancel</button>{a.id && <button class="btn danger" onClick={async () => { await store().del('announcements', a.id); onClose(); }}>Delete</button>}</div></Sheet>;
 }
 
 // ---------------- People ----------------
