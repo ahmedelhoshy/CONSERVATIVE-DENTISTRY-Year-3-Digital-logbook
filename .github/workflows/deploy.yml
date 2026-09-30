@@ -48,7 +48,7 @@ jobs:
           OWNER_EMAIL: ${{ vars.OWNER_EMAIL }}
           OWNER_NAME: ${{ vars.OWNER_NAME }}
         run: cd functions && node bootstrap.mjs
-      - name: Post department announcements (guides)
+      - name: Post department announcements and atlas pictures
         continue-on-error: true
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json

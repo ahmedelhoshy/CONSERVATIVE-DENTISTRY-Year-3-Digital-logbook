@@ -35,3 +35,18 @@ for (const s of SEEDS) {
   console.log('Announcement posted:', s.title);
 }
 console.log('Announcements up to date');
+
+// Reference pictures added to the Atlas (Learning resources → Atlas), posted once each.
+const PICS = [
+  { id: 'atlas-classI-occlusal-90', category: 'Class I', title: 'Class I — occlusal photo at 90° (reference angulation): buccal side down, ~15 cm, 2× zoom, tooth fills half the screen · صورة أكلوزال ٩٠° مرجعية', url: site + '/guides/ClassI_occlusal_90.jpg', order: 1 },
+  { id: 'atlas-classI-probe', category: 'Class I', title: 'Class I — periodontal probe on the pulpal floor, parallel to the long axis. For the depth reading, photograph from the side at the level of the occlusal surface · البروب على الأرضية وموازي لمحور السن', url: site + '/guides/ClassI_probe.jpg', order: 2 },
+];
+const pmark = db.doc('config/seededMaterials');
+const pdone = new Set((await pmark.get()).data()?.ids || []);
+for (const p of PICS) {
+  if (pdone.has(p.id)) continue;
+  const { id, ...m } = p;
+  await db.doc(`materials/${id}`).set({ kind: 'atlas', lectureNo: null, path: null, ...m, updatedAt: Date.now(), updatedBy: byName });
+  await pmark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+  console.log('Atlas picture added:', p.id);
+}
