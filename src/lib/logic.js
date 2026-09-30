@@ -36,25 +36,43 @@ export async function audit(action, target, before, after, reason) {
 // ---------- sessions & attendance ----------
 export function sessionIsOpen(s, t = nowMs()) { return s && s.status === 'open' && s.closesAt && t < s.closesAt; }
 
+// Cairo wall-clock time -> epoch ms (handles Egypt's summer time).
+export function cairoMs(date, time) {
+  const guess = Date.parse(`${date}T${time || '00:00'}:00Z`);
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Cairo', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(guess)).map((x) => [x.type, x.value]));
+  const asCairo = Date.parse(`${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:00Z`);
+  return guess - (asCairo - guess);
+}
+// Check-ins saved offline are accepted until 30 minutes after the session ends (or after attendance closes, if later),
+// so a student whose phone had no signal in the lab is recorded as soon as it reconnects.
+const SYNC_GRACE = 30 * 60e3;
+function syncUntil(s, closesAt) {
+  const end = s && s.date && s.end ? cairoMs(s.date, s.end) : 0;
+  return Math.max(closesAt, end) + SYNC_GRACE;
+}
 export async function openSession(sid, minutes = COURSE.attendanceWindowMin) {
-  const t = nowMs();
-  await S.update('sessions', sid, { status: 'open', openedAt: t, closesAt: t + minutes * 60e3, openedBy: ME.uid, openedByName: ME.name });
-  await rotateCode(sid);
+  const t = nowMs(); const s = await S.get('sessions', sid);
+  const closesAt = t + minutes * 60e3;
+  await S.update('sessions', sid, { status: 'open', openedAt: t, closesAt, syncUntil: syncUntil(s, closesAt), openedBy: ME.uid, openedByName: ME.name });
+  await rotateCode(sid, true);
 }
 export async function extendSession(sid, minutes = 5) {
   const s = await S.get('sessions', sid);
-  await S.update('sessions', sid, { status: 'open', closesAt: Math.max(nowMs(), s.closesAt || 0) + minutes * 60e3 });
+  const closesAt = Math.max(nowMs(), s.closesAt || 0) + minutes * 60e3;
+  await S.update('sessions', sid, { status: 'open', closesAt, syncUntil: Math.max(s.syncUntil || 0, syncUntil(s, closesAt)) });
 }
 export async function closeSession(sid) { await S.update('sessions', sid, { status: 'closed', closesAt: nowMs() }); }
 
 const six = () => String(Math.floor(100000 + Math.random() * 900000));
-export async function rotateCode(sid) {
-  const prev = await S.get('codes', sid);
+export async function rotateCode(sid, fresh = false) {
+  const prev = fresh ? null : await S.get('codes', sid);
   const t = nowMs();
   // Keep the codes of the last 5 minutes so a check-in saved on a phone during a Wi-Fi drop is still accepted when it syncs.
   const hist = ((prev && prev.hist) || []).filter((x) => t - x.at < 5 * 60e3);
   const cur = six(); hist.push({ c: cur, at: t });
-  const code = { cur, prev: prev ? prev.cur : null, at: t, hist, recent: hist.map((x) => x.c) };
+  // 'all' = every code shown during this opening, so check-ins that sync late (offline) still match.
+  const all = [...((prev && prev.all) || []), cur].slice(-300);
+  const code = { cur, prev: prev ? prev.cur : null, at: t, hist, recent: hist.map((x) => x.c), all };
   await S.set('codes', sid, code);
   return code;
 }
@@ -75,7 +93,7 @@ export async function checkIn(session, code) {
     const c = await S.get('codes', session.id);
     if (!sessionIsOpen(session)) throw fail('closed');
     if (session.type === 'lab' && session.section !== ME.section) throw fail('wrong-section');
-    if (!c || (rec.submittedCode !== c.cur && rec.submittedCode !== c.prev && !(c.recent || []).includes(rec.submittedCode))) throw fail('bad-code');
+    if (!c || (rec.submittedCode !== c.cur && rec.submittedCode !== c.prev && !(c.all || c.recent || []).includes(rec.submittedCode))) throw fail('bad-code');
     await S.create('attendance', id, rec);
     return { state: 'recorded' };
   }
