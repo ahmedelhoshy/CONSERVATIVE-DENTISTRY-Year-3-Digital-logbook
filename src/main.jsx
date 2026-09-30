@@ -84,7 +84,7 @@ function Shell({ onSignOut, onSwitch }) {
   const student = u.role === 'student';
   return <div class="app">
     <header class="topbar">
-      <div class="crest" aria-hidden="true">CU</div>
+      <img class="crest" src="/cu-logo.png" alt="Faculty of Dentistry, Cairo University" />
       <div class="brand"><b>{L('Conservative Dentistry · Year 3', 'العلاج التحفظي · الفرقة الثالثة')}</b><span>{u.name} · {student ? `${L('Section', 'سكشن')} ${u.section}` : ROLE_LABEL[u.role]}</span></div>
       <div class="spacer" />
       <button class="tb-btn" onClick={() => setLang(lang() === 'ar' ? 'en' : 'ar')}>{lang() === 'ar' ? 'English' : 'عربي'}</button>

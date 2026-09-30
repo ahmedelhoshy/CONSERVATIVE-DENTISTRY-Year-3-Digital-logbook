@@ -17,7 +17,7 @@ export function Login({ state, setState }) {
     setBusy(false);
   };
   return <main><div class="login stack">
-    <div class="row between"><div class="crest">CU</div><button class="btn sm" onClick={() => setLang(lang() === 'ar' ? 'en' : 'ar')}>{lang() === 'ar' ? 'English' : 'عربي'}</button></div>
+    <div class="row between"><img class="crest lg" src="/cu-logo.png" alt="Faculty of Dentistry, Cairo University" /><button class="btn sm" onClick={() => setLang(lang() === 'ar' ? 'en' : 'ar')}>{lang() === 'ar' ? 'English' : 'عربي'}</button></div>
     <div class="hero"><span class="eyebrow">{L('Faculty of Dentistry · Cairo University', 'كلية طب الأسنان · جامعة القاهرة')}</span>
       <h1>{L('Conservative Dentistry Logbook', 'لوجبوك العلاج التحفظي')}</h1>
       <p class="muted">{L('Year 3 preclinical · sign in with your university email.', 'الفرقة الثالثة · سجّل الدخول ببريدك الجامعي.')}</p></div>
