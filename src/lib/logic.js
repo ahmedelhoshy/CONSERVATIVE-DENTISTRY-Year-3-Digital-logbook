@@ -229,7 +229,7 @@ export async function askAssistant(history) {
   const q = history[history.length - 1].text.toLowerCase();
   await new Promise((r) => setTimeout(r, 700));
   let a = 'In the live platform I answer from the approved course material (schedule, rubrics, instruments, Prep Lens steps and the platform guide). I cannot record attendance, give grades or approve requirements — your demonstrator decides assessments.';
-  if (/attend|حضور/.test(q)) a = 'Attendance: be physically present, open Attendance, scan the QR on the board (or type the 6-digit code) during the open window. It counts only after staff confirmation. I cannot record attendance for you.';
+  if (/attend|حضور/.test(q)) a = 'Attendance: be physically present, open Attendance, tap Scan the QR code, then Confirm attendance during the open window (type the code only if the camera fails). It counts only after staff confirmation. I cannot record attendance for you.';
   else if (/bur|tool|instrument|أدوات|تحضر/.test(q)) a = 'For the next lab bring: ruler, white paper and pen, low-speed handpiece with contra-angle, round bur #1, bur 330, bur 245 and an acrylic lower first molar.';
   else if (/photo|lens|صورة/.test(q)) a = 'Prep Lens photo: clean the typodont, place a periodontal probe beside the tooth, hold the phone ~15 cm away at 90° to the occlusal surface, keep it sharp and shadow-free.';
   else if (/class ii|class 2/.test(q)) a = 'Class II composite (9–10 band): follow central/B-L grooves precisely, width ≤ ¼ intercuspal distance, depth 2 mm from the external wall, gingival floor in enamel above the CEJ, all line angles rounded.';

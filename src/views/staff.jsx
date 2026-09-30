@@ -103,7 +103,7 @@ export function Projector({ session, onClose }) {
       <div class="qr">{qr ? <img src={qr} alt="Attendance QR code" /> : null}</div>
       <div class="big">{code ? code.cur : '······'}</div>
       <div class="timer" aria-hidden="true"><i style={{ width: (cyc / 30) * 100 + '%' }} /></div>
-      <div>Scan with the phone camera, or open the logbook → Attendance and type the code. New code in {cyc}s · window closes in {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</div>
+      <div>Scan with the phone camera, or in the logbook: Attendance → Scan the QR code, then tap Confirm attendance. New code in {cyc}s · window closes in {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</div>
     </> : <div class="big" style={{ fontSize: '2.4rem', letterSpacing: 0 }}>Attendance closed</div>}
     <div class="row" style={{ justifyContent: 'center' }}><button class="btn" onClick={() => extendSession(session.id, 5)}>+5 min</button><button class="btn" onClick={onClose}>Back to list</button></div>
   </div>;
