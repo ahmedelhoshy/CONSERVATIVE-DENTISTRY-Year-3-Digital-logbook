@@ -92,15 +92,15 @@ export const LAB_STEPS = [
 ];
 
 export const PHOTO_GUIDE = [
-  'Clean and dry the typodont; light directly into the cavity (lab light or phone ring light) — no shadows, no glare on the plastic.',
-  'Shot 1 — Occlusal: phone about 15 cm away, exactly 90° to the occlusal surface, tooth centred (outline, extensions, width, margins).',
+  'Clean the tooth first (blow off debris, no pencil or bur marks) and dry it; light directly into the cavity (lab light or phone ring light) — no shadows, no glare on the plastic.',
+  'Shot 1 — Occlusal: exactly 90° to the occlusal surface, buccal side at the bottom of the photo. Hold the phone about 15 cm away and use 2× zoom so the tooth fills about half the width of the screen; tap the tooth to focus (outline, extensions, width, margins).',
   'Shot 2 — Angled 45°: tilt from the mesial or distal side so the walls are visible (wall inclination/convergence, line angles, smoothness).',
   'Shot 3 — Probe: graduated periodontal probe standing in the deepest part of the floor, markings readable (depth in mm).',
   'Keep every photo sharp; retake if the check says dark or blurred.',
 ];
 export const PHOTO_GUIDE_AR = [
-  'نظّف وجفّف السن؛ وجّه الإضاءة داخل الكافيتي (لمبة اللاب أو رينج لايت) بدون ظلال أو لمعان.',
-  'الصورة ١ — أكلوزال: الموبايل على بعد ١٥ سم تقريبًا وبزاوية ٩٠° تمامًا على السطح الماضغ والسن في المنتصف (الـ outline والامتدادات والعرض والحواف).',
+  'نظّف السن أولًا (انفخ البُرادة، وامسح علامات القلم أو البيرز) وجفّفه؛ وجّه الإضاءة داخل الكافيتي (لمبة اللاب أو رينج لايت) بدون ظلال أو لمعان.',
+  'الصورة ١ — أكلوزال: بزاوية ٩٠° تمامًا على السطح الماضغ والناحية البكالية لأسفل الصورة. الموبايل على بعد ١٥ سم تقريبًا مع زووم 2× بحيث يملأ السن نصف عرض الشاشة تقريبًا، واضغط على السن ليضبط الفوكس (الـ outline والامتدادات والعرض والحواف).',
   'الصورة ٢ — زاوية ٤٥°: أمِل الموبايل من الناحية الميزيال أو الديستال لتظهر الجدران (ميل/تقارب الجدران، الـ line angles، النعومة).',
   'الصورة ٣ — البروب: البروب المدرّج واقف في أعمق نقطة في الأرضية والعلامات واضحة (العمق بالملّيمتر).',
   'كل صورة يجب أن تكون واضحة؛ أعد التصوير إذا ظهر تنبيه "مظلمة" أو "غير واضحة".',
