@@ -95,7 +95,7 @@ function ImportPast({ onClose }) {
       const prev = await S.get('entries', id);
       const review = { grade: r.grade, status: r.grade >= 6 ? 'Completed' : 'Incomplete', feedback: '', picks: null, by: u.uid, byName: `${u.name} (paper sheet)`, at: Date.now(), source: 'paper' };
       if (prev) { if (prev.review?.grade !== r.grade) await S.update('entries', id, { review, updatedAt: Date.now() }); continue; }
-      await S.set('entries', id, { uid: r.st.uid, code: r.st.code || '', name: r.st.name, section: r.section, week: r.week, rubricId: task?.rubric || null, taskLabel: task ? '' : (w?.topic || ''), tooth: task?.teeth?.[r.req - 1] || task?.teeth?.[0] || '', date: w?.from || today(), status: 'reviewed', self: null, ai: null, review, photos: [], createdAt: Date.now(), updatedAt: Date.now(), history: [], practice: false, stage: 'full', source: 'paper', reqNo: r.req });
+      await S.set('entries', id, { uid: r.st.uid, code: r.st.code || '', name: r.st.name, section: r.section, week: r.week, rubricId: task?.rubric || null, taskLabel: task ? '' : (w?.topic || ''), tooth: task?.teeth?.[r.req - 1] || task?.teeth?.[0] || '', date: r.date || w?.from || today(), status: 'reviewed', self: null, ai: null, review, photos: [], createdAt: Date.now(), updatedAt: Date.now(), history: [], practice: false, stage: 'full', source: 'paper', reqNo: r.req });
     }
     await audit('attendance.import', 'past', null, `${n} present records in ${sess} lab sessions; ${tw} weekly teeth counts; ${gn} graded teeth`, 'Imported from paper registers / grade sheets');
     toast(`${n} attendance records, ${tw} teeth counts and ${gn} grades imported`); onClose();
