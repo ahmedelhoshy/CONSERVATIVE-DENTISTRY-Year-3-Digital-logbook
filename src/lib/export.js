@@ -119,7 +119,9 @@ export function parsePastAttendance(sheets, students, weekForDate) {
       const sec = sheetSec || (secC >= 0 ? Number(r[secC]) || null : null);
       const vals = Object.entries(cols).map(([j, w]) => [w, val(r[j])]).filter(([, v]) => v !== null);
       const teeth = Object.entries(reqCols).map(([j, w]) => [w, String(r[j]).trim() === '' ? null : Number(r[j])]).filter(([, v]) => v !== null && Number.isFinite(v) && v >= 0 && v <= 20);
-      const grades = Object.entries(gradeCols).map(([j, k]) => [k, String(r[j]).trim() === '' ? null : Number(String(r[j]).replace(',', '.'))]).filter(([, v]) => v !== null && Number.isFinite(v) && v >= 0 && v <= 10);
+      let grades = Object.entries(gradeCols).map(([j, k]) => [k, String(r[j]).trim() === '' ? null : Number(String(r[j]).replace(',', '.'))]).filter(([, v]) => v !== null && Number.isFinite(v) && v >= 0 && v <= 10);
+      // An absent student has no teeth: a 0 typed in the grade cells of an absent row is not a grade.
+      if (vals.length && vals.every(([, v]) => v === false)) grades = [];
       if (!vals.length && !teeth.length && !grades.length) continue;
       const st = find(code, name, sec);
       if (!st) { unmatched.push(`${code} ${name}${sec ? ' (section ' + sec + ')' : ''}`.trim()); continue; }
