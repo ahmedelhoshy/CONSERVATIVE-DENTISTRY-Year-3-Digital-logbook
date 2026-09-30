@@ -163,7 +163,7 @@ function PrepLensValidation() {
       const S = store();
       const [entries, research] = await Promise.all([S.query('entries', []), S.query('research', []).catch(() => [])]);
       const rs = {}; for (const r of research) rs[r.entryId || r.id] = r;
-      const lab = entries.filter((e) => !e.practice && e.review && typeof e.review.grade === 'number');
+      const lab = entries.filter((e) => !e.practice && e.source !== 'paper' && e.review && typeof e.review.grade === 'number');
       const aiScore = (e) => (rs[e.id]?.score ?? e.ai?.score ?? null);
       const aiPairs = lab.filter((e) => aiScore(e) != null).map((e) => [aiScore(e), e.review.grade]);
       const selfPairs = lab.filter((e) => typeof e.self?.grade === 'number').map((e) => [e.self.grade, e.review.grade]);

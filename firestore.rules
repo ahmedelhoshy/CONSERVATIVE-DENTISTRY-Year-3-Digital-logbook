@@ -70,7 +70,8 @@ service cloud.firestore {
 
     match /entries/{id} {
       allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
-      allow create: if isStudent() && request.resource.data.uid == myUid()
+      allow create: if (isEditor() && request.resource.data.get('source', '') == 'paper')
+        || isStudent() && request.resource.data.uid == myUid()
         && request.resource.data.section == mySec() && (mySec() != null || request.resource.data.get('practice', false) == true)
         && request.resource.data.status == 'draft' && request.resource.data.review == null && request.resource.data.ai == null;
       allow update: if (isStudent() && resource.data.uid == myUid() && resource.data.status in ['draft', 'redo']

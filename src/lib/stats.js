@@ -46,10 +46,14 @@ export function computeStats({ students, sessions, attendance, entries: allEntri
   for (const L of heldLabs) { const n = students.filter((s) => s.section === L.section).length; const p = students.filter((s) => s.section === L.section && att[s.uid]?.has(L.id)).length; if (weekTrend[L.week]) { weekTrend[L.week].labExp += n; weekTrend[L.week].labPres += p; } }
 
   // Teeth recorded on paper registers count as completed requirements for weeks that have ended.
+  // (A student-week with graded teeth already counts those teeth; the register count only adds the difference.)
+  const gradedWk = {};
+  for (const e of entries) if (e.status !== 'draft') { const k = e.uid + '|' + e.week; gradedWk[k] = gradedWk[k] || { sub: 0, done: 0 }; gradedWk[k].sub++; if (e.review?.status === 'Completed') gradedWk[k].done++; }
   for (const p of paperwork || []) {
-    const x = stu[p.uid]; const n = Number(p.teeth) || 0;
-    if (weekTrend[p.week]) weekTrend[p.week].teeth += n;
-    if (x && weeks.find((w) => w.w === p.week && w.to < today)) x.done += n;
+    const x = stu[p.uid]; const g = gradedWk[p.uid + '|' + p.week] || { sub: 0, done: 0 };
+    const extra = Math.max(0, (Number(p.teeth) || 0) - g.sub), extraDone = Math.max(0, (Number(p.teeth) || 0) - Math.max(g.done, g.sub));
+    if (weekTrend[p.week]) weekTrend[p.week].teeth += extra;
+    if (x && weeks.find((w) => w.w === p.week && w.to < today)) x.done += extraDone;
   }
 
   let aiWithin1 = 0, aiN = 0, selfWithin1 = 0, selfN = 0;
