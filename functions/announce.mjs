@@ -50,3 +50,15 @@ for (const p of PICS) {
   await pmark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
   console.log('Atlas picture added:', p.id);
 }
+
+// Leadership accounts (read-only oversight). Added only if not already on the roster, so a role changed on the People page is kept.
+const LEADERS = [
+  { email: 'heba.hamza@dentistry.cu.edu.eg', name: 'Prof. Dr. Heba Hamza', role: 'hod' },
+  { email: 'alaa.elbaz@dentistry.cu.edu.eg', name: 'Prof. Dr. Alaa El Baz', role: 'vicedean' },
+];
+for (const l of LEADERS) {
+  const r = db.doc(`roster/${l.email}`);
+  if ((await r.get()).exists) { console.log('On roster already:', l.email); continue; }
+  await r.set({ uid: l.email, email: l.email, name: l.name, role: l.role, sections: [], lectures: [] });
+  console.log('Added to roster:', l.email, l.role);
+}

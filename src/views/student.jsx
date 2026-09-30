@@ -57,7 +57,14 @@ export function Attend() {
   const [code, setCode] = useState(deepLink.code || '');
   const [result, setResult] = useState(null);
   useEffect(() => { if (!sid && sessions.length === 1) setSid(sessions[0].id); }, [sessions.length]);
-  const chosen = sessions.find((s) => s.id === sid);
+  // A scanned session that is not in the live list (weak network, list loaded before the lab opened):
+  // read it from the phone's cache; the server still checks the code and the time window.
+  const [scanned, setScanned] = useState(null);
+  useEffect(() => {
+    if (!sid || sessions.some((s) => s.id === sid) || (scanned && scanned.id === sid)) return;
+    store().get('sessions', sid).then((d) => { if (d && (d.type === 'lecture' || d.section === u.section)) setScanned({ ...d, id: sid }); }).catch(() => {});
+  }, [sid, sessions.length]);
+  const chosen = sessions.find((s) => s.id === sid) || (scanned && scanned.id === sid ? scanned : null);
   const submit = async (e) => {
     e && e.preventDefault();
     if (!chosen) { setResult({ state: 'failed', reason: 'closed' }); return; }
@@ -87,9 +94,9 @@ export function Attend() {
     </div>}
     <form class="card lead" onSubmit={submit}>
       <h2>{L('Check in', 'تسجيل الحضور')}</h2>
-      {!sessions.length && <div class="state info"><b>{L('No session is open right now', 'لا توجد جلسة مفتوحة الآن')}</b><p>{L('Attendance opens only when the lecturer or demonstrator starts it (15-minute window). Opening this page alone does not record attendance.', 'يفتح الحضور فقط عندما يبدأه المحاضر أو المعيد (١٥ دقيقة). فتح الصفحة وحده لا يسجل الحضور.')}</p></div>}
+      {!sessions.length && !chosen && <div class="state info"><b>{L('No open session showing on this phone', 'لا تظهر جلسة مفتوحة على هذا الموبايل')}</b><p>{L('When the lecturer or demonstrator shows the attendance QR on the screen, tap Scan the QR code. Opening this page alone does not record attendance.', 'عندما يعرض المحاضر أو المعيد QR الحضور على الشاشة اضغط امسح الـQR. فتح الصفحة وحده لا يسجل الحضور.')}</p></div>}
       {ready ? <div class="state recorded"><b>{chosen.type === 'lecture' ? `Lecture ${chosen.lectureNo} — ${chosen.title}` : `${labTitle(chosen)} · ${chosen.start}`}</b><p>{L('Session found. Tap Confirm attendance while you are in the room.', 'تم التعرف على الجلسة. اضغط تأكيد الحضور وأنت داخل القاعة.')}</p></div>
-        : sessions.length > 0 && <><button type="button" id="scan-qr" class="btn primary big" onClick={() => setScan(true)}>{L('Scan the QR code', 'امسح الـQR')}</button>
+        : <><button type="button" id="scan-qr" class="btn primary big" onClick={() => setScan(true)}>{L('Scan the QR code', 'امسح الـQR')}</button>
           <p class="faint">{L('Keep this page open during the session: scanning works here even when the Wi-Fi is weak.', 'اترك هذه الصفحة مفتوحة أثناء المحاضرة أو اللاب: المسح يعمل هنا حتى لو الشبكة ضعيفة.')}</p></>}
       {scan && <QrScanner onResult={onScan} onClose={() => setScan(false)} />}
       {ready && <button id="confirm-att" class="btn primary big" disabled={result && result.state === 'sending'}>{result && result.state === 'sending' ? L('Sending…', 'جارٍ الإرسال…') : L('Confirm attendance', 'تأكيد الحضور')}</button>}
