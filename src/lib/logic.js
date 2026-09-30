@@ -162,6 +162,8 @@ export async function createEntry({ week, rubricId, tooth, label, practice, stag
   });
 }
 export async function setStage(entryId, stage) { await S.update('entries', entryId, { stage, updatedAt: nowMs() }); }
+// The student's own reading of the probe markings (mm) — compared with the Prep Lens estimate in the validation panel.
+export async function setProbeReading(entryId, mm) { await S.update('entries', entryId, { probeMm: mm, updatedAt: nowMs() }); }
 export async function addPhoto(entryId, file, view = 'occlusal') {
   // 1600 px keeps the periodontal-probe markings readable for Prep Lens (well under the 3 MB upload limit).
   const { blob, quality } = await compressImage(file, 1600, 0.88);

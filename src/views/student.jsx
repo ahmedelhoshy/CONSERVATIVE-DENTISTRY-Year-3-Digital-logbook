@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'preact/hooks';
-import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage } from '../lib/logic.js';
+import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage, setProbeReading } from '../lib/logic.js';
 import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow , labTitle } from '../lib/ui.jsx';
 import { PRACTICAL_WEEKS, LECTURES, PHOTO_GUIDE, PHOTO_GUIDE_AR, PHOTO_VIEWS, PREP_STAGES, stageCriteria, ORIENTATION_EXERCISES, COURSE } from '../data/course.js';
 import { rubricById, suggestGrade, RUBRICS } from '../data/rubrics.js';
@@ -195,6 +195,7 @@ export function EntrySheet({ id, onClose }) {
       {q && (q.tooDark || q.blurry || q.tooBright) && <div class="state pending"><b>{L('Consider retaking', 'يُفضل إعادة التصوير')}</b><p>{[q.tooDark && L('too dark', 'مظلمة'), q.tooBright && L('too bright', 'ساطعة جدًا'), q.blurry && L('not sharp', 'غير واضحة')].filter(Boolean).join(' · ')}</p></div>}
       {editable && <div class="row"><div class="seg">{PHOTO_VIEWS.map(([v, en, ar]) => <button class={view === v ? 'on' : ''} onClick={() => setView(v)}>{L(en, ar)}</button>)}</div>
         <label class="btn primary">{busy === 'photo' ? L('Uploading…', 'جارٍ الرفع…') : L('Take / choose photo', 'التقط / اختر صورة')}<input id="photo-input" type="file" accept="image/*" capture="environment" onChange={onPhoto} hidden /></label></div>}
+      {(e.photos || []).some((p) => p.view === 'probe') && <label class="fld" style={{ maxWidth: 260 }}>{L('My probe reading (mm)', 'قراءة البروب (مم)')}<input id="probe-mm" type="number" min="0" max="10" step="0.5" inputMode="decimal" value={e.probeMm ?? ''} disabled={!editable} onChange={(ev) => { const v = ev.target.value; setProbeReading(e.id, v === '' ? null : Math.min(10, Math.max(0, Number(v)))); }} /></label>}
     </section>
 
     {rub && <section class="stack"><h3>2 · {L('Self-assessment against the rubric', 'التقييم الذاتي وفق الروبرك')}</h3>

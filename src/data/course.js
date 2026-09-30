@@ -95,14 +95,14 @@ export const PHOTO_GUIDE = [
   'Clean the tooth first (blow off debris, no pencil or bur marks) and dry it; light directly into the cavity (lab light or phone ring light) — no shadows, no glare on the plastic.',
   'Shot 1 — Occlusal: exactly 90° to the occlusal surface, buccal side at the bottom of the photo. Hold the phone about 15 cm away and use 2× zoom so the tooth fills about half the width of the screen; tap the tooth to focus (outline, extensions, width, margins).',
   'Shot 2 — Angled 45°: tilt from the mesial or distal side so the walls are visible (wall inclination/convergence, line angles, smoothness).',
-  'Shot 3 — Probe: graduated periodontal probe standing in the deepest part of the floor, markings readable (depth in mm).',
+  'Shot 3 — Probe: graduated periodontal probe resting on the floor, parallel to the long axis. Hold the phone level with the occlusal surface, from the buccal side, at a right angle to the probe — not from above — so the marking at the cavity margin is readable. Hold the probe at the end of the handle to keep fingers out of the photo, then type the reading in "My probe reading".',
   'Keep every photo sharp; retake if the check says dark or blurred.',
 ];
 export const PHOTO_GUIDE_AR = [
   'نظّف السن أولًا (انفخ البُرادة، وامسح علامات القلم أو البيرز) وجفّفه؛ وجّه الإضاءة داخل الكافيتي (لمبة اللاب أو رينج لايت) بدون ظلال أو لمعان.',
   'الصورة ١ — أكلوزال: بزاوية ٩٠° تمامًا على السطح الماضغ والناحية البكالية لأسفل الصورة. الموبايل على بعد ١٥ سم تقريبًا مع زووم 2× بحيث يملأ السن نصف عرض الشاشة تقريبًا، واضغط على السن ليضبط الفوكس (الـ outline والامتدادات والعرض والحواف).',
   'الصورة ٢ — زاوية ٤٥°: أمِل الموبايل من الناحية الميزيال أو الديستال لتظهر الجدران (ميل/تقارب الجدران، الـ line angles، النعومة).',
-  'الصورة ٣ — البروب: البروب المدرّج واقف في أعمق نقطة في الأرضية والعلامات واضحة (العمق بالملّيمتر).',
+  'الصورة ٣ — البروب: البروب المدرّج على الأرضية وموازي لمحور السن. الموبايل في مستوى سطح السن من ناحية البكل وعمودي على البروب — مش من فوق — عشان الرقم عند حافة التحضير يبان. امسك البروب من آخر اليد عشان الصوابع تبعد عن الصورة، واكتب القراءة في خانة "My probe reading".',
   'كل صورة يجب أن تكون واضحة؛ أعد التصوير إذا ظهر تنبيه "مظلمة" أو "غير واضحة".',
 ];
 // Photo views used by Prep Lens (older records may also have 'proximal' or 'buccal/lingual').

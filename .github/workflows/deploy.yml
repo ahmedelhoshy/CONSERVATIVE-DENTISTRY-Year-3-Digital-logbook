@@ -48,6 +48,14 @@ jobs:
           OWNER_EMAIL: ${{ vars.OWNER_EMAIL }}
           OWNER_NAME: ${{ vars.OWNER_NAME }}
         run: cd functions && node bootstrap.mjs
+      - name: Post department announcements (guides)
+        continue-on-error: true
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          OWNER_EMAIL: ${{ vars.OWNER_EMAIL }}
+          OWNER_NAME: ${{ vars.OWNER_NAME }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://digitallogbook-dfc3e.web.app' }}
+        run: cd functions && node announce.mjs
       - name: Deploy AI, reports and scheduled jobs (Cloud Functions)
         continue-on-error: true
         env:
