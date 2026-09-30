@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'preact/hooks';
+import { useEffect, useState, useMemo, useRef } from 'preact/hooks';
 import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage, setProbeReading } from '../lib/logic.js';
 import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow , labTitle } from '../lib/ui.jsx';
 import { PRACTICAL_WEEKS, LECTURES, PHOTO_GUIDE, PHOTO_GUIDE_AR, PHOTO_VIEWS, PREP_STAGES, stageCriteria, ORIENTATION_EXERCISES, COURSE } from '../data/course.js';
@@ -66,16 +66,19 @@ export function Attend() {
     try { const r = await checkIn(chosen, code); clearTimeout(slow); setResult(r); }
     catch (x) { clearTimeout(slow); setResult({ state: 'failed', reason: x.reason || 'network' }); }
   };
-  useEffect(() => { if (deepLink.sid && deepLink.code && chosen && !result) submit(); }, [chosen]);
+  const [scan, setScan] = useState(false);
+  const onScan = (text) => { setScan(false); try { const q = new URL(text).searchParams; if (q.get('s')) setSid(q.get('s')); if (q.get('c')) setCode(q.get('c').replace(/\D/g, '').slice(0, 6)); setResult(null); } catch (x) { setResult({ state: 'failed', reason: 'not-qr' }); } };
+  const ready = chosen && code.length === 6;
   const reasons = {
     closed: L('This session is not open for attendance now. Ask the lecturer or demonstrator.', 'الجلسة غير مفتوحة للحضور الآن. اسأل المحاضر أو المعيد.'),
     'bad-code': L('The code is wrong or has expired (it changes every 30 seconds). Type the code shown now.', 'الكود خاطئ أو انتهت صلاحيته (يتغير كل ٣٠ ثانية). اكتب الكود المعروض الآن.'),
     'wrong-section': L('This lab session is for another section.', 'هذه الجلسة لسكشن آخر.'),
     rejected: L('The server refused this check-in: the code expired, the window closed, or the session is for another section. Tell the lecturer or demonstrator now, while you are present.', 'رفض الخادم التسجيل: انتهى الكود أو أُغلقت النافذة أو الجلسة لسكشن آخر. أبلغ المحاضر أو المعيد الآن أثناء وجودك.'),
+    'not-qr': L('That is not the attendance QR. Scan the QR shown on the lecture or lab screen.', 'هذا ليس QR الحضور. امسح الـQR المعروض على شاشة المحاضرة أو اللاب.'),
     network: L('No connection. Move nearer a window or switch Wi-Fi/data, then tap Try again. If it still fails, tell the lecturer or demonstrator now.', 'لا يوجد اتصال. غيّر مكانك أو الشبكة ثم اضغط حاول مرة أخرى. إن استمرت المشكلة أبلغ المحاضر أو المعيد الآن.'),
   };
   return <>
-    <section class="hero"><h1>{L('Attendance', 'الحضور')}</h1><p class="muted">{L('Scan the QR on the board or type the 6-digit code during the open window. Staff confirm your presence afterwards.', 'امسح الـQR على السبورة أو اكتب الكود المكون من ٦ أرقام أثناء فترة الحضور. يؤكد فريق التدريس حضورك بعدها.')}</p></section>
+    <section class="hero"><h1>{L('Attendance', 'الحضور')}</h1><p class="muted">{L('Scan the QR on the screen, then tap Confirm attendance. Staff confirm your presence afterwards.', 'امسح الـQR على الشاشة ثم اضغط تأكيد الحضور. يؤكد فريق التدريس حضورك بعدها.')}</p></section>
     {result && result.state !== 'sending' && <div class={'state ' + ({ recorded: 'recorded', duplicate: 'recorded', pending: 'pending', failed: 'failed' }[result.state])} role="status">
       {result.state === 'recorded' && <><b>✓ {L('Recorded', 'تم التسجيل')}</b><p>{L('Your check-in reached the server. It counts once staff confirm you are present — stay in the session and show your ID if asked.', 'وصل تسجيلك إلى الخادم. يُحتسب بعد تأكيد فريق التدريس لوجودك — ابقَ في الجلسة وأظهر الكارنيه عند الطلب.')}</p></>}
       {result.state === 'duplicate' && <><b>{L('Already recorded', 'مسجّل بالفعل')}</b><p>{L('You already checked in to this session. No need to submit again.', 'سجلت حضورك لهذه الجلسة من قبل. لا داعي للإرسال مرة أخرى.')}</p></>}
@@ -84,16 +87,51 @@ export function Attend() {
     </div>}
     <form class="card lead" onSubmit={submit}>
       <h2>{L('Check in', 'تسجيل الحضور')}</h2>
-      {sessions.length ? <label class="fld">{L('Session', 'الجلسة')}<select id="att-session" value={sid} onChange={(e) => setSid(e.target.value)}><option value="">{L('Choose the announced session', 'اختر الجلسة المعلنة')}</option>{sessions.map((s) => <option value={s.id}>{s.type === 'lecture' ? `Lecture ${s.lectureNo} — ${s.title}` : `${labTitle(s)} · ${s.start}`}</option>)}</select></label>
-        : <div class="state info"><b>{L('No session is open right now', 'لا توجد جلسة مفتوحة الآن')}</b><p>{L('Attendance opens only when the lecturer or demonstrator starts it (15-minute window). Opening this page alone does not record attendance.', 'يفتح الحضور فقط عندما يبدأه المحاضر أو المعيد (١٥ دقيقة). فتح الصفحة وحده لا يسجل الحضور.')}</p></div>}
-      <label class="fld">{L('Student number', 'الرقم الجامعي')}<input id="att-code-student" value={u.code} disabled class="mono" /></label>
-      <label class="fld">{L('6-digit code shown now', 'الكود المعروض الآن (٦ أرقام)')}<input id="att-code" class="codebox" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" value={code} onInput={(e) => setCode(e.target.value.replace(/\D/g, ''))} /></label>
-      <button class="btn primary big" disabled={!chosen || code.length !== 6 || (result && result.state === 'sending')}>{result && result.state === 'sending' ? L('Sending…', 'جارٍ الإرسال…') : L('Submit attendance', 'إرسال الحضور')}</button>
-      <p class="faint">{L("Never enter another student's number or share the code. The course assistant cannot record attendance.", 'لا تُدخل رقم طالب آخر ولا تشارك الكود. المساعد التعليمي لا يسجل الحضور.')}</p>
+      {!sessions.length && <div class="state info"><b>{L('No session is open right now', 'لا توجد جلسة مفتوحة الآن')}</b><p>{L('Attendance opens only when the lecturer or demonstrator starts it (15-minute window). Opening this page alone does not record attendance.', 'يفتح الحضور فقط عندما يبدأه المحاضر أو المعيد (١٥ دقيقة). فتح الصفحة وحده لا يسجل الحضور.')}</p></div>}
+      {ready ? <div class="state recorded"><b>{chosen.type === 'lecture' ? `Lecture ${chosen.lectureNo} — ${chosen.title}` : `${labTitle(chosen)} · ${chosen.start}`}</b><p>{L('Session found. Tap Confirm attendance while you are in the room.', 'تم التعرف على الجلسة. اضغط تأكيد الحضور وأنت داخل القاعة.')}</p></div>
+        : sessions.length > 0 && <><button type="button" id="scan-qr" class="btn primary big" onClick={() => setScan(true)}>{L('Scan the QR code', 'امسح الـQR')}</button>
+          <p class="faint">{L('Keep this page open during the session: scanning works here even when the Wi-Fi is weak.', 'اترك هذه الصفحة مفتوحة أثناء المحاضرة أو اللاب: المسح يعمل هنا حتى لو الشبكة ضعيفة.')}</p></>}
+      {scan && <QrScanner onResult={onScan} onClose={() => setScan(false)} />}
+      {ready && <button id="confirm-att" class="btn primary big" disabled={result && result.state === 'sending'}>{result && result.state === 'sending' ? L('Sending…', 'جارٍ الإرسال…') : L('Confirm attendance', 'تأكيد الحضور')}</button>}
+      {sessions.length > 0 && !ready && <details><summary class="faint">{L("Camera not working? Type the code shown under the QR", 'الكاميرا لا تعمل؟ اكتب الكود المكتوب تحت الـQR')}</summary>
+        {sessions.length > 1 && <label class="fld">{L('Session', 'الجلسة')}<select id="att-session" value={sid} onChange={(e) => setSid(e.target.value)}><option value="">{L('Choose the announced session', 'اختر الجلسة المعلنة')}</option>{sessions.map((s) => <option value={s.id}>{s.type === 'lecture' ? `Lecture ${s.lectureNo} — ${s.title}` : `${labTitle(s)} · ${s.start}`}</option>)}</select></label>}
+        <label class="fld">{L('6-digit code shown now', 'الكود المعروض الآن (٦ أرقام)')}<input id="att-code" class="codebox" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" value={code} onInput={(e) => setCode(e.target.value.replace(/\D/g, ''))} /></label></details>}
+      <p class="faint">{L('Student number', 'الرقم الجامعي')}: <span class="mono">{u.code}</span> · {L("Never check in for another student or forward the QR. It changes every 30 seconds and counts only after staff confirm you are in the room.", 'لا تسجل لطالب آخر ولا ترسل الـQR لأحد. يتغير كل ٣٠ ثانية ولا يُحتسب إلا بعد تأكيد فريق التدريس لوجودك.')}</p>
     </form>
     <section class="card"><h2>{L('My attendance', 'سجل حضوري')}</h2>
       <div class="list">{(hist.rows || []).length ? hist.rows.map((a) => { const [t, k] = attLabel(a.status); return <div class="item"><div class="grow"><b>{a.type === 'lecture' ? L('Lecture', 'محاضرة') : labTitle(a, false)}</b> <span class="faint">{fmtDate(a.date)} · {fmtTime(a.at)}</span>{a.reason && <div class="faint">{a.reason}</div>}</div><Pill kind={a._pending ? 'warn' : k}>{a._pending ? L('Pending', 'قيد الإرسال') : t}</Pill></div>; }) : <Empty>{L('No attendance yet.', 'لا يوجد حضور بعد.')}</Empty>}</div></section>
   </>;
+}
+
+// In-page QR reader: works inside the already-open logbook, so scanning still works when the network drops.
+function QrScanner({ onResult, onClose }) {
+  const vref = useRef(null);
+  const [err, setErr] = useState('');
+  useEffect(() => {
+    let stream, timer, stopped = false;
+    (async () => {
+      try {
+        const jsQR = (await import('jsqr')).default;
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        const v = vref.current; v.srcObject = stream; await v.play();
+        const c = document.createElement('canvas'); const ctx = c.getContext('2d', { willReadFrequently: true });
+        const tick = () => {
+          if (stopped) return;
+          if (v.videoWidth) {
+            const w = Math.min(640, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth);
+            c.width = w; c.height = h; ctx.drawImage(v, 0, 0, w, h);
+            const r = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
+            if (r && r.data) { onResult(r.data); return; }
+          }
+          timer = setTimeout(tick, 200);
+        };
+        tick();
+      } catch (e) { setErr(L('Camera not available — allow camera access, or type the code instead.', 'الكاميرا غير متاحة — اسمح بالكاميرا أو اكتب الكود.')); }
+    })();
+    return () => { stopped = true; clearTimeout(timer); if (stream) stream.getTracks().forEach((t) => t.stop()); };
+  }, []);
+  return <div class="stack"><video ref={vref} playsInline muted style={{ width: '100%', borderRadius: 14, background: '#10262d', maxHeight: 360, objectFit: 'cover' }} />
+    {err && <p class="faint">{err}</p>}<button type="button" class="btn" onClick={onClose}>{L('Cancel', 'إلغاء')}</button></div>;
 }
 
 export function MyLab() {

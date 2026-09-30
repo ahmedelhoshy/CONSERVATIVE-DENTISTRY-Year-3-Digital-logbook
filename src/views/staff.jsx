@@ -154,7 +154,7 @@ export function ReviewSheet({ id, onClose }) {
   };
   return <Sheet onClose={onClose} label="Review">
     <div class="row between"><div><span class="eyebrow">Section {e.section} · week {e.week} · {fmtDate(e.date)}</span><h2>{e.name} <span class="mono faint">{e.code}</span></h2><p class="muted">{rub?.title} · <span class="mono">#{e.tooth}</span></p></div><button class="btn sm" onClick={onClose}>Close</button></div>
-    {weekAtt === 0 && <div class="state pending"><b>No confirmed lab attendance this week</b><p>Confirm the student's physical attendance before recording this requirement.</p></div>}
+    {weekAtt === 0 && !readOnly && <div class="state failed"><b>No confirmed lab attendance this week</b><p>Official grades need physical attendance. Confirm the student's attendance for this week's lab first (Today → the lab → Confirm or Mark present), then grade the tooth.</p></div>}
     {e.photos?.length ? <div class="thumbs">{e.photos.map((p) => <a href={p.url} target="_blank" rel="noopener"><img class="photo" src={p.url} alt={`${p.view} view`} /></a>)}</div> : <p class="faint">No photos attached.</p>}
     {e.self?.comment && <p><b>Student note:</b> {e.self.comment}</p>}
     <div class="row"><span class="faint">Student self-grade</span><b class="mono">{e.self?.grade ?? '–'}</b>{e.probeMm != null && <><span class="faint">· probe reading</span><b class="mono">{e.probeMm} mm</b></>}{e.ai && <button class="btn sm" onClick={() => setShowAI(!showAI)}>{showAI ? 'Hide' : 'Show'} Prep Lens feedback</button>}</div>
@@ -168,8 +168,8 @@ export function ReviewSheet({ id, onClose }) {
       <label class="fld">Feedback to the student<textarea id="rv-feedback" value={feedback} onInput={(ev) => setFeedback(ev.target.value)} placeholder="Specific, criterion-based feedback" /></label>
       {changing && <label class="fld">Reason for changing the saved grade (audit log)<input id="rv-reason" value={reason} onInput={(ev) => setReason(ev.target.value)} /></label>}
       <details><summary>Photo unclear?</summary><label class="fld" style={{ marginTop: 8 }}>Reject photo and ask for a new one — reason<input id="rv-reject" value={rejectPhoto} onInput={(ev) => setRejectPhoto(ev.target.value)} placeholder="e.g. not at 90°, no probe for scale" /></label></details>
-      <div class="row"><button class="btn primary" disabled={busy || grade === '' || !rub?.criteria.every((c) => picks?.[c.id]) || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
-        <button class="btn danger" disabled={busy || grade === '' || !feedback.trim()} onClick={() => save(true)}>Save & ask to correct</button></div>
+      <div class="row"><button class="btn primary" disabled={busy || weekAtt === 0 || grade === '' || !rub?.criteria.every((c) => picks?.[c.id]) || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
+        <button class="btn danger" disabled={busy || weekAtt === 0 || grade === '' || !feedback.trim()} onClick={() => save(true)}>Save & ask to correct</button></div>
     </>}
     {e.history?.length > 0 && <details><summary>History ({e.history.length})</summary><div class="list">{e.history.map((ev) => <div class="item faint">{fmtDT(ev.at)} · {ev.event}{ev.by ? ' · ' + ev.by : ''}{ev.reason ? ' · ' + ev.reason : ''}</div>)}</div></details>}
   </Sheet>;
