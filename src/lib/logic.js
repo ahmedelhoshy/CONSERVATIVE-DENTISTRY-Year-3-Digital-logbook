@@ -145,7 +145,8 @@ export async function createEntry({ week, rubricId, tooth, label, practice, stag
 }
 export async function setStage(entryId, stage) { await S.update('entries', entryId, { stage, updatedAt: nowMs() }); }
 export async function addPhoto(entryId, file, view = 'occlusal') {
-  const { blob, quality } = await compressImage(file);
+  // 1600 px keeps the periodontal-probe markings readable for Prep Lens (well under the 3 MB upload limit).
+  const { blob, quality } = await compressImage(file, 1600, 0.88);
   const path = `photos/${ME.uid}/${entryId}/${Date.now()}.jpg`;
   const url = await S.putFile(path, blob);
   const e = await S.get('entries', entryId);
