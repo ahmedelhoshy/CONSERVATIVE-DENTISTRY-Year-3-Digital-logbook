@@ -89,3 +89,10 @@ for (const d of (await db.collection('materials').get()).docs) {
   else if (!['director', 'admin'].includes(s.data().role)) { await r.update({ role: 'director' }); console.log('Role set to director:', e, '(was', s.data().role + ')'); }
   else console.log('Full access already:', e);
 }
+
+// Old address no longer in use (Dr. Mahitab now uses mahitab.kamal@): remove it everywhere it could receive access or mail.
+for (const e of ['mahetab.mahmoud@dentistry.cu.edu.eg']) {
+  const r = db.doc(`roster/${e}`);
+  if ((await r.get()).exists) { await r.delete(); console.log('Removed from roster:', e); } else console.log('Not on roster:', e);
+  await db.doc('config/course').set({ reportRecipients: FieldValue.arrayRemove(e) }, { merge: true });
+}
