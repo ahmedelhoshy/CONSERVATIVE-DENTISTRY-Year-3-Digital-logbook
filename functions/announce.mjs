@@ -80,3 +80,11 @@ for (const d of (await db.collection('materials').get()).docs) {
     console.log('Lecture material left as is:', d.id, 'lecture', m.lectureNo, (url.match(/\/d\/([^/]+)/) || [])[1] || '(no Drive id)');
   }
 }
+
+// Course Director's assistant: same full access as the Course Director.
+{
+  const e = 'yomna.sayed@dentistry.cu.edu.eg'; const r = db.doc(`roster/${e}`); const s = await r.get();
+  if (!s.exists) { await r.set({ uid: e, email: e, name: 'Dr. Yomna Sayed', role: 'director', sections: [], lectures: [] }); console.log('Added to roster:', e, 'director'); }
+  else if (!['director', 'admin'].includes(s.data().role)) { await r.update({ role: 'director' }); console.log('Role set to director:', e, '(was', s.data().role + ')'); }
+  else console.log('Full access already:', e);
+}
