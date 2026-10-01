@@ -132,3 +132,9 @@ for (const e of ['mahetab.mahmoud@dentistry.cu.edu.eg']) {
     await smark.set({ ids: FieldValue.arrayUnion('staff-2026-s1') }, { merge: true });
   }
 }
+
+// Dr. Engy Mostafa — main supervisor, Section 8 (email received after the first staffing setup).
+{
+  const e = 'engy.mostafa@dentistry.cu.edu.eg'; const r = db.doc(`roster/${e}`); const cur = await r.get();
+  if (!cur.exists) { await r.set({ uid: e, email: e, name: 'Dr. Engy Mostafa', role: 'lecturer', sections: [8], lectures: [] }); console.log('Supervisor added:', e); }
+}
