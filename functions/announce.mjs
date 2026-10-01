@@ -169,3 +169,11 @@ for (const d of (await db.collection('materials').get()).docs) {
     await smark.set({ ids: FieldValue.arrayUnion('staff-final-2026-s1') }, { merge: true });
   }
 }
+
+// Week 3 changed to Class I on 2 molars (schedule delay): update the titles of Week 3 lab sessions already created.
+{
+  const T = 'Class I cavity preparation for resin composite on 2 molars (practice week: schedule delay)';
+  const snap = await db.collection('sessions').where('week', '==', 3).get(); let n = 0;
+  for (const d of snap.docs) if (d.data().type === 'lab' && d.data().title !== T) { await d.ref.update({ title: T }); n++; }
+  console.log('Week 3 lab sessions retitled:', n);
+}

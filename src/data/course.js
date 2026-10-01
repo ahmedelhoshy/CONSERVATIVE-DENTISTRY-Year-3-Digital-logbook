@@ -41,7 +41,7 @@ export const LECTURES = [
 export const PRACTICAL_WEEKS = [
   { w: 1, from: '2026-09-19', to: '2026-09-24', topic: 'Introduction to lab rules and instruments · Orientation (manual-control exercises)', orientation: true, req: 0, scheduleReq: 0, tasks: [] },
   { w: 2, from: '2026-09-26', to: '2026-09-30', topic: 'Demo/videos: Class I for resin composite · Simple Class I preparation (tooth 36)', req: 2, scheduleReq: 2, tasks: [{ rubric: 'c1_comp_prep', teeth: ['36'] }] },
-  { w: 3, from: '2026-10-03', to: '2026-10-07', topic: 'Demo/videos: Class II for resin composite · Compound Class II preparation (teeth 37 & 16)', req: 2, scheduleReq: 3, tasks: [{ rubric: 'c2_comp_prep', teeth: ['37', '16'] }] },
+  { w: 3, from: '2026-10-03', to: '2026-10-07', topic: 'Class I cavity preparation for resin composite on 2 molars (practice week: schedule delay)', req: 2, scheduleReq: 2, tasks: [{ rubric: 'c1_comp_prep', teeth: ['36', '46', '37', '47', '16', '26', '17', '27'] }] },
   { w: 4, from: '2026-10-10', to: '2026-10-14', topic: 'Compound Class II preparation for resin composite (teeth 36 & 16)', req: 2, scheduleReq: 3, tasks: [{ rubric: 'c2_comp_prep', teeth: ['36', '16'] }] },
   { w: 5, from: '2026-10-17', to: '2026-10-21', topic: 'First practical exam · Matricing systems and instrumentation for direct resin composite', exam: true, req: 0, scheduleReq: 0, tasks: [] },
   { w: 6, from: '2026-10-24', to: '2026-10-28', topic: 'Demo/videos: Class III, IV & V for resin composite · Class III & V preparation (tooth 11)', req: 2, scheduleReq: 4, tasks: [{ rubric: 'c3_comp_prep', teeth: ['11'] }, { rubric: 'c5_comp_prep', teeth: ['11'] }] },
