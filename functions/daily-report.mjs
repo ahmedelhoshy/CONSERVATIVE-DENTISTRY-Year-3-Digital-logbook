@@ -11,8 +11,16 @@ import { cairoDate, loadAll, reportHtml } from './report-lib.js';
 
 initializeApp({ credential: applicationDefault(), projectId: process.env.FB_PROJECT_ID });
 const db = getFirestore();
-const all = await loadAll(db);
-const st = computeStats({ ...all, weeks: PRACTICAL_WEEKS, today: cairoDate() });
+// The leaders' report counts only from the official start of the platform (3 October 2026);
+// orientation weeks, paper-register weeks and trial sessions before that are left out of the totals.
+const START = '2026-10-03';
+const raw = await loadAll(db);
+const weeks = PRACTICAL_WEEKS.filter((w) => w.from >= START);
+const wk = new Set(weeks.map((w) => w.w));
+const sessions = raw.sessions.filter((x) => (x.date || '') >= START);
+const sids = new Set(sessions.map((x) => x.id));
+const all = { ...raw, sessions, attendance: raw.attendance.filter((a) => sids.has(a.sid)), entries: raw.entries.filter((e) => wk.has(e.week)), paperwork: raw.paperwork.filter((p) => wk.has(p.week)) };
+const st = computeStats({ ...all, weeks, today: cairoDate() });
 const day = cairoDate(new Date(Date.now() - 86400e3));
 const snap = await db.collection('roster').where('role', 'in', ['hod', 'vicedean']).get();
 const to = [...new Set(snap.docs.map((d) => String(d.data().email || d.id).trim().toLowerCase()).filter((e) => e.includes('@')))];
