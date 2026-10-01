@@ -91,13 +91,6 @@ for (const d of (await db.collection('materials').get()).docs) {
   else console.log('Full access already:', e);
 }
 
-// Old address no longer in use (Dr. Mahitab now uses mahitab.kamal@): remove it everywhere it could receive access or mail.
-for (const e of ['mahetab.mahmoud@dentistry.cu.edu.eg']) {
-  const r = db.doc(`roster/${e}`);
-  if ((await r.get()).exists) { await r.delete(); console.log('Removed from roster:', e); } else console.log('Not on roster:', e);
-  await db.doc('config/course').set({ reportRecipients: FieldValue.arrayRemove(e) }, { merge: true });
-}
-
 // First-semester 2026–27 staffing from the Head of Department (supervisor timetable):
 // main supervisors keep their own sections; every demonstrator covers all 18 sections because their schedules change.
 // Runs once (config/seededStaff), so later edits on the People page are kept.
@@ -137,4 +130,42 @@ for (const e of ['mahetab.mahmoud@dentistry.cu.edu.eg']) {
 {
   const e = 'engy.mostafa@dentistry.cu.edu.eg'; const r = db.doc(`roster/${e}`); const cur = await r.get();
   if (!cur.exists) { await r.set({ uid: e, email: e, name: 'Dr. Engy Mostafa', role: 'lecturer', sections: [8], lectures: [] }); console.log('Supervisor added:', e); }
+}
+
+// Final Year 3 staff list (Course Director, 1 Oct 2026): 8 main supervisors with their sections, 10 demonstrators on all 18 sections.
+// Runs once (config/seededStaff 'staff-final-2026-s1'); later edits on the People page are kept.
+{
+  const smark = db.doc('config/seededStaff');
+  const sdone = new Set((await smark.get()).data()?.ids || []);
+  if (!sdone.has('staff-final-2026-s1')) {
+    const ALL = Array.from({ length: 18 }, (_, i) => i + 1);
+    const SUP = {
+      'heba.eldeeb@dentistry.cu.edu.eg': ['Prof. Heba ElDeeb', [13, 15]],
+      'amir.hafez@dentistry.cu.edu.eg': ['Assoc. Prof. Amir Hafez', [7, 11, 16]],
+      'zeinab.omar@dentistry.cu.edu.eg': ['Assoc. Prof. Zeinab Omar', [1, 2, 3]],
+      'possy.moustafa@dentistry.cu.edu.eg': ['Assoc. Prof. Possy Moustafa', [10, 14, 17]],
+      'omnia.magdy@dentistry.cu.edu.eg': ['Dr. Omnia Magdy', [4, 5, 6, 12]],
+      'monamahmoud@dentistry.cu.edu.eg': ['Dr. Mona Mahmoud', [9]],
+      'nancy.helmy@dentistry.cu.edu.eg': ['Dr. Nancy Helmy', [18]],
+      'engy.mostafa@dentistry.cu.edu.eg': ['Dr. Engy Mostafa', [8]],
+    };
+    const DEM = ['sarah.seif', 'engy.aref', 'marwa.husseiny', 'mariam.kamal', 'ayatellah.ossman', 'mahetab.mahmoud', 'asmaa.abdelfatah', 'mahitab.kamal', 'manar_said', 'yasmin.shibl'].map((x) => x + '@dentistry.cu.edu.eg');
+    const keep = (cur) => ['director', 'admin', 'hod', 'vicedean'].includes(cur.role);
+    for (const [e, [name, sections]] of Object.entries(SUP)) {
+      const r = db.doc(`roster/${e}`); const cur = (await r.get()).data() || {};
+      if (keep(cur)) continue;
+      await r.set({ uid: e, email: e, name: cur.name || name, role: 'lecturer', sections, lectures: cur.lectures || [] }, { merge: true });
+      console.log('Supervisor:', e, sections.join(','));
+    }
+    for (const e of DEM) {
+      const r = db.doc(`roster/${e}`); const cur = (await r.get()).data() || {};
+      if (keep(cur)) continue;
+      const nm = cur.name || 'Dr. ' + e.split('@')[0].split(/[._]/).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+      await r.set({ uid: e, email: e, name: nm, role: 'demonstrator', sections: ALL, lectures: [] }, { merge: true });
+      console.log('Demonstrator (all sections):', e);
+    }
+    const r8 = db.doc('projects/g8'); const p8 = (await r8.get()).data() || {};
+    if (!p8.lecturer) await r8.set({ group: 8, title: p8.title || '', lecturer: 'Dr. Engy Mostafa', demonstrator: p8.demonstrator || '' }, { merge: true });
+    await smark.set({ ids: FieldValue.arrayUnion('staff-final-2026-s1') }, { merge: true });
+  }
 }
