@@ -97,3 +97,38 @@ for (const e of ['mahetab.mahmoud@dentistry.cu.edu.eg']) {
   if ((await r.get()).exists) { await r.delete(); console.log('Removed from roster:', e); } else console.log('Not on roster:', e);
   await db.doc('config/course').set({ reportRecipients: FieldValue.arrayRemove(e) }, { merge: true });
 }
+
+// First-semester 2026–27 staffing from the Head of Department (supervisor timetable):
+// main supervisors keep their own sections; every demonstrator covers all 18 sections because their schedules change.
+// Runs once (config/seededStaff), so later edits on the People page are kept.
+{
+  const smark = db.doc('config/seededStaff');
+  const sdone = new Set((await smark.get()).data()?.ids || []);
+  if (!sdone.has('staff-2026-s1')) {
+    const SUP = [
+      { email: 'zeinab.omar@dentistry.cu.edu.eg', name: 'Assoc. Prof. Zeinab Omar', sections: [1, 2, 3], lectures: [3] },
+      { email: 'omnia.magdy@dentistry.cu.edu.eg', name: 'Dr. Omnia Magdy', sections: [4, 5, 6, 12] },
+      { email: 'amir.hafez@dentistry.cu.edu.eg', name: 'Assoc. Prof. Amir Hafez', sections: [7, 11, 16] },
+      { email: 'monamahmoud@dentistry.cu.edu.eg', name: 'Dr. Mona Mahmoud', sections: [9] },
+      { email: 'possy.moustafa@dentistry.cu.edu.eg', name: 'Assoc. Prof. Possy Moustafa', sections: [10, 14, 17] },
+      { email: 'heba.eldeeb@dentistry.cu.edu.eg', name: 'Prof. Heba ElDeeb', sections: [13, 15] },
+      { email: 'nancy.helmy@dentistry.cu.edu.eg', name: 'Dr. Nancy Helmy', sections: [18] },
+    ];
+    for (const s of SUP) {
+      const r = db.doc(`roster/${s.email}`); const cur = (await r.get()).data() || {};
+      const lectures = [...new Set([...(cur.lectures || []), ...(s.lectures || [])])];
+      await r.set({ uid: s.email, email: s.email, name: cur.name && cur.role === 'lecturer' ? cur.name : s.name, role: ['director', 'admin', 'hod', 'vicedean'].includes(cur.role) ? cur.role : 'lecturer', sections: s.sections, lectures }, { merge: true });
+      console.log('Supervisor set:', s.email, s.sections.join(','));
+    }
+    const ALL = Array.from({ length: 18 }, (_, i) => i + 1);
+    const dems = await db.collection('roster').where('role', '==', 'demonstrator').get();
+    for (const d of dems.docs) { await d.ref.update({ sections: ALL }); console.log('Demonstrator → all sections:', d.id); }
+    // Project lecturer column = the section's supervisor (only where still empty). Engy Mostafa (Section 8) has no account yet.
+    const NAMES = { 8: 'Dr. Engy Mostafa' }; for (const s of SUP) for (const n of s.sections) NAMES[n] = s.name;
+    for (const [g, name] of Object.entries(NAMES)) {
+      const r = db.doc(`projects/g${g}`); const cur = (await r.get()).data() || {};
+      if (!cur.lecturer) await r.set({ group: Number(g), title: cur.title || '', lecturer: name, demonstrator: cur.demonstrator || '', updatedAt: Date.now(), updatedBy: byName }, { merge: true });
+    }
+    await smark.set({ ids: FieldValue.arrayUnion('staff-2026-s1') }, { merge: true });
+  }
+}
