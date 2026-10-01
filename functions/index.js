@@ -253,14 +253,6 @@ export const dailyReport = onSchedule({ schedule: '0 9 * * *', timeZone: 'Africa
   await db.doc('config/course').set({ lastReportAt: Date.now() }, { merge: true });
 });
 
-// 19:00 Cairo — course director, administrators, lecturers and demonstrators: today's update.
-export const eveningReport = onSchedule({ schedule: '0 19 * * *', timeZone: 'Africa/Cairo', timeoutSeconds: 300, memory: '1GiB' }, async () => {
-  const { st, all } = await buildStats();
-  const d = cairoDate();
-  const to = await emailsFor(['director', 'admin', 'lecturer', 'demonstrator']);
-  await sendReport(to, `Today's update ${d} — Year 3 Conservative Dentistry`, reportHtml(st, all, d, "Today's update"));
-});
-
 export const weeklyReport = onSchedule({ schedule: '0 9 * * 5', timeZone: 'Africa/Cairo', timeoutSeconds: 300, memory: '1GiB' }, async () => {
   const all = await loadAll();
   const to = (all.config.reportRecipients || []).filter(Boolean);
