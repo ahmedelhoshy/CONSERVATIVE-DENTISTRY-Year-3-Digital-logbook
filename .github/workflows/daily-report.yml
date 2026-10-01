@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: '20 5 * * *'   # 08:20 Cairo in summer time, 07:20 in winter time
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['functions/daily-report.mjs', 'functions/report-lib.js', 'functions/report_public.pem', '.github/workflows/daily-report.yml']
 permissions:
   contents: write
 concurrency: daily-report
