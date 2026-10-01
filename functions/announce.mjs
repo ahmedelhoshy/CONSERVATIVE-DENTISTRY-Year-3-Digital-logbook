@@ -56,11 +56,12 @@ const LEADERS = [
   { email: 'heba.hamza@dentistry.cu.edu.eg', name: 'Prof. Dr. Heba Hamza', role: 'hod' },
   { email: 'alaa.elbaz@dentistry.cu.edu.eg', name: 'Prof. Dr. Alaa El Baz', role: 'vicedean' },
   { email: 'zeinab.omar@dentistry.cu.edu.eg', name: 'Dr. Zeinab Omar', role: 'lecturer', lectures: [3] },
+  { email: 'mahitab.kamal@dentistry.cu.edu.eg', name: 'Dr. Mahitab Kamal', role: 'demonstrator', sections: [6] },
 ];
 for (const l of LEADERS) {
   const r = db.doc(`roster/${l.email}`);
   if ((await r.get()).exists) { console.log('On roster already:', l.email); continue; }
-  await r.set({ uid: l.email, email: l.email, name: l.name, role: l.role, sections: [], lectures: l.lectures || [] });
+  await r.set({ uid: l.email, email: l.email, name: l.name, role: l.role, sections: l.sections || [], lectures: l.lectures || [] });
   console.log('Added to roster:', l.email, l.role);
 }
 
