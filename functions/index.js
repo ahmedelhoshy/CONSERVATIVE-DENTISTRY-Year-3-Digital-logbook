@@ -2,7 +2,7 @@
 // - prepLens: criterion-based AI feedback on a preparation photo (Gemini), never a grade.
 // - assistant: course assistant limited to approved material.
 // - refreshStats / nightlyStats (19:00 Cairo): dashboard aggregate in reports/latest.
-// - dailyReport (09:00 Cairo): email summary of the previous day to configured recipients.
+// - daily report: see functions/daily-report.mjs (sent from the Course Director's Gmail).
 // - weeklyReport (Friday 09:00 Cairo): teeth per student, Excel attachment.
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
@@ -18,6 +18,9 @@ import { computeStats } from './shared/stats.js';
 import { PRACTICAL_WEEKS, COURSE, PREP_STAGES, stageCriteria } from './shared/course.js';
 import { rubricById } from './shared/rubrics.js';
 import { buildKnowledge } from './knowledge.js';
+import { cairoDate, esc, loadAll as loadAllFrom, reportHtml as reportHtmlFrom } from './report-lib.js';
+const loadAll = () => loadAllFrom(db);
+const reportHtml = (st, all, day, heading) => reportHtmlFrom(st, all, day, heading, SITE_URL.value());
 
 initializeApp();
 const db = getFirestore();
@@ -32,7 +35,6 @@ const SMTP_USER = defineString('SMTP_USER', { default: '' });
 const SITE_URL = defineString('SITE_URL', { default: '' });
 const PROMPT_VERSION = 'prep-lens-v2';
 
-const cairoDate = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(d);
 
 async function caller(req) { return userByEmail(req.auth?.token?.email); }
 async function userByEmail(rawEmail) {
@@ -158,19 +160,6 @@ async function doAssistant(u, data) {
 }
 
 // ---------------- statistics & reports ----------------
-async function loadAll() {
-  const [students, sessions, attendance, entries, research, cfg, paperwork] = await Promise.all([
-    db.collection('roster').where('role', '==', 'student').get(), db.collection('sessions').get(), db.collection('attendance').get(),
-    db.collection('entries').get(), db.collection('research').get(), db.doc('config/course').get(), db.collection('paperwork').get(),
-  ]);
-  const rs = {}; research.docs.forEach((d) => { rs[d.id] = d.data().score; });
-  const ents = entries.docs.map((d) => { const e = { id: d.id, ...d.data() }; if (e.ai && rs[d.id] != null) e.ai = { ...e.ai, score: rs[d.id] }; return e; });
-  return {
-    students: students.docs.map((d) => ({ id: d.id, ...d.data(), uid: String(d.data().code) })),
-    sessions: sessions.docs.map((d) => ({ id: d.id, ...d.data() })), attendance: attendance.docs.map((d) => ({ id: d.id, ...d.data() })),
-    entries: ents, config: cfg.exists ? cfg.data() : {}, paperwork: paperwork.docs.map((d) => d.data()),
-  };
-}
 async function buildStats() {
   const all = await loadAll();
   const st = computeStats({ ...all, weeks: PRACTICAL_WEEKS, today: cairoDate() });
@@ -210,33 +199,9 @@ export const nightlyStats = onSchedule({ schedule: '0 19 * * *', timeZone: 'Afri
 function mailer() {
   return nodemailer.createTransport({ host: SMTP_HOST.value(), port: 465, secure: true, auth: { user: SMTP_USER.value(), pass: SMTP_PASS.value() } });
 }
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-// Report recipients come from the roster, so adding or removing staff on the People page updates the lists.
 async function emailsFor(roles) {
   const snap = await db.collection('roster').where('role', 'in', roles).get();
   return [...new Set(snap.docs.map((d) => String(d.data().email || d.id).trim().toLowerCase()).filter((e) => e.includes('@')))];
-}
-function reportHtml(st, all, day, heading) {
-  const yAtt = all.attendance.filter((a) => a.date === day);
-  const ySess = all.sessions.filter((s) => s.date === day && (s.status === 'open' || s.status === 'closed' || yAtt.some((a) => a.sid === s.id)));
-  const yEnt = all.entries.filter((e) => e.date === day && e.status !== 'draft' && !e.practice);
-  const yRev = all.entries.filter((e) => e.review && cairoDate(new Date(e.review.at)) === day);
-  const rows = ySess.sort((a, b) => (a.start || '').localeCompare(b.start || '')).map((s) => {
-    const exp = s.type === 'lab' ? all.students.filter((x) => x.section === s.section).length : all.students.length;
-    const conf = yAtt.filter((a) => a.sid === s.id && a.status === 'confirmed').length;
-    const pend = yAtt.filter((a) => a.sid === s.id && a.status === 'recorded').length;
-    return `<tr><td>${s.type === 'lecture' ? `Lecture ${s.lectureNo}` : `Lab ${s.labNo || ''} · S${s.section}`}</td><td>${s.start}–${s.end}</td><td style="text-align:right">${conf}/${exp}</td><td style="text-align:right">${pend}</td></tr>`;
-  }).join('');
-  const T = st.totals;
-  return `<div style="font-family:Arial,sans-serif;color:#13262A;max-width:680px">
-<h2 style="color:#0B4A55">${esc(heading)} — ${esc(day)}</h2><p>Year 3 Preclinical Conservative Dentistry · Faculty of Dentistry, Cairo University</p>
-<h3>${esc(day)}</h3><ul><li>Sessions held: ${ySess.length}</li><li>Requirement teeth submitted: ${yEnt.length} · reviewed by demonstrators: ${yRev.length}</li><li>Prep Lens feedback requests: ${yEnt.filter((e) => e.ai).length}</li></ul>
-${rows ? `<table cellpadding="6" style="border-collapse:collapse;border:1px solid #D3DDDA"><tr style="background:#E8EEEC"><th align="left">Session</th><th align="left">Time</th><th>Confirmed</th><th>Awaiting</th></tr>${rows}</table>` : '<p>No sessions held.</p>'}
-<h3>Course to date</h3><ul><li>Lecture attendance ${T.lectureAttendance ?? '–'}% · lab attendance ${T.labAttendance ?? '–'}%</li><li>Requirements completed ${T.completion ?? '–'}% · mean official grade ${T.meanGrade ?? '–'}</li><li>Students needing attention: <b>${T.atRisk}</b> · reviews overdue &gt;48 h: <b>${T.overdue}</b></li></ul>
-${st.sections.filter((s) => s.overdue || (s.labAttendance != null && s.labAttendance < 80)).map((s) => `<p>⚠ Section ${s.section}: ${s.overdue ? `${s.overdue} overdue review(s)` : ''} ${s.labAttendance != null && s.labAttendance < 80 ? `lab attendance ${s.labAttendance}%` : ''}</p>`).join('')}
-${SITE_URL.value() ? `<p><a href="${esc(SITE_URL.value())}" style="background:#0B4A55;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Open the live dashboard</a></p>` : ''}
-<p style="color:#74878A;font-size:12px">Aggregated figures. Student-level detail is available only inside the platform to authorised staff. Generated ${new Date().toISOString()}.</p></div>`;
 }
 async function sendReport(to, subject, html) {
   if (!to.length || !SMTP_USER.value() || !SMTP_PASS.value()) { console.log('Report not sent:', !to.length ? 'no recipients' : 'SMTP not configured'); return; }
@@ -244,14 +209,8 @@ async function sendReport(to, subject, html) {
   console.log('Report sent to', to.length);
 }
 
-// 09:00 Cairo — Head of Department and Vice Dean: the previous day.
-export const dailyReport = onSchedule({ schedule: '0 9 * * *', timeZone: 'Africa/Cairo', timeoutSeconds: 300, memory: '1GiB' }, async () => {
-  const { st, all } = await buildStats();
-  const y = cairoDate(new Date(Date.now() - 86400e3));
-  const to = await emailsFor(['hod', 'vicedean']);
-  await sendReport(to, `Daily report ${y} — Year 3 Conservative Dentistry`, reportHtml(st, all, y, 'Daily report'));
-  await db.doc('config/course').set({ lastReportAt: Date.now() }, { merge: true });
-});
+// The 09:00 daily report to the Head of Department and Vice Dean is now built by .github/workflows/daily-report.yml
+// (functions/daily-report.mjs) and sent from the Course Director's own Gmail by a scheduled Claude task, so no SMTP password is needed.
 
 export const weeklyReport = onSchedule({ schedule: '0 9 * * 5', timeZone: 'Africa/Cairo', timeoutSeconds: 300, memory: '1GiB' }, async () => {
   const all = await loadAll();
