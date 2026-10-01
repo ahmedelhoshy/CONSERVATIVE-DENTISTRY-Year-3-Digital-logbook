@@ -155,10 +155,15 @@ function imageQuality(canvas) {
 
 export async function createEntry({ week, rubricId, tooth, label, practice, stage }) {
   const t = nowMs();
+  if (!practice) {
+    // At most two requirement teeth per week, recorded in Lab 1.
+    const mine = (await S.query('entries', [['uid', '==', ME.uid], ['week', '==', week]], {})).filter((e) => !e.practice);
+    if (mine.length >= 2) throw Object.assign(new Error('Two requirement teeth are already recorded for this week.'), { code: 'limit' });
+  }
   return S.add('entries', {
     uid: ME.uid, code: ME.code || '', name: ME.name, section: ME.section || null, week, rubricId: rubricId || null, taskLabel: label || '',
     tooth: tooth || '', date: today(), status: 'draft', self: null, ai: null, review: null, photos: [], createdAt: t, updatedAt: t, history: [],
-    practice: !!practice, stage: stage || (practice ? 'outline' : 'full'),
+    practice: !!practice, stage: stage || (practice ? 'outline' : 'full'), ...(practice ? {} : { labNo: 1 }),
   });
 }
 export async function setStage(entryId, stage) { await S.update('entries', entryId, { stage, updatedAt: nowMs() }); }

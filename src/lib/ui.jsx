@@ -109,10 +109,10 @@ export function MiniChart({ data, xKey, yKey, max = 100, unit = '%', kind = 'lin
 
 export function useOnce(fn, deps = []) { const r = useRef(false); useEffect(() => { if (!r.current) { r.current = true; fn(); } }, deps); }
 
-// "Lab 1 · requirements" / "Lab 2 · practice & discussion" (see labNo in logic.js)
+// "Lab 1 · requirements" / "Lab 2 · discussion & project" (see labNo in logic.js)
 export function labTitle(s, withSection = true) {
   const n = labNo(s); const sec = withSection && s.section ? ` · ${L('Section', 'سكشن')} ${s.section}` : '';
   if (n === 1) return L('Lab 1 · requirements', 'لاب ١ · المتطلبات') + sec;
-  if (n) return L(`Lab ${n} · practice & discussion`, `لاب ${n} · تدريب ومناقشة`) + sec;
+  if (n) return L(`Lab ${n} · discussion & project`, `لاب ${n} · مناقشة ومشروع`) + sec;
   return L('Lab', 'لاب') + sec;
 }

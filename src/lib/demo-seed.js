@@ -27,7 +27,7 @@ export function labDatesForWeek(week, section) {
 export function seedDemo() {
   const r = rng(20260927);
   const pick = (a) => a[Math.floor(r() * a.length)];
-  const db = { roster: {}, users: {}, sessions: {}, attendance: {}, entries: {}, announcements: {}, materials: {}, messages: {}, audit: {}, config: {}, codes: {} };
+  const db = { roster: {}, users: {}, sessions: {}, attendance: {}, entries: {}, announcements: {}, materials: {}, projects: {}, messages: {}, audit: {}, config: {}, codes: {} };
   const now = ms(DEMO_TODAY, '09:00');
 
   db.config.course = {
@@ -152,6 +152,8 @@ export function seedDemo() {
   mats.forEach((m, i) => { db.materials[`m${i + 1}`] = { ...m, updatedAt: now - i * 86400e3 }; });
 
   // Announcements
+  db.projects.g1 = { group: 1, title: 'Bulk-fill versus incremental composite in Class II cavities: a typodont comparison', lecturer: 'Dr. Lecturer (demo)', demonstrator: 'Dr. Mona Adel', updatedAt: 0 };
+  db.projects.g2 = { group: 2, title: 'Preparation depth with and without a periodontal-probe check', lecturer: 'Dr. Lecturer (demo)', demonstrator: 'Dr. Mona Adel', updatedAt: 0 };
   db.announcements.a1 = { title: 'ماذا تحضر معك في اللاب القادم؟', body: 'مسطرة، ورق أبيض وقلم، Low-speed handpiece مع contra-angle، Round bur مقاس 1، Bur 330، Bur 245، وضرس أول سفلي أكريليك.', audience: 'students', sections: [], pinned: true, publishAt: ms('2026-09-21', '10:00'), by: 'demo-director', byName: 'Prof. Ahmed El-Hoshy' };
   db.announcements.a2 = { title: 'Practical exam 1 results released', body: 'Results of the first practical exam are now visible under My progress.', audience: 'students', sections: [], pinned: false, publishAt: ms('2026-10-25', '09:00'), by: 'demo-director', byName: 'Prof. Ahmed El-Hoshy' };
   db.announcements.a3 = { title: 'Demonstrators: calibration meeting', body: 'Short calibration on the Class III–V rubrics before week 7 labs, Sunday 8:00, department room.', audience: 'staff', sections: [], pinned: false, publishAt: ms('2026-10-29', '08:00'), by: 'demo-director', byName: 'Prof. Ahmed El-Hoshy' };

@@ -122,7 +122,7 @@ async function generateTerm() {
     const dates = labDatesForWeek(w, sec);
     for (let i = 0; i < dates.length; i++) {
       const id = `lab-w${w.w}-s${sec}-${i + 1}`;
-      if (!(await S.get('sessions', id))) { await S.set('sessions', id, { type: 'lab', section: sec, week: w.w, date: dates[i].date, start: dates[i].start, end: dates[i].end, title: i === 0 ? w.topic : 'Practice, demonstration and open discussion (no requirement)', labNo: i + 1, status: 'scheduled', req: i === 0 ? w.req : 0 }); n++; }
+      if (!(await S.get('sessions', id))) { await S.set('sessions', id, { type: 'lab', section: sec, week: w.w, date: dates[i].date, start: dates[i].start, end: dates[i].end, title: i === 0 ? w.topic : 'Discussion and group project (no requirement)', labNo: i + 1, status: 'scheduled', req: i === 0 ? w.req : 0 }); n++; }
     }
   }
   await audit('sessions.generate', 'term-1', null, `${n} created`, 'Generated from curriculum and timetable');

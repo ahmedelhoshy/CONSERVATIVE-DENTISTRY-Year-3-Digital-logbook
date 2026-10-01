@@ -107,6 +107,10 @@ service cloud.firestore {
       allow read: if isStaff() || (isStudent() && resource.data.audience in ['students', 'all', 'sections']);
       allow write: if isEditor();
     }
+    match /projects/{id} {
+      allow read: if known();
+      allow write: if isEditor();
+    }
     match /materials/{id} {
       allow read: if known();
       allow write: if isEditor();

@@ -5,6 +5,7 @@ import { L, useDoc, Kpi, Pill, Bar, Empty, MiniChart, fmtDT, fmtDate, toast, Ban
 import { exportXlsx } from '../lib/export.js';
 import { PRACTICAL_WEEKS, COURSE } from '../data/course.js';
 import { RUBRICS, rubricById } from '../data/rubrics.js';
+import { useProjects, lab2Time } from './projects.jsx';
 
 // Loads statistics: live mode reads the nightly aggregate (one document); demo mode computes on the fly.
 function useStats() {
@@ -34,7 +35,7 @@ function useStats() {
 
 const kindPct = (v, good = 85, warn = 75) => (v == null ? '' : v >= good ? 'good' : v >= warn ? 'warn' : 'bad');
 
-export function Dashboard() {
+export function Dashboard({ go } = {}) {
   const u = me();
   const { st, refresh } = useStats();
   const [secSort, setSecSort] = useState('section');
@@ -74,6 +75,7 @@ export function Dashboard() {
       </tbody></table></div></section>
     <section class="card"><div class="row between"><h2>Students needing attention</h2><button class="btn sm noprint" onClick={() => exportXlsx({ title: 'Students requiring follow-up', filters: `Absence limit ${25}%; grade < 6; requirements < 70 % of due`, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 32 }, { label: 'Section', key: 'section' }, { label: 'Lecture attendance %', key: 'lecAtt' }, { label: 'Lab attendance %', key: 'labAtt' }, { label: 'Requirements done', key: 'done' }, { label: 'Requirements due', key: 'due' }, { label: 'Mean grade', key: 'meanGrade' }, { label: 'Reasons', get: (r) => r.reasons.join('; '), w: 50 }], rows: st.atRisk })}>Export (Excel)</button></div>
       {st.atRisk.length ? <div class="tablewrap"><table><thead><tr><th>Student</th><th>Sec.</th><th>Reasons</th></tr></thead><tbody>{st.atRisk.slice(0, 60).map((r) => <tr><td><b>{r.name}</b> <span class="mono faint">{r.code}</span></td><td class="mono">S{r.section}</td><td>{r.reasons.map((x) => <Pill kind="bad">{x}</Pill>)}</td></tr>)}</tbody></table></div> : <Empty>No students flagged.</Empty>}</section>
+    <ProjectsCard go={go} />
     {full && <div class="grid2">
       <section class="card"><h2>Demonstrator workload</h2><div class="tablewrap"><table><thead><tr><th>Demonstrator</th><th>Sections</th><th class="n">Reviews</th><th class="n">Median turnaround</th></tr></thead><tbody>{st.demonstrators.map((d) => <tr><td>{d.name}</td><td class="mono">{d.sections}</td><td class="n">{d.reviews}</td><td class="n">{d.medianHours != null ? d.medianHours + ' h' : '–'}</td></tr>)}</tbody></table></div><p class="faint">A workload measure, not a measure of teaching quality.</p></section>
       <section class="card"><h2>Grading agreement</h2>
@@ -201,4 +203,14 @@ function PrepLensValidation() {
       <p class="faint">Bias = mean (rater − demonstrator); negative means the rater scores lower. Limits of agreement follow Bland–Altman. Lin's CCC measures agreement on the same scale (1 = perfect). Weighted κ uses quadratic weights over the four rubric bands. Calculated {fmtDT(res.at)}.</p>
     </>}
   </section>;
+}
+
+// Group projects (Lab 2): group, title and supervisors at a glance.
+function ProjectsCard({ go }) {
+  const by = useProjects();
+  const gs = Array.from({ length: 18 }, (_, i) => i + 1);
+  const filled = gs.filter((g) => by[g] && by[g].title).length;
+  return <section class="card"><div class="row between"><h2>Group projects</h2><div class="row"><Pill kind={filled === 18 ? 'good' : 'warn'}>{filled}/18 assigned</Pill>{go && <button class="btn sm noprint" onClick={() => go('projects')}>Open</button>}</div></div>
+    <div class="tablewrap"><table><thead><tr><th class="n">Group</th><th>Project</th><th>Supervisors</th><th>Lab 2</th></tr></thead>
+      <tbody>{gs.map((g) => <tr><td class="n mono">{g}</td><td dir="auto">{by[g]?.title || <span class="faint">not assigned</span>}</td><td dir="auto" class="faint">{[by[g]?.lecturer, by[g]?.demonstrator].filter(Boolean).join(' · ') || '—'}</td><td class="faint">{lab2Time(g)}</td></tr>)}</tbody></table></div></section>;
 }
