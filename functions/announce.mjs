@@ -57,6 +57,7 @@ const LEADERS = [
   { email: 'alaa.elbaz@dentistry.cu.edu.eg', name: 'Prof. Dr. Alaa El Baz', role: 'vicedean' },
   { email: 'zeinab.omar@dentistry.cu.edu.eg', name: 'Dr. Zeinab Omar', role: 'lecturer', lectures: [3] },
   { email: 'mahitab.kamal@dentistry.cu.edu.eg', name: 'Dr. Mahitab Kamal', role: 'demonstrator', sections: [6] },
+  { email: 'sarah.seif@dentistry.cu.edu.eg', name: 'Dr. Sarah Seif', role: 'demonstrator', sections: [] },
 ];
 for (const l of LEADERS) {
   const r = db.doc(`roster/${l.email}`);
