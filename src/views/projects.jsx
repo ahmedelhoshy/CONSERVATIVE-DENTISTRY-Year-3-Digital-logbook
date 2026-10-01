@@ -29,7 +29,9 @@ export function MyProject({ section }) {
     {p && p.title ? <div class="list"><div class="item"><div class="grow"><b dir="auto">{p.title}</b>
       <div class="faint" dir="auto">{L('Supervisors', 'الإشراف')}: {[p.lecturer, p.demonstrator].filter(Boolean).join(' · ') || '—'}</div>
       <div class="faint">{L('Project lab (Lab 2)', 'لاب المشروع (لاب ٢)')}: {lab2Time(section)}</div></div></div></div>
-      : <p class="faint">{L('Your project and supervisors will appear here once the course director adds them.', 'سيظهر مشروعك والمشرفون هنا بعد أن يضيفهم مدير المقرر.')}</p>}
+      : <div class="stack"><p class="faint">{L('Project titles will be announced on Saturday 10 October.', 'سيتم إعلان عناوين المشاريع يوم السبت ١٠ أكتوبر.')}</p>
+        {p && p.lecturer && <div class="faint" dir="auto">{L('Supervisor', 'المشرف')}: {p.lecturer}</div>}
+        <div class="faint">{L('Project lab (Lab 2)', 'لاب المشروع (لاب ٢)')}: {lab2Time(section)}</div></div>}
   </section>;
 }
 
