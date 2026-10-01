@@ -381,12 +381,32 @@ export function People() {
       {preview && <div class="stack"><div class="state info"><b>{preview.students.length} students found</b><p>{(() => { const noEm = preview.students.filter((s) => !s.email), noSec = preview.students.filter((s) => s.email && !s.section); return <>{noEm.length ? `${noEm.length} rows have no email and will be skipped: ${noEm.slice(0, 6).map((s) => s.code).join(', ')}${noEm.length > 6 ? '…' : ''}. ` : ''}{noSec.length ? `${noSec.length} students have no section yet: they can sign in, check in to lectures and use the library now; lab check-in and tooth submissions open once you re-import the file with sections (a blank section never erases one already set).` : ''}{!noEm.length && !noSec.length ? 'All rows have email and section.' : ''}</>; })()}</p></div>
         <div class="row"><button class="btn primary" disabled={!preview.students.some((s) => s.email)} onClick={importNow}>Import {preview.students.filter((s) => s.email).length} students</button><button class="btn" onClick={() => setPreview(null)}>Cancel</button></div></div>}
     </section>
+    <SignIns students={counts.rows || []} staff={staff.rows || []} />
     <section class="card"><div class="row between"><h2>Staff</h2><button class="btn" onClick={() => setEdit({ role: 'demonstrator', sections: [], lectures: [] })}>+ Add staff</button></div>
       {['director', 'hod', 'vicedean', 'lecturer', 'demonstrator', 'admin'].map((r) => byRole(r).length > 0 && <div class="stack"><span class="eyebrow">{{ director: 'Course Director', hod: 'Head of Department', vicedean: 'Vice Dean — Student Affairs', lecturer: 'Lecturers', demonstrator: 'Demonstrators', admin: 'Administrators' }[r]}</span>
-        <div class="list">{byRole(r).map((s) => <div class="item"><div class="grow"><b>{s.name}</b><div class="faint">{s.email}{s.sections?.length ? ` · sections ${s.sections.join(', ')}` : ''}{s.lectures?.length ? ` · lectures ${s.lectures.join(', ')}` : ''}</div></div><button class="btn sm" onClick={() => setEdit(s)}>Edit</button></div>)}</div></div>)}
+        <div class="list">{byRole(r).map((s) => <div class="item"><div class="grow"><b>{s.name}</b><div class="faint">{s.email}{s.sections?.length ? ` · sections ${s.sections.join(', ')}` : ''}{s.lectures?.length ? ` · lectures ${s.lectures.join(', ')}` : ''} · {s.lastLogin ? `last sign-in ${fmtDT(s.lastLogin)}` : 'not signed in yet'}</div></div><button class="btn sm" onClick={() => setEdit(s)}>Edit</button></div>)}</div></div>)}
     </section>
     {edit && <StaffSheet s={edit} onClose={() => setEdit(null)} />}
   </>;
+}
+// Who has signed in: recorded on each person's roster entry at sign-in (refreshed at most every 6 hours).
+function SignIns({ students, staff }) {
+  const [sec, setSec] = useState(0);
+  const inS = students.filter((x) => x.lastLogin), inT = staff.filter((x) => x.lastLogin);
+  const bySec = Array.from({ length: 18 }, (_, i) => { const all = students.filter((x) => x.section === i + 1); return { s: i + 1, all: all.length, in: all.filter((x) => x.lastLogin).length }; });
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+  const list = sec ? students.filter((x) => x.section === sec).sort((a, b) => (b.lastLogin || 0) - (a.lastLogin || 0)) : [];
+  const exportNot = () => exportXlsx({ title: 'Not signed in yet', fileName: 'Not_signed_in', columns: [
+    { label: 'Student number', get: (r) => r.code }, { label: 'Name', get: (r) => r.name, w: 34 }, { label: 'Section', get: (r) => r.section ?? '' }, { label: 'Email', get: (r) => r.email, w: 36 },
+  ], rows: students.filter((x) => !x.lastLogin).sort((a, b) => (a.section || 99) - (b.section || 99) || String(a.code).localeCompare(String(b.code))) });
+  return <section class="card" id="signins"><div class="row between"><div><h2>Who has signed in</h2>
+      <p class="faint">Students {inS.length} / {students.length} ({pct(inS.length, students.length)}%) · Staff {inT.length} / {staff.length}</p></div>
+      <button class="btn" onClick={exportNot}>Download students not signed in (Excel)</button></div>
+    <div class="tablewrap"><table><thead><tr><th>Section</th>{bySec.map((x) => <th class="n click" onClick={() => setSec(sec === x.s ? 0 : x.s)} style={{ cursor: 'pointer', textDecoration: sec === x.s ? 'underline' : '' }}>{x.s}</th>)}</tr></thead>
+      <tbody><tr><td class="faint">Signed in</td>{bySec.map((x) => <td class="n mono" style={{ color: x.all && x.in === x.all ? 'var(--good, #2e8b57)' : '' }}>{x.in}/{x.all}</td>)}</tr></tbody></table></div>
+    <p class="faint">Tap a section number to see its students.</p>
+    {sec > 0 && <div class="list">{list.map((x) => <div class="item"><div class="grow"><b dir="auto">{x.name}</b> <span class="mono faint">{x.code}</span></div>{x.lastLogin ? <Pill kind="good">{fmtDT(x.lastLogin)}</Pill> : <Pill kind="warn">not yet</Pill>}</div>)}</div>}
+  </section>;
 }
 function StaffSheet({ s, onClose }) {
   const [f, setF] = useState({ name: '', email: '', ...s, sections: s.sections || [], lectures: s.lectures || [] });
