@@ -63,3 +63,20 @@ for (const l of LEADERS) {
   await r.set({ uid: l.email, email: l.email, name: l.name, role: l.role, sections: [], lectures: l.lectures || [] });
   console.log('Added to roster:', l.email, l.role);
 }
+
+// Lecture slides: point Lectures 1 and 2 at the copies already shared with students
+// (the original copies in the Course Director's Drive are private). Only links to those two private files are changed.
+const RELINK = {
+  '12oCqZOSHU5nTJpzufPOgDWTABvDSipLL': '1_unCDVCdcWSPqZm3tzVmVuyKMJxsMHpf', // Lecture 1 → "3rd year orientation session.pdf" (faculty-wide)
+  '1dvnYIjio8aCbMzRetBFKLUD3l9jI-nZ5': '1Y544M-qSjk_qImTi3BSAnU7LZk39793e', // Lecture 2 → "Hard tooth structure defects.pdf" (anyone with link)
+};
+for (const d of (await db.collection('materials').get()).docs) {
+  const m = d.data(); const url = String(m.url || '');
+  const old = Object.keys(RELINK).find((k) => url.includes(k));
+  if (old) {
+    await d.ref.update({ url: `https://drive.google.com/file/d/${RELINK[old]}/preview`, updatedAt: Date.now(), updatedBy: byName });
+    console.log('Lecture link switched to shared copy:', d.id, 'lecture', m.lectureNo);
+  } else if (Number(m.lectureNo) === 1 || Number(m.lectureNo) === 2) {
+    console.log('Lecture material left as is:', d.id, 'lecture', m.lectureNo, (url.match(/\/d\/([^/]+)/) || [])[1] || '(no Drive id)');
+  }
+}
