@@ -24,6 +24,11 @@ const have = new Map(roster.map((r) => [H(r.email), r]));
 note('Account check', CHECK.map(([e, c], i) => { const r = have.get(e); return `#${i + 1}: ${r ? 'on roster (' + r.role + (r.section ? ', section ' + r.section : '') + (H(r.code) === c ? ', right student' : ', WRONG student') + (r.lastLogin ? ', signed in' : ', not signed in yet') + ')' : 'NOT on roster'}`; }).join(' ; '));
 const byCode = {}; for (const r of st) byCode[r.code] = (byCode[r.code] || 0) + 1;
 note('Duplicates', `students with more than one roster entry: ${Object.values(byCode).filter((n) => n > 1).length} · emails with no student number: ${st.filter((r) => !r.code).length}`);
+{ const g = {}; for (const r of st) (g[r.code] = g[r.code] || []).push(r);
+  note('Duplicate detail', Object.values(g).filter((x) => x.length > 1).map((x) => x.map((r) => `S${r.section} ${r.lastLogin ? 'signed in' : 'never signed in'} ${CHECK.some(([e]) => e === H(r.email)) ? '(corrected email)' : '(old email)'}`).join(' + ')).join(' ; ') || 'none'); }
+{ const s1 = (await db.doc('sessions/lab-w3-s1-1').get()).data() || {}; const by = roster.find((r) => r.uid === s1.openedBy || r.authUid === s1.openedBy);
+  const n = (await db.collection('attendance').where('sid', '==', 'lab-w3-s1-1').get()).size;
+  note('Lab 1 S1 (3 Oct) opened early', `status ${s1.status} · opened ${s1.openedAt ? new Date(s1.openedAt).toISOString() : '-'} by ${by ? by.role : s1.openedBy ? 'unknown' : '-'} · attendance records ${n}`); }
 const staff = roster.filter((r) => r.role !== 'student');
 note('Staff signed in', `${staff.filter((r) => r.lastLogin).length}/${staff.length} · lecturers with sections ${staff.filter((r) => r.role === 'lecturer' && (r.sections || []).length).length} · demonstrators on all 18 ${staff.filter((r) => r.role === 'demonstrator' && (r.sections || []).length === 18).length}/${staff.filter((r) => r.role === 'demonstrator').length}`);
 const lec3 = staff.filter((r) => (r.lectures || []).includes(3));
