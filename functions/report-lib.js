@@ -38,3 +38,30 @@ ${st.sections.filter((s) => s.overdue || (s.labAttendance != null && s.labAttend
 ${siteUrl ? `<p><a href="${esc(siteUrl)}" style="background:#0B4A55;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none">Open the live dashboard</a></p>` : ''}
 <p style="color:#74878A;font-size:12px">Aggregated figures. Student-level detail is available only inside the platform to authorised staff. Generated ${new Date().toISOString()}.</p></div>`;
 }
+
+// End-of-day checklist (counts per section only): what is still open today so staff can correct it before the day closes.
+export function actionHtml(all, day) {
+  const sess = all.sessions.filter((s) => s.date === day).sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+  const att = all.attendance.filter((a) => a.date === day);
+  const label = (s) => (s.type === 'lecture' ? `Lecture ${s.lectureNo}` : `Lab ${s.labNo || (/-(\d+)$/.exec(s.id) || [])[1] || ''} · Section ${s.section}`);
+  const rows = [];
+  for (const s of sess) {
+    const a = att.filter((x) => x.sid === s.id);
+    const notOpened = !(s.status === 'open' || s.status === 'closed' || a.length);
+    const awaiting = a.filter((x) => x.status === 'recorded').length;
+    const stillOpen = s.status === 'open';
+    let teethMissing = 0, unreviewed = 0;
+    const isLab1 = s.type === 'lab' && (s.labNo === 1 || /-1$/.test(s.id));
+    if (isLab1) {
+      const present = new Set(a.filter((x) => x.status === 'confirmed').map((x) => x.uid));
+      const mine = all.entries.filter((e) => e.section === s.section && e.week === s.week && !e.practice && e.status !== 'draft');
+      for (const uid of present) if (mine.filter((e) => e.uid === uid).length < 2) teethMissing++;
+      unreviewed = mine.filter((e) => e.status === 'submitted' && !e.review).length;
+    }
+    const issues = [notOpened && 'attendance NOT taken', stillOpen && 'attendance still open (close it)', awaiting && `${awaiting} check-in(s) awaiting confirmation`,
+      unreviewed && `${unreviewed} tooth/teeth not graded yet`, teethMissing && `${teethMissing} present student(s) with fewer than 2 teeth`].filter(Boolean);
+    rows.push(`<tr><td>${label(s)}</td><td>${s.start || ''}–${s.end || ''}</td><td>${issues.length ? '<b style="color:#B3261E">' + issues.join('<br>') + '</b>' : '<span style="color:#2E7D4F">✓ complete</span>'}</td></tr>`);
+  }
+  const open = rows.filter((r) => r.includes('#B3261E')).length;
+  return `<h3>Action needed today (${day})</h3>${rows.length ? `<p>${open ? `<b>${open}</b> session(s) need attention before the day closes.` : 'Everything for today is complete.'}</p><table cellpadding="6" style="border-collapse:collapse;border:1px solid #D3DDDA"><tr style="background:#E8EEEC"><th align="left">Session</th><th align="left">Time</th><th align="left">Still open</th></tr>${rows.join('')}</table>` : '<p>No sessions scheduled today.</p>'}`;
+}

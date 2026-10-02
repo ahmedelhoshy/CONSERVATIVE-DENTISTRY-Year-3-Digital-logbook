@@ -7,7 +7,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { writeFileSync } from 'node:fs';
 import { computeStats } from './shared/stats.js';
 import { PRACTICAL_WEEKS } from './shared/course.js';
-import { cairoDate, loadAll, reportHtml } from './report-lib.js';
+import { cairoDate, loadAll, reportHtml, actionHtml } from './report-lib.js';
 
 initializeApp({ credential: applicationDefault(), projectId: process.env.FB_PROJECT_ID });
 const db = getFirestore();
@@ -29,6 +29,6 @@ let to;
 if (evening) to = [...new Set((all.config.reportRecipients || []).map((e) => String(e).trim().toLowerCase()).filter((e) => e.endsWith('@dentistry.cu.edu.eg')))];
 else { const snap = await db.collection('roster').where('role', 'in', ['hod', 'vicedean']).get(); to = [...new Set(snap.docs.map((d) => String(d.data().email || d.id).trim().toLowerCase()).filter((e) => e.includes('@')))]; }
 const heading = evening ? 'End-of-day report' : 'Daily report';
-const out = { day, to, subject: `${heading} ${day} — Year 3 Conservative Dentistry`, html: reportHtml(st, all, day, heading, process.env.SITE_URL || ''), builtAt: new Date().toISOString() };
+const out = { day, to, subject: `${heading} ${day} — Year 3 Conservative Dentistry`, html: evening ? reportHtml(st, all, day, heading, process.env.SITE_URL || '').replace(/(<\/p>)/, `$1${actionHtml(all, day)}`) : reportHtml(st, all, day, heading, process.env.SITE_URL || ''), builtAt: new Date().toISOString() };
 writeFileSync(process.argv[2] || 'report.json', JSON.stringify(out));
 console.log('Report built for', day, '→', to.length, 'recipient(s)');
