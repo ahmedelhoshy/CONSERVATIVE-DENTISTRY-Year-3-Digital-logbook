@@ -67,6 +67,12 @@ console.log('Announcements up to date');
 const PICS = [
   { id: 'atlas-classI-occlusal-90', category: 'Class I', title: 'Class I — occlusal photo at 90° (reference angulation): buccal side down, ~15 cm, 2× zoom, tooth fills half the screen · صورة أكلوزال ٩٠° مرجعية', url: site + '/guides/ClassI_occlusal_90.jpg', order: 1 },
   { id: 'atlas-classI-probe', category: 'Class I', title: 'Class I — periodontal probe on the pulpal floor, parallel to the long axis. For the depth reading, photograph from the side at the level of the occlusal surface · البروب على الأرضية وموازي لمحور السن', url: site + '/guides/ClassI_probe.jpg', order: 2 },
+  { id: 'atlas-classII-models', category: 'Class II', title: 'Class II for composite — proximal and occlusal views. Left: compound preparation (proximal box + occlusal extension along the central groove). Right: proximal box only (slot) · تحضير كلاس ٢ للكومبوزيت', url: site + '/guides/ClassII_models.jpg', order: 1 },
+  { id: 'atlas-classII-outline', category: 'Class II', title: 'Class II — occlusal outline on a typodont molar: follows the grooves with smooth curves, width ≤ ¼ intercuspal distance · الامتداد الأكلوزالي', url: site + '/guides/ClassII_occlusal_outline.jpg', order: 2 },
+  { id: 'atlas-classII-probe', category: 'Class II', title: 'Class II — checking the proximal box with a periodontal probe: (a) occlusal view, (b–d) box depth and axial wall, probe parallel to the long axis, (e) gingival floor clearance · قياس الصندوق البروكسيمالي بالبروب', url: site + '/guides/ClassII_probe_box.jpg', order: 3 },
+  { id: 'atlas-classII-box-width', category: 'Class II', title: 'Class II — bucco-lingual extent of the proximal box: walls end 1–1.5 mm from the cusp peaks · عرض الصندوق البروكسيمالي', url: site + '/guides/ClassII_box_width.jpg', order: 4 },
+  { id: 'prac-w3-classII-pictures', kind: 'practical', ptype: 'guide', week: 3, category: null, title: 'Class II demonstration — reference pictures (PDF) · صور مرجعية لتحضير كلاس ٢', url: site + '/guides/ClassII_Composite_Reference_Pictures.pdf', order: 5 },
+  { id: 'prac-w4-classII-pictures', kind: 'practical', ptype: 'guide', week: 4, category: null, title: 'Compound Class II for composite — reference pictures (PDF) · صور مرجعية لتحضير كلاس ٢', url: site + '/guides/ClassII_Composite_Reference_Pictures.pdf', order: 1 },
 ];
 const pmark = db.doc('config/seededMaterials');
 const pdone = new Set((await pmark.get()).data()?.ids || []);
