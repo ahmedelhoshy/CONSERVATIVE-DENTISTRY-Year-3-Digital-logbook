@@ -30,11 +30,13 @@ export function Thread({ studentUid, section }) {
     catch (x) { setWarn(String(x.code || '').includes('permission') ? 'personal' : null); if (!String(x.code || '').includes('permission')) toast(L('Message not sent — check your connection.', 'لم تُرسل الرسالة — تحقق من الاتصال.')); }
   };
   return <section class="card">
+    {u.role === 'student' && <div class="state failed" role="note" style={{ marginBottom: 8 }}><b dir="rtl" style={{ display: 'block', textAlign: 'right' }}>للأسئلة العلمية العامة فقط — ممنوع إرسال الشغل أو طلب درجات أو أي أمور تخص الحضور</b>
+      <p style={{ margin: '4px 0 0' }}>General scientific questions only. Do not send your work, ask for grades, or raise anything about attendance.</p></div>}
     <div class="chat">{(msgs.rows || []).length ? msgs.rows.map((m) => <div class={'bubble' + (m.from === u.uid ? ' me' : '')}><span dir="auto">{m.text}</span><div class="meta">{m.fromName} · {ago(m.at)}</div></div>) : <Empty>{u.role === 'student' ? L('No messages yet. Your demonstrators for this section will see what you send.', 'لا توجد رسائل. سيرى معيدو السكشن ما ترسله.') : L('No messages.', 'لا توجد رسائل.')}</Empty>}<div ref={end} /></div>
     {warn && <div class="state failed" role="alert"><b>{L('Message not sent', 'لم تُرسل الرسالة')}</b><p>{L(...CHAT_RULE_TEXT[warn])}</p></div>}
     {canWrite ? <form class="row" onSubmit={send}><input id="thread-input" value={text} onInput={(e) => { setText(e.target.value); setWarn(null); }} placeholder={L('Write a message', 'اكتب رسالة')} maxLength={1000} style={{ flex: 1, minWidth: 180 }} dir="auto" /><button class="btn primary" disabled={!text.trim()}>{L('Send', 'إرسال')}</button></form>
       : <p class="faint">{L('Read-only view for quality oversight.', 'عرض فقط لأغراض متابعة الجودة.')}</p>}
-    <p class="faint">{L('Questions about the course and practical work only. Not allowed: personal information (phone numbers, emails, ID numbers, social-media accounts), attendance, or marks. Messages are visible to the teaching staff, the Head of Department and the Vice Dean for Student Affairs.', 'للأسئلة المتعلقة بالمقرر والعملي فقط. غير مسموح: البيانات الشخصية (أرقام هواتف، بريد إلكتروني، أرقام قومية، حسابات تواصل)، أو الحضور والغياب، أو الدرجات. الرسائل يطّلع عليها فريق التدريس ورئيس القسم ووكيل الكلية لشؤون الطلاب.')}</p>
+    <p class="faint">{L('General scientific questions only. Not allowed: personal information (phone numbers, emails, ID numbers, social-media accounts), attendance, or marks. Messages are visible to the teaching staff, the Head of Department and the Vice Dean for Student Affairs.', 'للأسئلة العلمية العامة فقط. غير مسموح: البيانات الشخصية (أرقام هواتف، بريد إلكتروني، أرقام قومية، حسابات تواصل)، أو الحضور والغياب، أو الدرجات. الرسائل يطّلع عليها فريق التدريس ورئيس القسم ووكيل الكلية لشؤون الطلاب.')}</p>
   </section>;
 }
 
