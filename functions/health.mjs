@@ -39,4 +39,7 @@ const cfg = (await db.doc('config/course').get()).data() || {};
 note('Settings', `aiEnabled ${cfg.aiEnabled} · aiDailyLimit ${cfg.aiDailyLimit} · absenceLimit ${cfg.absenceLimitPct}% · report recipients ${(cfg.reportRecipients || []).length}`);
 const pj = (await db.collection('projects').get()).docs.map((d) => d.data());
 note('Projects', `${pj.length} groups · with supervisor ${pj.filter((p) => p.lecturer).length} · with title ${pj.filter((p) => p.title).length}`);
+const w3 = all.filter((s) => s.week === 3 && s.type === 'lab');
+const t3 = {}; for (const s of w3) { const k = `Lab ${s.labNo || '?'}: ${String(s.title || '').slice(0, 30)}`; t3[k] = (t3[k] || 0) + 1; }
+note('Week 3 lab sessions', JSON.stringify(t3));
 console.log('health check done');
