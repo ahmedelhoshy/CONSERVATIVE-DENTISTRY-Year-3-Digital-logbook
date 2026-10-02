@@ -21,9 +21,14 @@ const sessions = raw.sessions.filter((x) => (x.date || '') >= START);
 const sids = new Set(sessions.map((x) => x.id));
 const all = { ...raw, sessions, attendance: raw.attendance.filter((a) => sids.has(a.sid)), entries: raw.entries.filter((e) => wk.has(e.week)), paperwork: raw.paperwork.filter((p) => wk.has(p.week)) };
 const st = computeStats({ ...all, weeks, today: cairoDate() });
-const day = cairoDate(new Date(Date.now() - 86400e3));
-const snap = await db.collection('roster').where('role', 'in', ['hod', 'vicedean']).get();
-const to = [...new Set(snap.docs.map((d) => String(d.data().email || d.id).trim().toLowerCase()).filter((e) => e.includes('@')))];
-const out = { day, to, subject: `Daily report ${day} — Year 3 Conservative Dentistry`, html: reportHtml(st, all, day, 'Daily report', process.env.SITE_URL || ''), builtAt: new Date().toISOString() };
+// REPORT_KIND=evening: today's figures at about 17:30 Cairo for the Course Director's team (Settings → report recipients).
+// Otherwise: yesterday's figures for the Head of Department and Vice Dean (09:00).
+const evening = process.env.REPORT_KIND === 'evening';
+const day = evening ? cairoDate() : cairoDate(new Date(Date.now() - 86400e3));
+let to;
+if (evening) to = [...new Set((all.config.reportRecipients || []).map((e) => String(e).trim().toLowerCase()).filter((e) => e.endsWith('@dentistry.cu.edu.eg')))];
+else { const snap = await db.collection('roster').where('role', 'in', ['hod', 'vicedean']).get(); to = [...new Set(snap.docs.map((d) => String(d.data().email || d.id).trim().toLowerCase()).filter((e) => e.includes('@')))]; }
+const heading = evening ? 'End-of-day report' : 'Daily report';
+const out = { day, to, subject: `${heading} ${day} — Year 3 Conservative Dentistry`, html: reportHtml(st, all, day, heading, process.env.SITE_URL || ''), builtAt: new Date().toISOString() };
 writeFileSync(process.argv[2] || 'report.json', JSON.stringify(out));
 console.log('Report built for', day, '→', to.length, 'recipient(s)');
