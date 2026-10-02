@@ -449,9 +449,9 @@ export function Settings() {
       <label class="fld">Absence limit before a student is flagged (%)<input id="set-abs" type="number" value={v.absenceLimitPct} onInput={(e) => set('absenceLimitPct', Number(e.target.value))} /></label>
       <label class="fld">Default minimum teeth per lab<input id="set-min" type="number" value={v.minTeethPerLab} onInput={(e) => set('minTeethPerLab', Number(e.target.value))} /></label></div>
       <p class="faint">Pass mark: 60 % (6/10). Weekly requirements follow the practical schedule.</p></section>
-    <section class="card"><h2>Daily report</h2><p class="muted">Every day at 9:00 Cairo time a summary of the previous day is emailed to these addresses. The dashboards refresh at 19:00.</p>
+    <section class="card"><h2>Daily report</h2><p class="muted">Every lab day (Saturday to Thursday) at 6:00 pm Cairo time, the same day's report is emailed to these addresses, with a checklist of anything still missing (attendance not taken or not confirmed, teeth not graded) so it can be corrected the same day. The Head of Department and the Vice Dean receive the previous day's summary at 9:00 am, Sunday to Friday. The dashboards refresh at 19:00.</p>
       <label class="fld">Recipients (one per line)<textarea id="set-rcpt" value={Array.isArray(v.reportRecipients) ? v.reportRecipients.join('\n') : v.reportRecipients} onInput={(e) => set('reportRecipients', e.target.value)} /></label>
-      {c?.lastReportAt && <p class="faint">Last report sent {fmtDT(c.lastReportAt)}.</p>}</section>
+      </section>
     <section class="card"><h2>Prep Lens (AI feedback)</h2>
       <label class="row"><input id="set-ai" type="checkbox" checked={v.aiEnabled} onChange={(e) => set('aiEnabled', e.target.checked)} /> Prep Lens feedback is on</label>
       <label class="fld">Daily limit (photos)<input id="set-ailim" type="number" value={v.aiDailyLimit} onInput={(e) => set('aiDailyLimit', Number(e.target.value))} /></label>
