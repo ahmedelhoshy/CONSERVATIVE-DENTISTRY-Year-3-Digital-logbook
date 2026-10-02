@@ -64,7 +64,12 @@ export function Attend() {
   const [scanned, setScanned] = useState(null);
   useEffect(() => {
     if (!sid || sessions.some((s) => s.id === sid) || (scanned && scanned.id === sid)) return;
-    store().get('sessions', sid).then((d) => { if (d && (d.type === 'lecture' || d.section === u.section)) setScanned({ ...d, id: sid }); }).catch(() => {});
+    // Fully offline and never loaded: rebuild the session from its id (lec-N / lab-wW-sS-N) so the check-in is saved as pending;
+    // the server still validates the code, section and time window when the phone reconnects.
+    const fromId = () => { let m = /^lec-(\d+)$/.exec(sid); if (m) return { id: sid, type: 'lecture', lectureNo: Number(m[1]), date: today() };
+      m = /^lab-w(\d+)-s(\d+)-(\d+)$/.exec(sid); if (m && Number(m[2]) === u.section) return { id: sid, type: 'lab', week: Number(m[1]), section: Number(m[2]), labNo: Number(m[3]), date: today() }; return null; };
+    store().get('sessions', sid).then((d) => { if (d && (d.type === 'lecture' || d.section === u.section)) setScanned({ ...d, id: sid }); else if (!d) { const f = fromId(); if (f) setScanned(f); } })
+      .catch(() => { const f = fromId(); if (f) setScanned(f); });
   }, [sid, sessions.length]);
   const chosen = sessions.find((s) => s.id === sid) || (scanned && scanned.id === sid ? scanned : null);
   const submit = async (e) => {
