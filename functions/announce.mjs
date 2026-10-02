@@ -174,6 +174,21 @@ for (const d of (await db.collection('materials').get()).docs) {
 {
   const T = 'Class I cavity preparation for resin composite on 2 molars (practice week: schedule delay)';
   const snap = await db.collection('sessions').where('week', '==', 3).get(); let n = 0;
-  for (const d of snap.docs) if (d.data().type === 'lab' && d.data().title !== T) { await d.ref.update({ title: T }); n++; }
+  for (const d of snap.docs) if (d.data().type === 'lab' && /-1$/.test(d.id) && d.data().title !== T) { await d.ref.update({ title: T }); n++; }
   console.log('Week 3 lab sessions retitled:', n);
+}
+
+// Every lab session carries its lab number (Lab 1 = requirements, Lab 2+ = discussion & project).
+// Sessions generated before lab numbers existed get it from their id (lab-w<week>-s<section>-<n>); Lab 2+ keep the project title.
+{
+  const DISC = 'Discussion and group project (no requirement)';
+  const snap = await db.collection('sessions').where('type', '==', 'lab').get(); let fixed = 0;
+  for (const d of snap.docs) {
+    const m = /^lab-w\d+-s\d+-(\d+)$/.exec(d.id); if (!m) continue;
+    const n = Number(m[1]); const s = d.data(); const up = {};
+    if (s.labNo !== n) up.labNo = n;
+    if (n >= 2 && s.title !== DISC && s.source !== 'paper') { up.title = DISC; up.req = 0; }
+    if (Object.keys(up).length) { await d.ref.update(up); fixed++; }
+  }
+  console.log('Lab sessions given lab numbers / project titles:', fixed);
 }

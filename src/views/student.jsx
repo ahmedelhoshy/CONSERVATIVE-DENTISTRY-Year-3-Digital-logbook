@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'preact/hooks';
 import { MyProject } from './projects.jsx';
-import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage, setProbeReading } from '../lib/logic.js';
+import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage, setProbeReading, labNo } from '../lib/logic.js';
 import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow , labTitle } from '../lib/ui.jsx';
 import { PRACTICAL_WEEKS, LECTURES, PHOTO_GUIDE, PHOTO_GUIDE_AR, PHOTO_VIEWS, PREP_STAGES, stageCriteria, ORIENTATION_EXERCISES, COURSE } from '../data/course.js';
 import { rubricById, suggestGrade, RUBRICS } from '../data/rubrics.js';
@@ -156,7 +156,7 @@ export function MyLab() {
   const weekRows = rows.filter((e) => e.week === wk.w);
   // Requirement teeth are recorded in Lab 1 only, at most wk.req (2) per week; Lab 2 is discussion and the group project.
   const wkS = useQuery('sessions', u.section ? [['section', '==', u.section], ['week', '==', wk.w]] : null, {}, [u.section, wk.w]);
-  const lab1 = (wkS.rows || []).find((s) => s.labNo === 1);
+  const lab1 = (wkS.rows || []).find((s) => s.type === 'lab' && labNo(s) === 1);
   const lab1Open = !lab1 || today() >= lab1.date;
   const full = weekRows.length >= (wk.req || 2);
   const byWeek = useMemo(() => { const m = {}; for (const e of rows) (m[e.week] = m[e.week] || []).push(e); return Object.entries(m).sort((a, b) => b[0] - a[0]); }, [rows]);
