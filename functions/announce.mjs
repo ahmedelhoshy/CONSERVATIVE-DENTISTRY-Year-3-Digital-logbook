@@ -231,3 +231,16 @@ for (const d of (await db.collection('materials').get()).docs) {
     await wmark.set({ ids: FieldValue.arrayUnion('welcome-2026-10-03-v3') }, { merge: true });
   }
 }
+
+// Course Director's request (2 Oct 2026): remove all student–staff messages sent before the work-message ban. Runs once.
+{
+  const mk = db.doc('config/seededStaff'); const done2 = new Set((await mk.get()).data()?.ids || []);
+  if (!done2.has('purge-messages-2026-10-02')) {
+    const cutoff = Date.parse('2026-10-02T12:10:00Z'); // 15:10 Cairo
+    const snap = await db.collection('messages').get(); let n = 0;
+    for (const d of snap.docs) { const at = Number(d.data().at || 0); if (at && at < cutoff) { await d.ref.delete(); n++; } }
+    await db.collection('audit').add({ action: 'messages.purge', target: 'messages', before: String(n), after: '0', reason: 'Course Director: remove messages sent before the rule on work, grades and attendance', by: owner || 'system', byName, byRole: 'director', at: Date.now() });
+    await mk.set({ ids: FieldValue.arrayUnion('purge-messages-2026-10-02') }, { merge: true });
+    console.log('Messages removed:', n);
+  }
+}
