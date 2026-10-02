@@ -2,6 +2,7 @@
 // as GitHub notices, so the course team can verify the live data without opening the database.
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { createHash } from 'node:crypto';
 initializeApp({ credential: applicationDefault(), projectId: process.env.FB_PROJECT_ID });
 const db = getFirestore();
 const day = process.env.CHECK_DAY || '2026-10-03';
@@ -42,4 +43,8 @@ note('Projects', `${pj.length} groups · with supervisor ${pj.filter((p) => p.le
 const w3 = all.filter((s) => s.week === 3 && s.type === 'lab');
 const t3 = {}; for (const s of w3) { const k = `Lab ${s.labNo || '?'}: ${String(s.title || '').slice(0, 30)}`; t3[k] = (t3[k] || 0) + 1; }
 note('Week 3 lab sessions', JSON.stringify(t3));
+// Is a given account on the roster? Checked by SHA-256 of the email so no address appears in the public log.
+const CHECK = ['8078c1ce18307e860a94201a39f33d418d2a9d483f8ccd772de4b582a5ddb6fd'];
+const have = new Map(roster.map((r) => [createHash('sha256').update(String(r.email || '').toLowerCase()).digest('hex'), r]));
+note('Account check', CHECK.map((h, i) => { const r = have.get(h); return `#${i + 1}: ${r ? 'on roster (' + r.role + (r.section ? ', section ' + r.section : '') + (r.lastLogin ? ', signed in before' : ', never signed in') + ')' : 'NOT on roster'}`; }).join(' ; '));
 console.log('health check done');
