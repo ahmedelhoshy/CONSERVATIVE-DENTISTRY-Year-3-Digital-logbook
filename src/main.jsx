@@ -28,9 +28,10 @@ const NAV = {
   director: [['dash', 'Dashboard'], ['today', 'Today'], ['sessions', 'Sessions'], ['review', 'Reviews'], ['students', 'Students'], ['projects', 'Projects'], ['content', 'Materials'], ['announce', 'Announcements'], ['messages', 'Messages'], ['reports', 'Reports'], ['people', 'People'], ['settings', 'Settings'], ['audit', 'Audit log']],
   hod: [['dash', 'Dashboard'], ['students', 'Students'], ['projects', 'Projects'], ['review', 'Reviews'], ['messages', 'Messages'], ['reports', 'Reports'], ['audit', 'Audit log']],
   vicedean: [['dash', 'Dashboard'], ['projects', 'Projects'], ['messages', 'Messages'], ['reports', 'Reports']],
+  dean: [['dash', 'Dashboard'], ['projects', 'Projects'], ['messages', 'Messages'], ['reports', 'Reports']],
 };
 NAV.admin = NAV.director;
-const ROLE_LABEL = { student: 'Student', demonstrator: 'Demonstrator', lecturer: 'Lecturer', director: 'Course Director', hod: 'Head of Department', vicedean: 'Vice Dean — Student Affairs', admin: 'Administrator' };
+const ROLE_LABEL = { student: 'Student', demonstrator: 'Demonstrator', lecturer: 'Lecturer', director: 'Course Director', hod: 'Head of Department', dean: 'Dean of the Faculty', vicedean: 'Vice Dean — Student Affairs', admin: 'Administrator' };
 
 function View({ route, go }) {
   const u = me();
@@ -62,7 +63,7 @@ function View({ route, go }) {
 function DemoBar({ users, onSwitch }) {
   const u = me();
   const opts = [
-    ['director', 'Course Director'], ['hod', 'Head of Department'], ['vicedean', 'Vice Dean'], ['lecturer', 'Lecturer'],
+    ['director', 'Course Director'], ['hod', 'Head of Department'], ['vicedean', 'Vice Dean'], ['dean', 'Dean'], ['lecturer', 'Lecturer'],
     ['demonstrator', 'Demonstrator (sections 1–2)'], ['student', 'Student (section 1)'],
   ];
   return <div class="demo-bar noprint">

@@ -25,7 +25,7 @@ export function currentWeek() {
   return PRACTICAL_WEEKS.find((w) => t >= w.from && t <= w.to) || PRACTICAL_WEEKS.filter((w) => w.from <= t).slice(-1)[0] || PRACTICAL_WEEKS[0];
 }
 export const isStaff = (u = ME) => u && u.role !== 'student';
-export const isLeader = (u = ME) => u && ['director', 'hod', 'vicedean', 'admin'].includes(u.role);
+export const isLeader = (u = ME) => u && ['director', 'hod', 'vicedean', 'dean', 'admin'].includes(u.role);
 export const canEditCourse = (u = ME) => u && ['director', 'admin'].includes(u.role);
 
 // ---------- audit ----------

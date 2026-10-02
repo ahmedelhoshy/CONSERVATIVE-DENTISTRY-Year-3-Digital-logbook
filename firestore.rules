@@ -13,10 +13,10 @@ service cloud.firestore {
     function prof() { return get(rosterPath()).data; }
     function role() { return prof().role; }
     function isStudent() { return known() && role() == 'student'; }
-    function isStaff() { return known() && role() in ['demonstrator', 'lecturer', 'director', 'hod', 'vicedean', 'admin']; }
+    function isStaff() { return known() && role() in ['demonstrator', 'lecturer', 'director', 'hod', 'vicedean', 'dean', 'admin']; }
     function isTeacher() { return known() && role() in ['demonstrator', 'lecturer', 'director', 'admin']; }
     function isEditor() { return known() && role() in ['director', 'admin']; }
-    function isLeader() { return known() && role() in ['director', 'admin', 'hod', 'vicedean']; }
+    function isLeader() { return known() && role() in ['director', 'admin', 'hod', 'vicedean', 'dean']; }
     function mySec() { return prof().get('section', null); }
     function myUid() { return role() == 'student' ? string(prof().code) : em(); }
     function covers(section) {

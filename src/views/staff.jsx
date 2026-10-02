@@ -7,7 +7,7 @@ import { suggestGrade } from '../data/rubrics.js';
 import { TOOTH_STATUS, PRACTICAL_WEEKS } from '../data/course.js';
 import { Thread } from './chat.jsx';
 
-const mySections = (u) => (['director', 'admin', 'hod', 'vicedean'].includes(u.role) ? Array.from({ length: 18 }, (_, i) => i + 1) : u.sections || []);
+const mySections = (u) => (['director', 'admin', 'hod', 'vicedean', 'dean'].includes(u.role) ? Array.from({ length: 18 }, (_, i) => i + 1) : u.sections || []);
 
 export function Today() {
   const u = me();
@@ -57,7 +57,7 @@ export function SessionPanel({ id, onClose }) {
   const counts = { recorded: 0, confirmed: 0, rejected: 0, none: 0 };
   for (const st of studs) counts[st.rec ? st.rec.status : 'none']++;
   const shown = studs.filter((st) => (filter === 'all' || (st.rec ? st.rec.status : 'none') === filter) && (!search || (st.name + st.code).toLowerCase().includes(search.toLowerCase()))).sort((a, b) => String(a.code).localeCompare(String(b.code)));
-  const canManage = u.role !== 'hod' && u.role !== 'vicedean';
+  const canManage = !['hod', 'vicedean', 'dean'].includes(u.role);
   const left = s.closesAt ? Math.max(0, Math.round((s.closesAt - now) / 1000)) : 0;
   const register = () => exportXlsx({ title: `Attendance register — ${s.type === 'lecture' ? 'Lecture ' + s.lectureNo : labTitle(s)}`, range: `${s.date} ${s.start}–${s.end}`, filters: `Session ${s.id}`, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 34 }, { label: 'Section', key: 'section' }, { label: 'Status', get: (r) => (r.rec ? r.rec.status : 'no record') }, { label: 'Check-in time', get: (r) => (r.rec ? fmtDT(r.rec.at) : '') }, { label: 'Method', get: (r) => r.rec?.method || '' }, { label: 'Decided by', get: (r) => r.rec?.byName || '' }, { label: 'Reason', get: (r) => r.rec?.reason || '' }], rows: studs, definitions: {}, fileName: `register_${s.id}` });
   return <Sheet onClose={onClose} label="Session">
@@ -142,7 +142,7 @@ export function ReviewSheet({ id, onClose }) {
   useEffect(() => { if (e && picks === null) { setPicks(e.review?.picks || {}); setGrade(e.review?.grade ?? ''); setStatus(e.review?.status || 'Completed'); setFeedback(e.review?.feedback || ''); } }, [e]);
   if (!e) return <Sheet onClose={onClose}><p>Loading…</p></Sheet>;
   const rub = rubricFor(e);
-  const readOnly = ['hod', 'vicedean'].includes(u.role);
+  const readOnly = ['hod', 'vicedean', 'dean'].includes(u.role);
   const sugg = rub && picks ? suggestGrade(rub, picks) : null;
   const weekAtt = (attended.rows || []).filter((a) => a.week === e.week && a.status === 'confirmed').length;
   const changing = e.review && Number(grade) !== e.review.grade;

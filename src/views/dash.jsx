@@ -42,7 +42,7 @@ export function Dashboard({ go } = {}) {
   if (st === undefined || (isDemo() && !st)) return <p>Loading dashboard…</p>;
   if (!st) return <><section class="hero"><h1>Dashboard</h1></section><Empty>No aggregate yet. It is produced every evening at 19:00. {['director', 'hod', 'admin'].includes(u.role) && <button class="btn sm" onClick={refresh}>Build it now</button>}</Empty></>;
   const T = st.totals;
-  const lead = { director: 'Course Director', admin: 'Course Director', hod: 'Head of Department', vicedean: 'Vice Dean for Student Affairs' }[u.role];
+  const lead = { director: 'Course Director', admin: 'Course Director', hod: 'Head of Department', vicedean: 'Vice Dean for Student Affairs', dean: 'Dean of the Faculty' }[u.role];
   const full = ['director', 'admin', 'hod'].includes(u.role);
   const secs = [...st.sections].sort((a, b) => (secSort === 'section' ? a.section - b.section : (a[secSort] ?? 999) - (b[secSort] ?? 999)));
   const issues = [
@@ -107,7 +107,7 @@ export function Reports() {
   const [to, setTo] = useState(today());
   const [sec, setSec] = useState('all');
   const S = store();
-  const leaderOnly = u.role === 'vicedean';
+  const leaderOnly = ['vicedean', 'dean'].includes(u.role);
   const range = `${from} to ${to}`;
   const inRange = (d) => d >= from && d <= to;
   const secF = (x) => sec === 'all' || x.section === Number(sec);

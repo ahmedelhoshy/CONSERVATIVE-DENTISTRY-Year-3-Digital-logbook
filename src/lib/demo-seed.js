@@ -41,6 +41,7 @@ export function seedDemo() {
     { uid: 'demo-director', name: 'Prof. Ahmed El-Hoshy', role: 'director', email: 'course.director@example.edu' },
     { uid: 'demo-hod', name: 'Head of Department (demo)', role: 'hod', email: 'head.department@example.edu' },
     { uid: 'demo-vicedean', name: 'Vice Dean for Student Affairs (demo)', role: 'vicedean', email: 'vice.dean@example.edu' },
+    { uid: 'demo-dean', name: 'Dean of the Faculty (demo)', role: 'dean', email: 'dean@example.edu' },
     { uid: 'demo-lecturer', name: 'Dr. Lecturer (demo)', role: 'lecturer', email: 'lecturer@example.edu', lectures: [2, 6], sections: [4, 8] },
   ];
   DEMO_DEMONSTRATORS.forEach((n, i) => {

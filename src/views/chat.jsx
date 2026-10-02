@@ -3,7 +3,7 @@ import { me, sendMessage, askAssistant, store } from '../lib/logic.js';
 import { L, useQuery, Empty, Pill, ago, toast } from '../lib/ui.jsx';
 import { chatBlocked, CHAT_RULE_TEXT } from '../lib/chatguard.js';
 const WRITERS = ['student', 'demonstrator', 'lecturer', 'director', 'admin'];
-const OBSERVERS = ['hod', 'vicedean'];
+const OBSERVERS = ['hod', 'vicedean', 'dean'];
 
 export function ChatHub() {
   const [tab, setTab] = useState('assistant');
@@ -40,7 +40,7 @@ export function Thread({ studentUid, section }) {
 
 export function Messages() {
   const u = me();
-  const all = ['director', 'admin', 'hod', 'vicedean'].includes(u.role) || (u.role === 'lecturer' && !(u.sections || []).length);
+  const all = ['director', 'admin', 'hod', 'vicedean', 'dean'].includes(u.role) || (u.role === 'lecturer' && !(u.sections || []).length);
   const scope = all ? [] : [['section', 'in', (u.sections && u.sections.length ? u.sections : [0]).slice(0, 10)]];
   const msgs = useQuery('messages', scope, { orderBy: 'at', desc: true, limit: 400 });
   const [open, setOpen] = useState(null);
