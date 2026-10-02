@@ -277,6 +277,6 @@ export function EntrySheet({ id, onClose }) {
 
     {editable && !e.practice && <button class="btn gold big" disabled={!allPicked || grade === '' || !e.photos?.length || busy} onClick={submit}>{e.status === 'redo' ? L('Resubmit for review', 'أعد الإرسال للتقييم') : L('Submit for demonstrator review', 'أرسل لتقييم المعيد')}</button>}
     {e.status === 'submitted' && <div class="state pending"><b>{L('Waiting for your demonstrator', 'في انتظار المعيد')}</b><p>{L('Take the tooth to your demonstrator for inspection. Record the official grade in your physical logbook too.', 'اعرض السن على المعيد للفحص، وسجل الدرجة الرسمية في اللوجبوك الورقي أيضًا.')}</p></div>}
-    <section class="stack"><h3>{L('Ask my demonstrator about this tooth', 'اسأل المعيد عن هذا السن')}</h3><div class="row"><input id="entry-msg" value={msg} onInput={(ev) => setMsg(ev.target.value)} placeholder={L('e.g. Check my margins?', 'مثال: هل الحواف سليمة؟')} style={{ flex: 1, minWidth: 180 }} /><button class="btn" disabled={!msg.trim()} onClick={async () => { await sendMessage(u.uid, u.section, `[#${e.tooth} ${rub?.title || ''}] ${msg}`, e.id); setMsg(''); toast(L('Sent to your demonstrators', 'تم الإرسال للمعيدين')); }}>{L('Send', 'إرسال')}</button></div></section>
+    {/* Per-tooth messages to the demonstrator were removed: no work, grades or attendance in messages (Course Director, 2 Oct 2026). */}
   </Sheet>;
 }
