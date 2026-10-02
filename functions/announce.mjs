@@ -34,7 +34,7 @@ Its success depends on the cooperation of each one of you. Your feedback and eng
 
 أ.د. أحمد الحوشي — مدير المقرر
 Prof. Dr. Ahmed El-Hoshy — Course Director
-تحت رعاية أ.د. جيرالدين أحمد، عميدة الكلية، وإشراف أ.د. علاء الباز، وكيلة الكلية لشؤون الطلاب، وأ.د. هبة حمزة، رئيس القسم
+تحت رعاية أ.د. جيرالدين أحمد، عميدة الكلية، وإشراف أ.د. ألاء الباز، وكيلة الكلية لشؤون الطلاب، وأ.د. هبة حمزة، رئيس القسم
 Under the patronage of Prof. Dr. Geraldine Ahmed, Dean of the Faculty, and the supervision of Prof. Dr. Alaa El Baz, Vice Dean for Student Affairs, and Prof. Dr. Heba Hamza, Head of Department`,
     audience: 'all', imageUrl: null,
   },
@@ -220,13 +220,13 @@ for (const d of (await db.collection('materials').get()).docs) {
   console.log('Lab sessions given lab numbers / project titles:', fixed);
 }
 
-// Welcome note v2: signature adds the Dean of the Faculty (updates the note already posted; runs once).
+// Welcome note v3: signature with the Dean of the Faculty; Vice Dean's name spelled ألاء (updates the note already posted; runs once).
 {
   const wmark = db.doc('config/seededAnnouncements'); const wd = new Set((await wmark.get()).data()?.ids || []);
-  if (!wd.has('welcome-2026-10-03-v2')) {
+  if (!wd.has('welcome-2026-10-03-v3')) {
     const w = SEEDS.find((x) => x.id === 'welcome-2026-10-03');
     const r = db.doc('announcements/welcome-2026-10-03');
     if ((await r.get()).exists) { await r.update({ body: w.body }); console.log('Welcome note updated with the Dean'); }
-    await wmark.set({ ids: FieldValue.arrayUnion('welcome-2026-10-03-v2') }, { merge: true });
+    await wmark.set({ ids: FieldValue.arrayUnion('welcome-2026-10-03-v3') }, { merge: true });
   }
 }
