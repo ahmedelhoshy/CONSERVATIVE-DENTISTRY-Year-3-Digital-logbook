@@ -258,3 +258,26 @@ for (const d of (await db.collection('materials').get()).docs) {
     console.log('Messages removed:', n);
   }
 }
+
+// One-time clean-up (2 Oct): remove a student's old roster entry left behind when the email was corrected,
+// and reset Lab 1 S1 of 3 Oct, which was opened a day early with no records. Emails are matched by hash only.
+{
+  const cmark = db.doc('config/seededAnnouncements'); const cd = new Set((await cmark.get()).data()?.ids || []);
+  if (!cd.has('roster-cleanup-2026-10-02')) {
+    const { createHash } = await import('node:crypto');
+    const H = (x) => createHash('sha256').update(String(x || '').toLowerCase()).digest('hex');
+    const FIXED = new Set(["fe96f9152da8879265382d40e94a4daa10577e52561028ae0c73d82992d57fba", "bc37c3d64ed04bf63c0a5c011e45f32452e14425115b57f166528296ad504f44", "41a945ea67ad29f1825047a163d6371f0ee710f50618a653643fb2e0719b294e", "9ddc3ef1efacf3c5f5b0c6de323fceac4ff306965de3dac28a3e8c888683cc38", "4fd746f2a675ef922af595270b4955ec309a5603bddb791b88d01423b736139e", "475a89820c921b2b6b102c1c30722033fb370f562718279fc17c5147ece9e286", "47510f9c9b1c0379d80876c5220e9480dfc2fc92342029092d539f7587b0df91", "65573521695f95c713d61845eae926ee12c6b8e4d8b380202d420ff0f9fb823d", "31e79153b87ec1664e684803e4a4b6c770776831ea3dcd4a5363d94c28c2514d", "dca8acdcddb07ad7c3a1827c4851c6b9e72f0604f655c4b9c6fa13bdde9be1f2"]);
+    const st = (await db.collection('roster').where('role', '==', 'student').get()).docs;
+    const g = {}; for (const d of st) (g[d.data().code] = g[d.data().code] || []).push(d);
+    let removed = 0;
+    for (const ds of Object.values(g)) {
+      if (ds.length < 2 || !ds.some((d) => FIXED.has(H(d.id)))) continue;
+      for (const d of ds) if (!FIXED.has(H(d.id)) && !d.data().lastLogin) { await d.ref.delete(); removed++; }
+    }
+    const s1 = db.doc('sessions/lab-w3-s1-1'); const sd = (await s1.get()).data();
+    const n = (await db.collection('attendance').where('sid', '==', 'lab-w3-s1-1').get()).size;
+    if (sd && sd.status === 'open' && n === 0) await s1.update({ status: 'scheduled', openedAt: FieldValue.delete(), closesAt: FieldValue.delete(), syncUntil: FieldValue.delete(), openedBy: FieldValue.delete(), openedByName: FieldValue.delete() });
+    console.log('Roster clean-up: old entries removed', removed, '· Lab 1 S1 reset', !!(sd && sd.status === 'open' && n === 0));
+    await cmark.set({ ids: FieldValue.arrayUnion('roster-cleanup-2026-10-02') }, { merge: true });
+  }
+}
