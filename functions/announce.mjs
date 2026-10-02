@@ -12,6 +12,33 @@ const byName = who?.name || process.env.OWNER_NAME || 'Course Director';
 
 const SEEDS = [
   {
+    id: 'welcome-2026-10-03',
+    title: 'أهلاً بكم في اللوجبوك الرقمي · Welcome to the Digital Logbook',
+    body: `أعزاءنا الطلاب والزملاء أعضاء هيئة التدريس والهيئة المعاونة،
+
+أهلاً بكم في اللوجبوك الرقمي لمقرر العلاج التحفظي للفرقة الثالثة. يسعدنا أن نكون جزءًا من التحول الرقمي في التعليم الجامعي بكلية طب الأسنان – جامعة القاهرة.
+
+هدفنا أن نجعل كل شيء أسهل: الحضور، ومتطلبات اللاب، والتقييم، والمواد التعليمية… كلها الآن على موبايلك وفي متناول يدك.
+
+نجاح هذه الخطوة يعتمد على تعاون كل واحد منكم، فملاحظاتكم ومشاركتكم هي ما سيجعل التجربة أفضل من أجل مستقبل أفضل لتعليم طب الأسنان. يسعدنا دائمًا أن نخدمكم ونساعدكم.
+
+—
+
+Dear students and colleagues,
+
+Welcome to the Digital Logbook for Year 3 Conservative Dentistry. We are proud to be part of the digital transformation of university education at the Faculty of Dentistry, Cairo University.
+
+Our aim is to make things easier: attendance, lab requirements, evaluation and learning materials are now on your smartphone, at your fingertips.
+
+Its success depends on the cooperation of each one of you. Your feedback and engagement will make it better, for a better future in dental education. We are always glad to serve and support you.
+
+أ.د. أحمد الحوشي — مدير المقرر
+Prof. Dr. Ahmed El-Hoshy — Course Director
+تحت إشراف أ.د. هبة حمزة، رئيس القسم، وأ.د. علاء الباز، وكيلة الكلية لشؤون الطلاب
+Under the supervision of Prof. Dr. Heba Hamza, Head of Department, and Prof. Dr. Alaa El Baz, Vice Dean for Student Affairs`,
+    audience: 'all', imageUrl: null,
+  },
+  {
     id: 'guide-demonstrator-v3',
     title: 'دليل المعيد (محدّث): الحضور والتقييم وتصوير السن',
     body: 'النسخة المحدثة من دليل المعيد.\n\nالجديد: صور الطالب — ٣ صور لكل سن (أكلوزال ٩٠°، زاوية ٤٥°، البروب).\nصورة البروب: الموبايل في مستوى سطح السن من ناحية البكل، مش من فوق، عشان الرقم عند حافة التحضير يبان. والطالب يكتب القراءة بالمم في خانة My probe reading، وتظهر لك بجانب تقييمه الذاتي.\n\nالنت ضعيف؟ الطالب يسجّل عادي ويظهر Pending، ويتسجل تلقائيًا لما يتصل خلال ٣٠ دقيقة من نهاية اللاب.\n\nالفيديو (دقيقة ونص):\n' + site + '/guides/Demonstrator_Guide_Video_v3.mp4',
