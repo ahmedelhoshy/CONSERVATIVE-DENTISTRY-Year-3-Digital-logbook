@@ -362,6 +362,14 @@ export function People() {
   const importNow = async () => {
     const S = store(); let n = 0, noSec = 0;
     const existing = new Set((counts.rows || []).map((x) => x.email));
+    // A corrected email replaces the student's old entry (wrong or shared email), so the student is not counted twice.
+    // Only entries nobody has signed in with, and that are not themselves in this file, are removed.
+    const inFile = new Set(preview.students.map((s) => s.email).filter(Boolean)); let replaced = 0;
+    for (const s of preview.students) {
+      if (!s.email) continue;
+      for (const old of (counts.rows || []).filter((x) => String(x.code) === s.code && x.email !== s.email && !inFile.has(x.email) && !x.lastLogin)) { await S.del('users', old.email); replaced++; }
+    }
+    if (replaced) await audit('roster.replace', 'students', null, `${replaced} old entries replaced by corrected emails`, 'Roster import');
     for (const s of preview.students) {
       if (!s.email) continue;
       const rec = { uid: s.code, code: s.code, name: s.name, email: s.email, status: s.status, role: 'student' };
@@ -370,7 +378,7 @@ export function People() {
       await S.set('users', s.email, rec, { merge: true }); n++;
     }
     await audit('roster.import', 'students', null, `${n} students (${noSec} without section)`, 'Roster import');
-    toast(`${n} students imported${noSec ? ` · ${noSec} without a section yet` : ''}`); setPreview(null);
+    toast(`${n} students imported${replaced ? ` · ${replaced} old email(s) replaced` : ''}${noSec ? ` · ${noSec} without a section yet` : ''}`); setPreview(null);
   };
   const byRole = (r) => (staff.rows || []).filter((x) => x.role === r);
   return <>
