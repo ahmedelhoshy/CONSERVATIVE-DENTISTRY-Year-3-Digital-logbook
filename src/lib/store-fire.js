@@ -7,7 +7,7 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   getAuth, onAuthStateChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut,
-  GoogleAuthProvider, OAuthProvider, signInWithPopup,
+  GoogleAuthProvider, OAuthProvider, signInWithPopup, signInWithRedirect,
 } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
@@ -104,7 +104,13 @@ export const fireStore = {
       history.replaceState(null, '', location.pathname + '#/');
       return { ok: true };
     },
-    google: () => signInWithPopup(auth, new GoogleAuthProvider()),
+    // One tap with the faculty Google account; falls back to a full-page redirect where pop-ups are blocked.
+    google: async () => {
+      const p = new GoogleAuthProvider(); p.setCustomParameters({ hd: 'dentistry.cu.edu.eg' });
+      try { return await signInWithPopup(auth, p); }
+      catch (e) { if (/popup-blocked|operation-not-supported|popup-closed-by-browser/.test(e.code || '')) return signInWithRedirect(auth, p); throw e; }
+    },
+    lastEmail: () => { try { return localStorage.getItem('signin-email') || ''; } catch (e) { return ''; } },
     microsoft: () => signInWithPopup(auth, new OAuthProvider('microsoft.com')),
     signOut: () => signOut(auth),
   },
