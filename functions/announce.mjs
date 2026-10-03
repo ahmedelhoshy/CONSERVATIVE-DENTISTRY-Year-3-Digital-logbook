@@ -50,8 +50,47 @@ Under the patronage of Prof. Dr. Geraldine Ahmed, Dean of the Faculty, and the s
     body: '١) أكلوزال ٩٠°: البكل لتحت، ١٥ سم، زووم 2×، السن نص الشاشة.\n٢) زاوية ٤٥°: من الميزيال أو الديستال لتظهر الجدران.\n٣) البروب: الموبايل في مستوى سطح السن من ناحية البكل — مش من فوق — واكتب القراءة بالمم في خانة My probe reading.\n\nنظّف السن وجفّفه، وارفع الصور من المنصة مباشرة. Prep Lens للتدريب فقط ولا يعطي درجة.',
     audience: 'students', imageUrl: site + '/guides/Student_Photo_Guide.jpg',
   },
-];
+  {
+    id: 'student-instructions-2026-10-03',
+    title: 'تعليمات المنصة الجديدة · New platform instructions',
+    body: `📌 تعليمات المنصة — من الأسبوع ده
 
+أولاً: حضور المحاضرة
+• الـQR هيظهر على الشاشة كاملة ومعاه كود من ٦ أرقام.
+• افتح المنصة ← الحضور ← امسح الـQR ← تأكيد الحضور.
+• لو قاعد بعيد ومش عارف تمسح: اكتب الـ٦ أرقام في خانة الكود ← تأكيد الحضور.
+• لو النت ضعيف: الحضور بيتحفظ على الموبايل ويتبعت لوحده لما النت يرجع. متمسحش مرتين.
+
+ثانياً: اللاب (سنتين في الأسبوع)
+١. سجّل حضورك بالـQR أول السكشن.
+٢. افتح اللاب ← سنة جديدة لكل ضرس من الاتنين.
+٣. صورتين بس لكل سنة:
+   📷 صورة ١: أكلوزال بزاوية ٩٠° (البكال تحت، الموبايل على بعد ١٥ سم، زووم 2×).
+   📷 صورة ٢: من الجنب بالبروب المدرّج على الأرضية موازي لمحور السن، والموبايل في مستوى سطح السن.
+   لو الصورة مش واضحة اضغط «إعادة التصوير»، وهي هتحل محل القديمة.
+٤. Prep Lens على سنة واحدة بس في الأسبوع: بعد الصورتين، قيّم نفسك على الروبريك واكتب درجتك ← «احفظ واعرض ملاحظات Prep Lens». السنة التانية: تقييم ذاتي وبس.
+٥. اضغط «أرسل لتقييم المعيد» لكل سنة. من غير «إرسال» المعيد مش هيقدر يقيّم.
+٦. اعرض السنة على المعيد. هيحدد العيوب الموجودة بس، ويديك درجة واحدة. هتوصلك الدرجة وقائمة العيوب على المنصة.
+
+تنبيهات
+• متعملش سنان كتير تجريبية. سنتين المتطلبات بس، والتدريب الإضافي من «سنة تدريب».
+• الرسائل للأسئلة العلمية العامة فقط. ممنوع إرسال صور أو شغل أو طلب درجات أو حضور.
+
+—
+
+Platform instructions (from this week)
+Lecture attendance: the QR fills the screen, with a 6-digit code. Attendance → scan → Confirm attendance. Too far to scan? Type the 6 digits. Weak network? The check-in saves on your phone and sends itself later, so don't scan twice.
+Lab, 2 molars per week:
+1. Scan the QR at the start of the lab.
+2. My lab → New tooth, once for each molar.
+3. Two photos only per tooth. Photo 1: occlusal at 90°. Photo 2: proximal side with the probe on the floor, parallel to the long axis. Use Retake to replace a photo.
+4. Prep Lens on one tooth per week: self-assess, then Save and see Prep Lens feedback. For the second tooth, self-assessment only.
+5. Tap Submit for demonstrator review for each tooth. Without Submit, the demonstrator can't grade.
+6. Show the tooth to your demonstrator. They mark only the defects and give one overall grade, and you see both on the platform.
+Messages are for general scientific questions only. No photos, work, grades or attendance.`,
+    audience: 'students',
+  },
+];
 const mark = db.doc('config/seededAnnouncements');
 const done = new Set((await mark.get()).data()?.ids || []);
 for (const s of SEEDS) {
@@ -352,5 +391,14 @@ for (const d of (await db.collection('materials').get()).docs) {
     if ((await r.get()).exists) await r.update({ makeup: true, req: 2, title: 'Week 3 make-up: Class I preparation on 2 molars (Saturday was the demonstration)' });
     await mm.set({ ids: FieldValue.arrayUnion('s16-makeup-2026-10-04') }, { merge: true });
     console.log('Section 16 make-up session set');
+  }
+}
+
+// The older photo guides (3 photos per tooth) are superseded by the 2-photo rule (3 Oct): unpin them.
+{
+  const om = db.doc('config/seededAnnouncements'); const od = new Set((await om.get()).data()?.ids || []);
+  if (!od.has('unpin-3photo-guides')) {
+    for (const id of ['guide-student-photos-v1', 'guide-demonstrator-v3']) { const r = db.doc('announcements/' + id); if ((await r.get()).exists) await r.update({ pinned: false }); }
+    await om.set({ ids: FieldValue.arrayUnion('unpin-3photo-guides') }, { merge: true });
   }
 }
