@@ -18,6 +18,8 @@ jobs:
       - name: Check live data
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-flash-lite-latest' }}
         run: cd functions && node health.mjs
       - if: always()
         run: rm -f "$RUNNER_TEMP/sa.json"

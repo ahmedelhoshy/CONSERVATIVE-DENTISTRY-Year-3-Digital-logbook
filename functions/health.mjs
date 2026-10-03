@@ -15,6 +15,16 @@ try { const es = (await db.collection('entries').where('week', '==', 3).get()).d
   const u = (await db.doc('usage/preplens-' + day0).get()).data() || {}; const u2 = (await db.doc('usage/preplens-2026-10-02').get()).data() || {};
   const rs = (await db.collection('research').get()).docs.map((d) => d.data());
   note('Prep Lens', `calls today ${u.total || 0} by ${Object.keys(u.users || {}).length} students · yesterday ${u2.total || 0} · research records ${rs.length} (week 3: ${rs.filter((r) => r.week === 3).length}, practice ${rs.filter((r) => r.practice).length}) · latest ${rs.map((r) => r.at || 0).sort().slice(-1).map((x) => new Date(x).toISOString()).join('')}`);
+  { const key = process.env.GEMINI_API_KEY || ''; const model = process.env.GEMINI_MODEL;
+    let msg = `key ${key ? 'present (' + key.length + ' chars)' : 'MISSING'} · model ${model}`;
+    try {
+      const e = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).find((x) => (x.photos || []).length);
+      const parts = [{ text: 'Reply with JSON {"ok":true,"what":"<3 words describing the image>"}' }];
+      if (e) { const { getStorage } = await import('firebase-admin/storage'); const [buf] = await getStorage().bucket('digitallogbook-dfc3e.firebasestorage.app').file(e.photos[e.photos.length - 1].path).download(); parts.push({ inline_data: { mime_type: 'image/jpeg', data: buf.toString('base64') } }); msg += ` · photo ${Math.round(buf.length / 1024)} KB`; }
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { responseMimeType: 'application/json' } }) });
+      const t = await res.text(); msg += ` · HTTP ${res.status} · ${t.replace(/\s+/g, ' ').slice(0, 300)}`;
+    } catch (x) { msg += ' · error ' + String(x.message).slice(0, 200); }
+    note('Gemini test', msg); }
   note('Photos', `week-3 teeth by section ${JSON.stringify(by)} · storage photos total ${files}, uploaded today ${today}, sizes KB ${sizes.slice(0, 15).join(',')}`); } catch (x) { note('Photos', 'error ' + String(x.message).slice(0, 200)); }
 
 const sess = (await db.collection('sessions').where('date', '==', day).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
