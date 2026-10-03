@@ -41,6 +41,12 @@ note('Duplicates', `students with more than one roster entry: ${Object.values(by
     out.push(`${s.type === 'lecture' ? 'Lecture ' + s.lectureNo : 'Lab ' + (s.labNo || '?') + ' S' + s.section} [${s.status || 'scheduled'}] att recorded ${c.recorded} confirmed ${c.confirmed} rejected ${c.rejected}${ent}`);
   }
   note('Today live', out.join(' ; ') || 'no sessions'); }
+{ const l = (await db.doc('sessions/lec-3').get()).data() || {}; const c = (await db.doc('codes/lec-3').get()).data() || {};
+  const iso = (x) => (x ? new Date(x + 3 * 3600e3).toISOString().slice(11, 16) : '-');
+  const n = (await db.collection('attendance').where('sid', '==', 'lec-3').get()).size;
+  const today = (await db.collection('attendance').where('date', '==', '2026-10-03').get()).docs.map((d) => d.data());
+  const bySid = {}; for (const a of today) bySid[a.sid] = (bySid[a.sid] || 0) + 1;
+  note('Lecture 3 detail', `status ${l.status} · opened ${iso(l.openedAt)} · closes ${iso(l.closesAt)} · syncUntil ${iso(l.syncUntil)} (Cairo) · codes: cur ${c.cur ? 'set' : 'none'}, recent ${(c.recent || []).length}, all ${(c.all || []).length}, rotated ${iso(c.at || c.updatedAt)} · records ${n} · today's records by session ${JSON.stringify(bySid)}`); }
 const staff = roster.filter((r) => r.role !== 'student');
 note('Staff signed in', `${staff.filter((r) => r.lastLogin).length}/${staff.length} · lecturers with sections ${staff.filter((r) => r.role === 'lecturer' && (r.sections || []).length).length} · demonstrators on all 18 ${staff.filter((r) => r.role === 'demonstrator' && (r.sections || []).length === 18).length}/${staff.filter((r) => r.role === 'demonstrator').length}`);
 const lec3 = staff.filter((r) => (r.lectures || []).includes(3));
