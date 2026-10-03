@@ -229,7 +229,7 @@ for (const d of (await db.collection('materials').get()).docs) {
     const m = /^lab-w\d+-s\d+-(\d+)$/.exec(d.id); if (!m) continue;
     const n = Number(m[1]); const s = d.data(); const up = {};
     if (s.labNo !== n) up.labNo = n;
-    if (n >= 2 && s.title !== DISC && s.source !== 'paper') { up.title = DISC; up.req = 0; }
+    if (n >= 2 && s.title !== DISC && s.source !== 'paper' && !s.makeup) { up.title = DISC; up.req = 0; }
     if (Object.keys(up).length) { await d.ref.update(up); fixed++; }
   }
   console.log('Lab sessions given lab numbers / project titles:', fixed);
@@ -341,5 +341,16 @@ for (const d of (await db.collection('materials').get()).docs) {
       if (e.week === 3 && e.review && e.review.grade != null && !e.photoRejected) { await d.ref.update({ status: 'reviewed', history: [...(e.history || []), { at: Date.now(), event: 'redo-cleared', by: byName, reason: 'Graded with the wrong button on 3 Oct; grade kept' }], updatedAt: Date.now() }); n++; } }
     console.log('Week 3 teeth moved from redo to graded:', n);
     await rm.set({ ids: FieldValue.arrayUnion('redo-to-reviewed-2026-10-03') }, { merge: true });
+  }
+}
+
+// Section 16: the demonstration took all of Saturday's Lab 1 (3 Oct), so Sunday's session (4 Oct, 16:00–18:00) is used for the Week 3 molars.
+{
+  const mm = db.doc('config/seededAnnouncements'); const md = new Set((await mm.get()).data()?.ids || []);
+  if (!md.has('s16-makeup-2026-10-04')) {
+    const r = db.doc('sessions/lab-w3-s16-2');
+    if ((await r.get()).exists) await r.update({ makeup: true, req: 2, title: 'Week 3 make-up: Class I preparation on 2 molars (Saturday was the demonstration)' });
+    await mm.set({ ids: FieldValue.arrayUnion('s16-makeup-2026-10-04') }, { merge: true });
+    console.log('Section 16 make-up session set');
   }
 }
