@@ -306,3 +306,27 @@ for (const d of (await db.collection('materials').get()).docs) {
     await hm.set({ ids: FieldValue.arrayUnion('holiday-2026-10-08') }, { merge: true });
   }
 }
+
+// Section 3, Lab 1, 3 Oct: students present on the paper register but with no platform record are marked present;
+// one scanned check-in left unconfirmed is confirmed. Students matched by hashed student number only.
+{
+  const am = db.doc('config/seededAnnouncements'); const ad = new Set((await am.get()).data()?.ids || []);
+  if (!ad.has('s3-paper-2026-10-03')) {
+    const { createHash } = await import('node:crypto'); const H = (x) => createHash('sha256').update(String(x || '')).digest('hex');
+    const ADD = new Set(["5474ddb2147777171c75dd57766ae104e3368105bb9b7a6c9e29f05e02e1bc04", "7d916bf517cbd25ab670f20af1a27a66868ca4815e95c46561bf1809b52c03af", "b253ab811e9121c6092ea68461dcee07175e69759f501918e50c580e3f7c2347", "a174ca1dcab676b9fe546e2ce4dc8a9b7433380bbc0af3e2526b9dcfda210aae", "48664c5c90a0bd456011918bff4f10e6fda537c176fb01c11e3be6f40c2f70be", "62014ad8ee9d85b258153205926415629de57e4d60ecf3daf736303b26863fb7", "5f746027b9707fa028ce944d349d53902272a12eb76738c35b0bba3dd2908f17", "d6091fd7fdfc48e01fd3238d4374421f9cd1c49b93b7e3f8c9845714f2935531"]); const CONF = '37c90e05f49c65980f5956ae385329f3f4333e6b092d7ed633ad0ce4825065e7';
+    const sid = 'lab-w3-s3-1'; const sess = (await db.doc('sessions/' + sid).get()).data();
+    const st = (await db.collection('roster').where('role', '==', 'student').where('section', '==', 3).get()).docs.map((d) => d.data());
+    const t = Date.now(); let added = 0, confirmed = 0;
+    for (const x of st) {
+      const ref = db.doc(`attendance/${sid}_${x.uid}`); const cur = (await ref.get()).data();
+      if (ADD.has(H(x.code)) && !cur) {
+        await ref.set({ sid, uid: x.uid, code: x.code || '', name: x.name, section: 3, type: 'lab', date: sess.date, week: sess.week || 3, at: t, status: 'confirmed', method: 'manual', by: 'course-director', byName: byName, decidedAt: t, reason: 'Paper register, Section 3, 3 Oct (confirmed by Course Director)' });
+        added++;
+      } else if (H(x.code) === CONF && cur && cur.status === 'recorded') {
+        await ref.update({ status: 'confirmed', by: 'course-director', byName: byName, decidedAt: t, reason: 'Present on paper register, 3 Oct' }); confirmed++;
+      }
+    }
+    console.log('Section 3 paper register: added', added, 'confirmed', confirmed);
+    await am.set({ ids: FieldValue.arrayUnion('s3-paper-2026-10-03') }, { merge: true });
+  }
+}
