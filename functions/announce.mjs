@@ -51,6 +51,36 @@ Under the patronage of Prof. Dr. Geraldine Ahmed, Dean of the Faculty, and the s
     audience: 'students', imageUrl: site + '/guides/Student_Photo_Guide.jpg',
   },
   {
+    id: 'staff-grading-2026-10-04',
+    title: 'التقييم الجديد للمعيدين · New grading for demonstrators',
+    body: `ابتداءً من الأحد ٤ أكتوبر:
+
+١) التقييم = العيوب فقط + درجة واحدة
+• افتح السنة من «قائمة التقييم».
+• دوس بس على البند اللي فيه عيب، واختار: Slight / Marked / Unacceptable.
+• أي بند ما اتدسش عليه بيتسجل «مقبول».
+• اكتب درجة واحدة (المنصة بتقترح درجة من العيوب، والقرار لك) ← Save evaluation.
+• العيوب بتتبعت للطالب تلقائي؛ الكومنت اختياري.
+• «Save & ask to correct» فقط لو السنة لازم تتصلح وتتبعت تاني.
+
+٢) صورتين بس لكل سنة
+• صورة ١: أكلوزال ٩٠°.  • صورة ٢: من الجنب بالبروب على الأرضية.
+• الطالب يقدر يعيد التصوير؛ الجديدة بتحل محل القديمة.
+• Prep Lens على سنة واحدة في الأسبوع لكل طالب؛ التانية تقييم ذاتي بس.
+
+٣) قبل التقييم
+• لازم الطالب يكون «حاضر» في لاب الأسبوع ويكون ضغط «إرسال». لو السنة لسه «مسودة» اطلب منه يضغط إرسال.
+• لو زرار الحفظ رمادي، السطر الأصفر فوقه بيقول الناقص.
+
+—
+
+From Sunday 4 October:
+1) Grading = defects only + one grade. Open the tooth from the Review queue, tap only the criteria with a defect and choose Slight / Marked / Unacceptable; untouched criteria are recorded as acceptable. Enter one overall grade (the platform suggests one) → Save evaluation. The defects go to the student automatically; a comment is optional. Use "Save & ask to correct" only when the tooth must be corrected and resubmitted.
+2) Two photos per tooth: occlusal 90° and proximal side with the probe on the floor; students can retake (the new photo replaces the old). Prep Lens is used on one tooth per student per week.
+3) Before grading: the student must be marked present in this week's lab and must have tapped Submit. If Save is grey, the yellow line above it says what is missing.`,
+    audience: 'staff',
+  },
+  {
     id: 'student-instructions-2026-10-03',
     title: 'تعليمات المنصة الجديدة · New platform instructions',
     body: `📌 تعليمات المنصة — من الأسبوع ده
