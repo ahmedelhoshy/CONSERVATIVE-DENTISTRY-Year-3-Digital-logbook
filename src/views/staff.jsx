@@ -171,6 +171,12 @@ export function ReviewSheet({ id, onClose }) {
       <label class="fld">Feedback to the student<textarea id="rv-feedback" value={feedback} onInput={(ev) => setFeedback(ev.target.value)} placeholder="Specific, criterion-based feedback" /></label>
       {changing && <label class="fld">Reason for changing the saved grade (audit log)<input id="rv-reason" value={reason} onInput={(ev) => setReason(ev.target.value)} /></label>}
       <details><summary>Photo unclear?</summary><label class="fld" style={{ marginTop: 8 }}>Reject photo and ask for a new one — reason<input id="rv-reject" value={rejectPhoto} onInput={(ev) => setRejectPhoto(ev.target.value)} placeholder="e.g. not at 90°, no probe for scale" /></label></details>
+      {(() => { const miss = (rub?.criteria || []).filter((c) => !picks?.[c.id]); const why = [];
+        if (weekAtt === 0) why.push('the student has no confirmed attendance this week');
+        if (miss.length) why.push(`choose a band (A–D) for ${miss.length} more criterion${miss.length > 1 ? 'a' : ''}: ${miss.map((c) => c.name).join(', ')}`);
+        if (grade === '') why.push('enter the official grade');
+        if (changing && !reason.trim()) why.push('give a reason for changing the saved grade');
+        return why.length ? <div class="state pending" role="status" style={{ display: "block", padding: 12 }}><b style={{ fontSize: "1rem" }}>To save:</b> {why.join(' · ')}.</div> : null; })()}
       <div class="row"><button class="btn primary" disabled={busy || weekAtt === 0 || grade === '' || !rub?.criteria.every((c) => picks?.[c.id]) || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
         <button class="btn danger" disabled={busy || weekAtt === 0 || grade === '' || !feedback.trim()} onClick={() => save(true)}>Save & ask to correct</button></div>
     </>}
