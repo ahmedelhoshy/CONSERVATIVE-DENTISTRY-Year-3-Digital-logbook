@@ -15,16 +15,6 @@ try { const es = (await db.collection('entries').where('week', '==', 3).get()).d
   const u = (await db.doc('usage/preplens-' + day0).get()).data() || {}; const u2 = (await db.doc('usage/preplens-2026-10-02').get()).data() || {};
   const rs = (await db.collection('research').get()).docs.map((d) => d.data());
   note('Prep Lens', `calls today ${u.total || 0} by ${Object.keys(u.users || {}).length} students · yesterday ${u2.total || 0} · research records ${rs.length} (week 3: ${rs.filter((r) => r.week === 3).length}, practice ${rs.filter((r) => r.practice).length}) · latest ${rs.map((r) => r.at || 0).sort().slice(-1).map((x) => new Date(x).toISOString()).join('')}`);
-  { const key = process.env.GEMINI_API_KEY || ''; const model = process.env.GEMINI_MODEL;
-    let msg = `key ${key ? 'present (' + key.length + ' chars)' : 'MISSING'} · model ${model}`;
-    try {
-      const e = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).find((x) => (x.photos || []).length);
-      const parts = [{ text: 'Reply with JSON {"ok":true,"what":"<3 words describing the image>"}' }];
-      if (e) { const { getStorage } = await import('firebase-admin/storage'); const [buf] = await getStorage().bucket('digitallogbook-dfc3e.firebasestorage.app').file(e.photos[e.photos.length - 1].path).download(); parts.push({ inline_data: { mime_type: 'image/jpeg', data: buf.toString('base64') } }); msg += ` · photo ${Math.round(buf.length / 1024)} KB`; }
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { responseMimeType: 'application/json' } }) });
-      const t = await res.text(); msg += ` · HTTP ${res.status} · ${t.replace(/\s+/g, ' ').slice(0, 300)}`;
-    } catch (x) { msg += ' · error ' + String(x.message).slice(0, 200); }
-    note('Gemini test', msg); }
   { const L7 = ["74353344a4ce6dcb671905ad81a76bc012ab6841116819b9da254a6f78e8b918", "87ab97d75ef85173c307ba848b6b9b0aed7d29877c8cd58ca27e2ec1a936d5ca", "671cca257c0e480bacc38db5a89d1e445449bc7ab8c42af7d3e6e1aaaeb05f4f", "9b082312b0c4b3f53e024346584d82c729ef442bca6d91eae6f235ec1ebace69", "d6091fd7fdfc48e01fd3238d4374421f9cd1c49b93b7e3f8c9845714f2935531", "b3b0f6633c40b350076f28a7151eb46b1daa5dfaff6beaa4f880a7f457161fd0", "149be316dfcee7e23944feaba4c23d83a4bc308d03999bacbd2ba0f8f26ea92e"];
     const ro = (await db.collection('roster').where('section', '==', 3).get()).docs.map((d) => d.data());
     const es3 = (await db.collection('entries').where('section', '==', 3).get()).docs.map((d) => d.data());
