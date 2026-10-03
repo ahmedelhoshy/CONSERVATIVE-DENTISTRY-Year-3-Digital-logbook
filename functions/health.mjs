@@ -25,6 +25,13 @@ try { const es = (await db.collection('entries').where('week', '==', 3).get()).d
       const t = await res.text(); msg += ` · HTTP ${res.status} · ${t.replace(/\s+/g, ' ').slice(0, 300)}`;
     } catch (x) { msg += ' · error ' + String(x.message).slice(0, 200); }
     note('Gemini test', msg); }
+  { const L7 = ["74353344a4ce6dcb671905ad81a76bc012ab6841116819b9da254a6f78e8b918", "87ab97d75ef85173c307ba848b6b9b0aed7d29877c8cd58ca27e2ec1a936d5ca", "671cca257c0e480bacc38db5a89d1e445449bc7ab8c42af7d3e6e1aaaeb05f4f", "9b082312b0c4b3f53e024346584d82c729ef442bca6d91eae6f235ec1ebace69", "d6091fd7fdfc48e01fd3238d4374421f9cd1c49b93b7e3f8c9845714f2935531", "b3b0f6633c40b350076f28a7151eb46b1daa5dfaff6beaa4f880a7f457161fd0", "149be316dfcee7e23944feaba4c23d83a4bc308d03999bacbd2ba0f8f26ea92e"];
+    const ro = (await db.collection('roster').where('section', '==', 3).get()).docs.map((d) => d.data());
+    const es3 = (await db.collection('entries').where('section', '==', 3).get()).docs.map((d) => d.data());
+    const out = L7.map((h, i) => { const r = ro.find((x) => createHash('sha256').update(String(x.code)).digest('hex') === h); if (!r) return `#${i + 1}: not in S3 roster`;
+      const mine = es3.filter((e) => e.uid === r.uid); return `#${i + 1}: uid==code ${String(r.uid) === String(r.code)} · codeType ${typeof r.code} · signedIn ${!!r.lastLogin} · teeth ${mine.length} · withPhotos ${mine.filter((e) => (e.photos || []).length).length} · photos ${mine.reduce((a, e) => a + (e.photos || []).length, 0)}`; });
+    const bad = ro.filter((x) => String(x.uid) !== String(x.code)).length;
+    note('S3 photo students', out.join(' ; ') + ` · S3 roster entries with uid != code: ${bad}`); }
   note('Photos', `week-3 teeth by section ${JSON.stringify(by)} · storage photos total ${files}, uploaded today ${today}, sizes KB ${sizes.slice(0, 15).join(',')}`); } catch (x) { note('Photos', 'error ' + String(x.message).slice(0, 200)); }
 
 const sess = (await db.collection('sessions').where('date', '==', day).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
