@@ -292,3 +292,17 @@ for (const d of (await db.collection('materials').get()).docs) {
     console.log('Lecture 4 slide code set');
   }
 }
+
+// Thursday 8 October 2026 is an official national day off: remove that day's sessions (only those with no attendance taken).
+{
+  const hm = db.doc('config/seededAnnouncements'); const hd = new Set((await hm.get()).data()?.ids || []);
+  if (!hd.has('holiday-2026-10-08')) {
+    const snap = await db.collection('sessions').where('date', '==', '2026-10-08').get(); const gone = [];
+    for (const d of snap.docs) {
+      const n = (await db.collection('attendance').where('sid', '==', d.id).limit(1).get()).size;
+      if (n === 0 && !['open', 'closed'].includes(d.data().status)) { await d.ref.delete(); gone.push(d.id); }
+    }
+    console.log('Holiday 8 Oct: sessions removed', gone.length, gone.join(', '));
+    await hm.set({ ids: FieldValue.arrayUnion('holiday-2026-10-08') }, { merge: true });
+  }
+}

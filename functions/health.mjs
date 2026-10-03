@@ -47,6 +47,7 @@ note('Duplicates', `students with more than one roster entry: ${Object.values(by
   const today = (await db.collection('attendance').where('date', '==', '2026-10-03').get()).docs.map((d) => d.data());
   const bySid = {}; for (const a of today) bySid[a.sid] = (bySid[a.sid] || 0) + 1;
   note('Lecture 3 detail', `status ${l.status} · opened ${iso(l.openedAt)} · closes ${iso(l.closesAt)} · syncUntil ${iso(l.syncUntil)} (Cairo) · codes: cur ${c.cur ? 'set' : 'none'}, recent ${(c.recent || []).length}, all ${(c.all || []).length}, rotated ${iso(c.at || c.updatedAt)} · records ${n} · today's records by session ${JSON.stringify(bySid)}`); }
+note('Holiday 8 Oct', `sessions on 2026-10-08: ${(await db.collection('sessions').where('date', '==', '2026-10-08').get()).size}`);
 const staff = roster.filter((r) => r.role !== 'student');
 note('Staff signed in', `${staff.filter((r) => r.lastLogin).length}/${staff.length} · lecturers with sections ${staff.filter((r) => r.role === 'lecturer' && (r.sections || []).length).length} · demonstrators on all 18 ${staff.filter((r) => r.role === 'demonstrator' && (r.sections || []).length === 18).length}/${staff.filter((r) => r.role === 'demonstrator').length}`);
 const lec3 = staff.filter((r) => (r.lectures || []).includes(3));
