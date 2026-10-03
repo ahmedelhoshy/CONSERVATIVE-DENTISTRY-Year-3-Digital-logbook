@@ -432,3 +432,24 @@ for (const d of (await db.collection('materials').get()).docs) {
     await om.set({ ids: FieldValue.arrayUnion('unpin-3photo-guides') }, { merge: true });
   }
 }
+
+// Lecture 3 (3 Oct): students on the Course Director's handwritten list (present, could not scan the QR from the back rows).
+// Matched by hashed student number; only students with no record are added.
+{
+  const lm = db.doc('config/seededAnnouncements'); const ld = new Set((await lm.get()).data()?.ids || []);
+  if (!ld.has('lec3-paper-2026-10-03')) {
+    const { createHash } = await import('node:crypto'); const H = (x) => createHash('sha256').update(String(x || '')).digest('hex');
+    const LIST = new Set(["061cdd34486f80077a31f9448c40bd94eee0e8baed2dc2b34fec0e3d1a2e351a", "8572c18115de38a973afa4169d37eea33679ec97d2163da3fe70d0b1dfdb4cc7", "372e065d0474acac41c18c57229aca05360211a9e004698ade0f84b2dffbe86f", "4f702f8977e2e2514dd85aaae3712b53457a74be65dfc91faef6947340805097", "1260d39d8822994b3028deb97806d2c0570389d16c3b84d3729b3fb89f67db9e", "683f5eae096cca42656e87a197dda36c3222183bcde77a98293af4cdb80e7ace", "7d916bf517cbd25ab670f20af1a27a66868ca4815e95c46561bf1809b52c03af", "a5ecb37f311af961d05d0866ef8840db56fa65369dcb3226f48210270c08d06d", "c24a705fac2242d9da29dc732e2b8ab1d9d446fca44805d35513afca2ede8b8a", "c0ca7b9b280e6cee0559e09a85ebd5084b8c612f3e9804b576a0d3c96d0e3573", "cf30ef488ecf60dece55e4261a920ec8d0e4a59e91cdd575ca1b6cff4362d8e2", "dd4817903576ca795f2b195c9426bd3a639b3dcd4accc3f0e21bfe193a340cb9", "3a31a7b6a76d7f6ffcf05325aa03ce2816050fbd30357a3a4a531f1e5feb6d91", "fde7987680fe49076fd1d7a14a43a7d7718f4f334f97b02cf74b7968440f0a01", "4d526535c192bef110ab0e1fff0fe8c0ac82dc7bd63cae8470ac47f49992f1c6", "d426db1c1af858e2cbf28341bfc3b04812032b1d66c1fcc2bae656622428746e", "762dd0469abe1808cf9a5387e3878f0119c659c1293269b118c7a9153f8a41d6", "62ae3ee73103aef071404c53f2ce72dd5d089966181589f4f95f23b2dcfbdd69", "22d5a5b9d6924cd50eb788d993b17aeafc82f154fb9c84e81e74042440b5f4c5", "716236a8fa441fd22836e26f2872d56c7a52d1e3fd863413e75b41fd2f496e8a", "fbec1ffca4e24f3a9ddba4510bc58efa9e04d59e39b0b0bcc7e4a8c110a226b1", "f3648bc58c31cc43e0243f389943a5f3c18d32e869e97076169e083af7a25703", "6158c31b909504e45d5c188d0072f0b54fc70d1ab44dc1c4aabd974fc12f0aee", "c109fba2530cf2b9e45ceabdb8bafd5f669ad516bc826b01c75822fab4061013", "22b1adb4953b1bd026613c4445c7378d00289d3712f040fc1143e17a62853740", "c7784cf2fca840d5071c922702fb6005a793125bee0ccc99cfde3b903cba15d6", "51d52c450ff3fcfeefe71fb9ac902fd5a5ee29980b0a6a0138f4ffc0a82d0686", "050102a13e0ea1a71ef474ce613b7627219aa1e6afa6c21dbfd8e6e65272d61e", "e3047bd42b619ae9c651545b712b5dee8f8d6af17590cd110a004802d48d3f0d"]);
+    const sid = 'lec-3'; const sess = (await db.doc('sessions/' + sid).get()).data();
+    const st = (await db.collection('roster').where('role', '==', 'student').get()).docs.map((d) => d.data()).filter((x) => LIST.has(H(x.code)));
+    const t = Date.now(); let added = 0, already = 0;
+    for (const x of st) {
+      const ref = db.doc(`attendance/${sid}_${x.uid}`); const cur = (await ref.get()).data();
+      if (cur) { already++; continue; }
+      await ref.set({ sid, uid: x.uid, code: x.code || '', name: x.name, section: x.section || null, type: 'lecture', date: sess.date, week: sess.week || null, at: t, status: 'confirmed', method: 'manual', by: 'course-director', byName, decidedAt: t, reason: 'Lecture 3 paper list: present, could not scan the QR (Course Director)' });
+      added++;
+    }
+    console.log('Lecture 3 paper list: matched', st.length, 'added', added, 'already recorded', already);
+    await lm.set({ ids: FieldValue.arrayUnion('lec3-paper-2026-10-03') }, { merge: true });
+  }
+}
