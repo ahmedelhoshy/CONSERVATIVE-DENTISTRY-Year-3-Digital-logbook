@@ -177,7 +177,8 @@ export async function addPhoto(entryId, file, view = 'occlusal') {
   const path = `photos/${ME.uid}/${entryId}/${Date.now()}.jpg`;
   const url = await S.putFile(path, blob);
   const e = await S.get('entries', entryId);
-  const photos = [...(e.photos || []), { path, url, view, at: nowMs(), quality }];
+  // One photo per view (occlusal 90° and proximal with probe): a retake replaces the earlier photo of that view.
+  const photos = [...(e.photos || []).filter((p) => p.view !== view), { path, url, view, at: nowMs(), quality }];
   await S.update('entries', entryId, { photos, updatedAt: nowMs() });
   return { quality };
 }

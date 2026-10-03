@@ -106,6 +106,10 @@ async function doPrepLens(u, data) {
   const rubric = rubricById[e.rubricId];
   if (!rubric) throw new HttpsError('failed-precondition', 'This exercise has no rubric.');
   if (!e.photos?.length) throw new HttpsError('failed-precondition', 'Add a photo first.');
+  if (!e.practice && !e.ai) {
+    const others = (await db.collection('entries').where('uid', '==', e.uid).where('week', '==', e.week).get()).docs.filter((d) => d.id !== entryId && !d.data().practice && d.data().ai);
+    if (others.length) throw new HttpsError('failed-precondition', 'Prep Lens is used on one tooth per week.');
+  }
   const cfg = (await db.doc('config/course').get()).data() || {};
   if (cfg.aiEnabled === false) throw new HttpsError('resource-exhausted', 'quota: Prep Lens is switched off.');
   const ok = await takeQuota('preplens', cfg.aiDailyLimit ?? 1500, { uid: u.uid, limit: cfg.aiPerStudentDaily ?? 20 });
