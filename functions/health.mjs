@@ -3,15 +3,14 @@
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { createHash } from 'node:crypto';
-import { getStorage } from 'firebase-admin/storage';
 initializeApp({ credential: applicationDefault(), projectId: process.env.FB_PROJECT_ID });
 const db = getFirestore();
 const day0 = process.env.CHECK_DAY || '2026-10-03';
-{ const es = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).filter((e) => !e.practice);
+try { const es = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).filter((e) => !e.practice);
   const by = {}; for (const e of es) { const k = 'S' + e.section; const b = by[k] = by[k] || { n: 0, photo: 0, nophoto: 0, ai: 0, sub: 0 }; b.n++; if ((e.photos || []).length) b.photo++; else b.nophoto++; if (e.ai) b.ai++; if (e.status !== 'draft') b.sub++; }
   let files = 0, today = 0, sizes = [];
-  try { const [fs] = await getStorage().bucket('digitallogbook-dfc3e.firebasestorage.app').getFiles({ prefix: 'photos/' }); files = fs.length; for (const f of fs) if (String(f.metadata.timeCreated || '').startsWith(day0)) { today++; sizes.push(Math.round(Number(f.metadata.size) / 1024)); } } catch (x) { files = 'error ' + x.message.slice(0, 80); }
-  note('Photos', `week-3 teeth by section ${JSON.stringify(by)} · storage photos total ${files}, uploaded today ${today}, sizes KB ${sizes.slice(0, 15).join(',')}`); }
+  try { const { getStorage } = await import('firebase-admin/storage'); const [fs] = await getStorage().bucket('digitallogbook-dfc3e.firebasestorage.app').getFiles({ prefix: 'photos/' }); files = fs.length; for (const f of fs) if (String(f.metadata.timeCreated || '').startsWith(day0)) { today++; sizes.push(Math.round(Number(f.metadata.size) / 1024)); } } catch (x) { files = 'error ' + x.message.slice(0, 80); }
+  note('Photos', `week-3 teeth by section ${JSON.stringify(by)} · storage photos total ${files}, uploaded today ${today}, sizes KB ${sizes.slice(0, 15).join(',')}`); } catch (x) { note('Photos', 'error ' + String(x.message).slice(0, 200)); }
 const day = process.env.CHECK_DAY || '2026-10-03';
 const note = (t, m) => console.log(`::notice title=${t}::${m}`);
 
