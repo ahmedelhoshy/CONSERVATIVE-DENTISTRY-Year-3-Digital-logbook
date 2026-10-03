@@ -281,3 +281,14 @@ for (const d of (await db.collection('materials').get()).docs) {
     await cmark.set({ ids: FieldValue.arrayUnion('roster-cleanup-2026-10-02') }, { merge: true });
   }
 }
+
+// Lecture 4 (10 Oct): Prof. Omima shows the attendance QR as a slide made in advance. Its code is accepted only while
+// attendance for Lecture 4 is open (opened on the day by staff), like the rotating codes.
+{
+  const fm = db.doc('config/seededAnnouncements'); const fd = new Set((await fm.get()).data()?.ids || []);
+  if (!fd.has('lec4-fixed-code')) {
+    await db.doc('codes/lec-4').set({ fixed: '985765' }, { merge: true });
+    await fm.set({ ids: FieldValue.arrayUnion('lec4-fixed-code') }, { merge: true });
+    console.log('Lecture 4 slide code set');
+  }
+}
