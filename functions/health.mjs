@@ -12,6 +12,9 @@ try { const es = (await db.collection('entries').where('week', '==', 3).get()).d
   const by = {}; for (const e of es) { const k = 'S' + e.section; const b = by[k] = by[k] || { n: 0, photo: 0, nophoto: 0, ai: 0, sub: 0 }; b.n++; if ((e.photos || []).length) b.photo++; else b.nophoto++; if (e.ai) b.ai++; if (e.status !== 'draft') b.sub++; }
   let files = 0, today = 0, sizes = [];
   try { const { getStorage } = await import('firebase-admin/storage'); const [fs] = await getStorage().bucket('digitallogbook-dfc3e.firebasestorage.app').getFiles({ prefix: 'photos/' }); files = fs.length; for (const f of fs) if (String(f.metadata.timeCreated || '').startsWith(day0)) { today++; sizes.push(Math.round(Number(f.metadata.size) / 1024)); } } catch (x) { files = 'error ' + x.message.slice(0, 80); }
+  const u = (await db.doc('usage/preplens-' + day0).get()).data() || {}; const u2 = (await db.doc('usage/preplens-2026-10-02').get()).data() || {};
+  const rs = (await db.collection('research').get()).docs.map((d) => d.data());
+  note('Prep Lens', `calls today ${u.total || 0} by ${Object.keys(u.users || {}).length} students · yesterday ${u2.total || 0} · research records ${rs.length} (week 3: ${rs.filter((r) => r.week === 3).length}, practice ${rs.filter((r) => r.practice).length}) · latest ${rs.map((r) => r.at || 0).sort().slice(-1).map((x) => new Date(x).toISOString()).join('')}`);
   note('Photos', `week-3 teeth by section ${JSON.stringify(by)} · storage photos total ${files}, uploaded today ${today}, sizes KB ${sizes.slice(0, 15).join(',')}`); } catch (x) { note('Photos', 'error ' + String(x.message).slice(0, 200)); }
 
 const sess = (await db.collection('sessions').where('date', '==', day).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
