@@ -155,10 +155,10 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--surface-2); 
 .bubble.me { align-self: flex-end; background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
 .bubble .meta { font-size: .7rem; opacity: .75; margin-top: 3px; }
 
-.projector { position: fixed; inset: 0; z-index: 60; background: #06262C; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; text-align: center; }
+.projector { position: fixed; inset: 0; z-index: 60; background: #06262C; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 14px; text-align: center; }
 .projector .big { font-family: var(--mono); font-size: clamp(3rem, 12vw, 8rem); letter-spacing: .15em; font-weight: 500; }
 .projector .qr { background: #fff; padding: 14px; border-radius: 14px; }
-.projector .qr img, .projector .qr canvas { width: min(46vh, 70vw); height: auto; display: block; }
+.projector .qr img, .projector .qr canvas { width: min(62vh, 80vw); height: auto; display: block; }
 .timer { height: 6px; width: min(520px, 80vw); background: rgba(255, 255, 255, .15); border-radius: 3px; overflow: hidden; }
 .timer i { display: block; height: 100%; background: #D9AE5B; transition: width 1s linear; }
 
