@@ -29,6 +29,18 @@ note('Duplicates', `students with more than one roster entry: ${Object.values(by
 { const s1 = (await db.doc('sessions/lab-w3-s1-1').get()).data() || {}; const by = roster.find((r) => r.uid === s1.openedBy || r.authUid === s1.openedBy);
   const n = (await db.collection('attendance').where('sid', '==', 'lab-w3-s1-1').get()).size;
   note('Lab 1 S1 (3 Oct) opened early', `status ${s1.status} · opened ${s1.openedAt ? new Date(s1.openedAt).toISOString() : '-'} by ${by ? by.role : s1.openedBy ? 'unknown' : '-'} · attendance records ${n}`); }
+{ const T = new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10);
+  const ts = (await db.collection('sessions').where('date', '==', T).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+  const out = [];
+  for (const s of ts.sort((a, b) => (a.start || '').localeCompare(b.start || ''))) {
+    const at = (await db.collection('attendance').where('sid', '==', s.id).get()).docs.map((d) => d.data());
+    const c = { recorded: 0, confirmed: 0, rejected: 0 }; for (const a of at) c[a.status] = (c[a.status] || 0) + 1;
+    let ent = '';
+    if (s.type === 'lab') { const es = (await db.collection('entries').where('section', '==', s.section).where('week', '==', 3).get()).docs.map((d) => d.data()).filter((e) => !e.practice);
+      ent = ` · teeth ${es.filter((e) => e.status !== 'draft').length} (drafts ${es.filter((e) => e.status === 'draft').length}, Prep Lens ${es.filter((e) => e.ai?.score != null).length}, self-eval ${es.filter((e) => e.self?.grade != null).length}, graded ${es.filter((e) => e.review).length})`; }
+    out.push(`${s.type === 'lecture' ? 'Lecture ' + s.lectureNo : 'Lab ' + (s.labNo || '?') + ' S' + s.section} [${s.status || 'scheduled'}] att recorded ${c.recorded} confirmed ${c.confirmed} rejected ${c.rejected}${ent}`);
+  }
+  note('Today live', out.join(' ; ') || 'no sessions'); }
 const staff = roster.filter((r) => r.role !== 'student');
 note('Staff signed in', `${staff.filter((r) => r.lastLogin).length}/${staff.length} · lecturers with sections ${staff.filter((r) => r.role === 'lecturer' && (r.sections || []).length).length} · demonstrators on all 18 ${staff.filter((r) => r.role === 'demonstrator' && (r.sections || []).length === 18).length}/${staff.filter((r) => r.role === 'demonstrator').length}`);
 const lec3 = staff.filter((r) => (r.lectures || []).includes(3));
