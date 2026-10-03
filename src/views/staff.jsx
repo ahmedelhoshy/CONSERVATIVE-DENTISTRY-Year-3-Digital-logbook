@@ -178,7 +178,7 @@ export function ReviewSheet({ id, onClose }) {
         if (changing && !reason.trim()) why.push('give a reason for changing the saved grade');
         return why.length ? <div class="state pending" role="status" style={{ display: "block", padding: 12 }}><b style={{ fontSize: "1rem" }}>To save:</b> {why.join(' · ')}.</div> : null; })()}
       <div class="row"><button class="btn primary" disabled={busy || weekAtt === 0 || grade === '' || !rub?.criteria.every((c) => picks?.[c.id]) || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
-        <button class="btn danger" disabled={busy || weekAtt === 0 || grade === '' || !feedback.trim()} onClick={() => save(true)}>Save & ask to correct</button></div>
+        <button class="btn danger" disabled={busy || weekAtt === 0 || grade === '' || !feedback.trim()} onClick={() => { if (confirm('This sends the tooth BACK to the student to correct and resubmit. To simply grade it, press Cancel and use "Save evaluation".')) save(true); }}>Save & ask to correct</button></div>
     </>}
     {e.history?.length > 0 && <details><summary>History ({e.history.length})</summary><div class="list">{e.history.map((ev) => <div class="item faint">{fmtDT(ev.at)} · {ev.event}{ev.by ? ' · ' + ev.by : ''}{ev.reason ? ' · ' + ev.reason : ''}</div>)}</div></details>}
   </Sheet>;

@@ -330,3 +330,16 @@ for (const d of (await db.collection('materials').get()).docs) {
     await am.set({ ids: FieldValue.arrayUnion('s3-paper-2026-10-03') }, { merge: true });
   }
 }
+
+// 3 Oct: several demonstrators pressed "Save & ask to correct" instead of "Save evaluation". The grade and feedback were saved;
+// only the status sent the tooth back to the student. Week 3 teeth graded that way (not photo rejections) are set to graded.
+{
+  const rm = db.doc('config/seededAnnouncements'); const rd = new Set((await rm.get()).data()?.ids || []);
+  if (!rd.has('redo-to-reviewed-2026-10-03')) {
+    const snap = await db.collection('entries').where('status', '==', 'redo').get(); let n = 0;
+    for (const d of snap.docs) { const e = d.data();
+      if (e.week === 3 && e.review && e.review.grade != null && !e.photoRejected) { await d.ref.update({ status: 'reviewed', history: [...(e.history || []), { at: Date.now(), event: 'redo-cleared', by: byName, reason: 'Graded with the wrong button on 3 Oct; grade kept' }], updatedAt: Date.now() }); n++; } }
+    console.log('Week 3 teeth moved from redo to graded:', n);
+    await rm.set({ ids: FieldValue.arrayUnion('redo-to-reviewed-2026-10-03') }, { merge: true });
+  }
+}
