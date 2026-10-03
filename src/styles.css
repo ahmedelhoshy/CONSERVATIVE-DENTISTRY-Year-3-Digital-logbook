@@ -188,3 +188,9 @@ details > summary { cursor: pointer; font-weight: 600; }
 /* Announcements and other expandable list items: stack the content under the title */
 details.item{display:block}
 details.item > summary{cursor:pointer}
+
+.defects { display: flex; flex-direction: column; gap: 8px; }
+.defect { border: 1px solid var(--line, #d9e0e3); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.defect.on { border-color: var(--bad); background: var(--bad-soft); }
+.defect .chip { text-align: start; background: none; border: 0; padding: 6px 2px; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; min-height: 40px; }
+.defect.on .chip { color: var(--bad); }

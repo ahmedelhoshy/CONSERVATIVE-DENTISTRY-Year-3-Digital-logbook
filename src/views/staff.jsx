@@ -146,12 +146,16 @@ export function ReviewSheet({ id, onClose }) {
   if (!e) return <Sheet onClose={onClose}><p>Loading…</p></Sheet>;
   const rub = rubricFor(e);
   const readOnly = ['hod', 'vicedean', 'dean'].includes(u.role);
-  const sugg = rub && picks ? suggestGrade(rub, picks) : null;
+  // Overall grading: the demonstrator marks only the defects; untouched criteria count as acceptable (A).
+  const full = rub ? Object.fromEntries(rub.criteria.map((c) => [c.id, (picks && picks[c.id]) || 'A'])) : {};
+  const defects = rub ? rub.criteria.filter((c) => full[c.id] !== 'A') : [];
+  const sugg = rub ? suggestGrade(rub, full) : null;
   const weekAtt = (attended.rows || []).filter((a) => a.week === e.week && a.status === 'confirmed').length;
   const changing = e.review && Number(grade) !== e.review.grade;
   const save = async (redo) => {
     setBusy(true);
-    try { await reviewEntry(e, { picks, grade: Number(grade), status, feedback, reason, redo, rejectPhoto: rejectPhoto || null }); toast('Saved'); onClose(); }
+    const auto = defects.length ? 'Defects: ' + defects.map((c) => `${c.name} — ${c.bands[rub.bands.findIndex((b) => b.key === full[c.id])]}`).join('; ') + '.' : 'No defects noted.';
+    try { await reviewEntry(e, { picks: full, mode: 'overall', grade: Number(grade), status, feedback: feedback.trim() ? feedback : auto, reason, redo, rejectPhoto: rejectPhoto || null }); toast('Saved'); onClose(); }
     catch (x) { toast(x.message); }
     setBusy(false);
   };
@@ -161,24 +165,32 @@ export function ReviewSheet({ id, onClose }) {
     {e.photos?.length ? <div class="thumbs">{e.photos.map((p) => <a href={p.url} target="_blank" rel="noopener"><img class="photo" src={p.url} alt={`${p.view} view`} /></a>)}</div> : <p class="faint">No photos attached.</p>}
     {e.self?.comment && <p><b>Student note:</b> {e.self.comment}</p>}
     <div class="row"><span class="faint">Student self-grade</span><b class="mono">{e.self?.grade ?? '–'}</b>{e.probeMm != null && <><span class="faint">· probe reading</span><b class="mono">{e.probeMm} mm</b></>}{e.ai && <button class="btn sm" onClick={() => setShowAI(!showAI)}>{showAI ? 'Hide' : 'Show'} Prep Lens feedback</button>}</div>
-    {rub && <section class="stack"><h3>Your evaluation of the physical tooth</h3>
+    {rub && !readOnly && <section class="stack"><h3>Defects in the preparation</h3><p class="faint" style={{ marginTop: -6 }}>Tap only what is wrong, then choose how much. Everything not tapped is recorded as acceptable.</p>
+      <div class="defects">{rub.criteria.map((c) => { const b = full[c.id]; const on = b !== 'A'; const si = e.self?.picks?.[c.id]; const ai = e.ai?.criteria?.[c.id];
+        return <div class={'defect' + (on ? ' on' : '')}>
+          <button type="button" class={'chip' + (on ? ' on' : '')} aria-pressed={on} onClick={() => setPicks({ ...full, [c.id]: on ? 'A' : 'B' })}>{on ? '✕ ' : ''}{c.name}{si && si !== 'A' ? <span class="faint"> · student {si}</span> : ''}{showAI && ai?.assessable && ai.band !== 'A' ? <span class="faint"> · AI {ai.band}</span> : ''}</button>
+          {on && <div class="seg">{[['B', 'Slight'], ['C', 'Marked'], ['D', 'Unacceptable']].map(([k, l]) => <button type="button" class={b === k ? 'on' : ''} onClick={() => setPicks({ ...full, [c.id]: k })}>{l}</button>)}</div>}
+          {on && <div class="faint" style={{ fontSize: '.85rem' }}>{c.bands[rub.bands.findIndex((x) => x.key === b)]}</div>}
+        </div>; })}</div>
+      {defects.length === 0 && <p class="faint">No defects marked — the tooth will be recorded as meeting every criterion.</p>}
+    </section>}
+    {rub && readOnly && <section class="stack"><h3>Your evaluation of the physical tooth</h3>
       {rub.criteria.map((c) => <div class="crit"><div class="row between"><b>{c.name}</b><span class="row" style={{ gap: 6 }}><span class="faint">Self</span><Band k={e.self?.picks?.[c.id]} />{showAI && <><span class="faint">AI</span>{e.ai?.criteria?.[c.id]?.assessable ? <Band k={e.ai.criteria[c.id].band} /> : <Band k={null} title="Not assessable from photo" />}</>}</span></div>
         <div class="bands">{rub.bands.map((b, i) => <button disabled={readOnly} class={(picks && picks[c.id] === b.key ? 'on ' : '') + b.key} onClick={() => setPicks({ ...picks, [c.id]: b.key })}><b>{b.label.replace('Accepted ', '').replace('Unaccepted ', '')}</b>{c.bands[i]}</button>)}</div></div>)}
     </section>}
     {!readOnly && <>
-      <div class="grid2"><label class="fld">Official grade (0–10){sugg != null ? ` · rubric suggests ${sugg}` : ''}<input id="rv-grade" type="number" min="0" max="10" step="0.25" value={grade} onInput={(ev) => setGrade(ev.target.value)} placeholder={sugg != null ? String(sugg) : ''} /></label>
+      <div class="grid2"><label class="fld">Overall grade (0–10){sugg != null ? ` · from the defects marked: about ${sugg}` : ''}<input id="rv-grade" type="number" min="0" max="10" step="0.25" value={grade} onInput={(ev) => setGrade(ev.target.value)} placeholder={sugg != null ? String(sugg) : ''} /></label>
         <label class="fld">Requirement status<select id="rv-status" value={status} onChange={(ev) => setStatus(ev.target.value)}>{TOOTH_STATUS.map((t) => <option>{t}</option>)}</select></label></div>
-      <label class="fld">Feedback to the student<textarea id="rv-feedback" value={feedback} onInput={(ev) => setFeedback(ev.target.value)} placeholder="Specific, criterion-based feedback" /></label>
+      <label class="fld">Comment to the student (optional — the defects marked are sent automatically)<textarea id="rv-feedback" value={feedback} onInput={(ev) => setFeedback(ev.target.value)} placeholder="Optional" /></label>
       {changing && <label class="fld">Reason for changing the saved grade (audit log)<input id="rv-reason" value={reason} onInput={(ev) => setReason(ev.target.value)} /></label>}
       <details><summary>Photo unclear?</summary><label class="fld" style={{ marginTop: 8 }}>Reject photo and ask for a new one — reason<input id="rv-reject" value={rejectPhoto} onInput={(ev) => setRejectPhoto(ev.target.value)} placeholder="e.g. not at 90°, no probe for scale" /></label></details>
-      {(() => { const miss = (rub?.criteria || []).filter((c) => !picks?.[c.id]); const why = [];
+      {(() => { const why = [];
         if (weekAtt === 0) why.push('the student has no confirmed attendance this week');
-        if (miss.length) why.push(`choose a band (A–D) for ${miss.length} more criterion${miss.length > 1 ? 'a' : ''}: ${miss.map((c) => c.name).join(', ')}`);
         if (grade === '') why.push('enter the official grade');
         if (changing && !reason.trim()) why.push('give a reason for changing the saved grade');
         return why.length ? <div class="state pending" role="status" style={{ display: "block", padding: 12 }}><b style={{ fontSize: "1rem" }}>To save:</b> {why.join(' · ')}.</div> : null; })()}
-      <div class="row"><button class="btn primary" disabled={busy || weekAtt === 0 || grade === '' || !rub?.criteria.every((c) => picks?.[c.id]) || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
-        <button class="btn danger" disabled={busy || weekAtt === 0 || grade === '' || !feedback.trim()} onClick={() => { if (confirm('This sends the tooth BACK to the student to correct and resubmit. To simply grade it, press Cancel and use "Save evaluation".')) save(true); }}>Save & ask to correct</button></div>
+      <div class="row"><button class="btn primary" disabled={busy || weekAtt === 0 || grade === '' || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
+        <button class="btn danger" disabled={busy || weekAtt === 0 || grade === '' || (!feedback.trim() && !defects.length)} onClick={() => { if (confirm('This sends the tooth BACK to the student to correct and resubmit. To simply grade it, press Cancel and use "Save evaluation".')) save(true); }}>Save & ask to correct</button></div>
     </>}
     {e.history?.length > 0 && <details><summary>History ({e.history.length})</summary><div class="list">{e.history.map((ev) => <div class="item faint">{fmtDT(ev.at)} · {ev.event}{ev.by ? ' · ' + ev.by : ''}{ev.reason ? ' · ' + ev.reason : ''}</div>)}</div></details>}
   </Sheet>;

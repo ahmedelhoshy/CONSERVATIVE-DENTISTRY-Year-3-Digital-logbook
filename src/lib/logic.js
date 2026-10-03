@@ -214,13 +214,13 @@ async function demoAI(entryId) {
   return ai;
 }
 
-export async function reviewEntry(entry, { picks, grade, status, feedback, reason, redo, rejectPhoto }) {
+export async function reviewEntry(entry, { picks, mode, grade, status, feedback, reason, redo, rejectPhoto }) {
   const before = entry.review ? { grade: entry.review.grade, status: entry.review.status } : null;
   if (before && before.grade !== grade && !reason) throw new Error('A reason is required to change a saved grade.');
   const history = [...(entry.history || [])];
   if (entry.review) history.push({ at: nowMs(), event: 'review-changed', by: ME.name, before, reason });
   if (rejectPhoto) history.push({ at: nowMs(), event: 'photo-rejected', by: ME.name, reason: rejectPhoto });
-  const review = { picks, grade, status, feedback: feedback || '', by: ME.uid, byName: ME.name, at: nowMs() };
+  const review = { picks, ...(mode ? { mode } : {}), grade, status, feedback: feedback || '', by: ME.uid, byName: ME.name, at: nowMs() };
   await S.update('entries', entry.id, { review, status: redo || rejectPhoto ? 'redo' : 'reviewed', updatedAt: nowMs(), history, photoRejected: rejectPhoto || null });
   if (before) await audit('grade.correct', entry.id, JSON.stringify(before), JSON.stringify({ grade, status }), reason);
 }
