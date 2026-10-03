@@ -5,14 +5,14 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { createHash } from 'node:crypto';
 initializeApp({ credential: applicationDefault(), projectId: process.env.FB_PROJECT_ID });
 const db = getFirestore();
+const day = process.env.CHECK_DAY || '2026-10-03';
+const note = (t, m) => console.log(`::notice title=${t}::${m}`);
 const day0 = process.env.CHECK_DAY || '2026-10-03';
 try { const es = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).filter((e) => !e.practice);
   const by = {}; for (const e of es) { const k = 'S' + e.section; const b = by[k] = by[k] || { n: 0, photo: 0, nophoto: 0, ai: 0, sub: 0 }; b.n++; if ((e.photos || []).length) b.photo++; else b.nophoto++; if (e.ai) b.ai++; if (e.status !== 'draft') b.sub++; }
   let files = 0, today = 0, sizes = [];
   try { const { getStorage } = await import('firebase-admin/storage'); const [fs] = await getStorage().bucket('digitallogbook-dfc3e.firebasestorage.app').getFiles({ prefix: 'photos/' }); files = fs.length; for (const f of fs) if (String(f.metadata.timeCreated || '').startsWith(day0)) { today++; sizes.push(Math.round(Number(f.metadata.size) / 1024)); } } catch (x) { files = 'error ' + x.message.slice(0, 80); }
   note('Photos', `week-3 teeth by section ${JSON.stringify(by)} · storage photos total ${files}, uploaded today ${today}, sizes KB ${sizes.slice(0, 15).join(',')}`); } catch (x) { note('Photos', 'error ' + String(x.message).slice(0, 200)); }
-const day = process.env.CHECK_DAY || '2026-10-03';
-const note = (t, m) => console.log(`::notice title=${t}::${m}`);
 
 const sess = (await db.collection('sessions').where('date', '==', day).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
 note(`Sessions ${day}`, sess.length ? sess.sort((a, b) => (a.start || '').localeCompare(b.start || '')).map((s) => `${s.type === 'lecture' ? 'Lecture ' + s.lectureNo : 'Lab ' + (s.labNo || '?') + ' S' + s.section} ${s.start}-${s.end} [${s.status || 'scheduled'}] ${String(s.title || '').slice(0, 40)}`).join(' ; ') : 'NONE');
