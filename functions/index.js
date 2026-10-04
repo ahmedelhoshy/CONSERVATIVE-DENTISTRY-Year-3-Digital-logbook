@@ -7,7 +7,7 @@
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getStorage } from 'firebase-admin/storage';
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onCall, onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { defineString } from 'firebase-functions/params';
@@ -18,7 +18,7 @@ import { computeStats } from './shared/stats.js';
 import { PRACTICAL_WEEKS, COURSE, PREP_STAGES, stageCriteria } from './shared/course.js';
 import { rubricById } from './shared/rubrics.js';
 import { buildKnowledge } from './knowledge.js';
-import { cairoDate, esc, loadAll as loadAllFrom, reportHtml as reportHtmlFrom } from './report-lib.js';
+import { cairoDate, esc, loadAll as loadAllFrom, reportHtml as reportHtmlFrom, actionHtml } from './report-lib.js';
 const loadAll = () => loadAllFrom(db);
 const reportHtml = (st, all, day, heading) => reportHtmlFrom(st, all, day, heading, SITE_URL.value());
 
@@ -232,4 +232,43 @@ export const weeklyReport = onSchedule({ schedule: '0 9 * * 5', timeZone: 'Afric
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([...head, ...rows]), 'Teeth per student');
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
   await mailer().sendMail({ from: `Conservative Dentistry Logbook <${SMTP_USER.value()}>`, to, subject: `Weekly teeth-per-student report — ${cairoDate()}`, html: `<p>Attached: teeth submitted and completed per student for the past week and to date (${rows.length} students).</p>`, attachments: [{ filename: `teeth_per_student_${cairoDate()}.xlsx`, content: buf }] });
+});
+
+// ---------- report feed for the Course Director's Gmail (Google Apps Script) ----------
+// The script in the Course Director's own Google account calls this with its Google sign-in token;
+// only a director/admin on the roster gets the report, which is built live from the database and sent from Gmail.
+async function buildReport(kind) {
+  const START = '2026-10-03';
+  const raw = await loadAllFrom(db);
+  const weeks = PRACTICAL_WEEKS.filter((w) => w.from >= START);
+  const wk = new Set(weeks.map((w) => w.w));
+  const sessions = raw.sessions.filter((x) => (x.date || '') >= START);
+  const sids = new Set(sessions.map((x) => x.id));
+  const all = { ...raw, sessions, attendance: raw.attendance.filter((a) => sids.has(a.sid)), entries: raw.entries.filter((e) => wk.has(e.week)), paperwork: raw.paperwork.filter((p) => wk.has(p.week)) };
+  const st = computeStats({ ...all, weeks, today: cairoDate() });
+  const evening = kind === 'evening';
+  const day = evening ? cairoDate() : cairoDate(new Date(Date.now() - 86400e3));
+  let to;
+  if (evening) to = [...new Set((all.config.reportRecipients || []).map((e) => String(e).trim().toLowerCase()).filter((e) => e.endsWith('@dentistry.cu.edu.eg')))];
+  else { const snap = await db.collection('roster').where('role', 'in', ['hod', 'vicedean']).get(); to = [...new Set(snap.docs.map((d) => String(d.data().email || d.id).trim().toLowerCase()).filter((e) => e.endsWith('@dentistry.cu.edu.eg')))]; }
+  const heading = evening ? 'End-of-day report' : 'Daily report';
+  const site = 'https://digitallogbook-dfc3e.web.app';
+  const html = evening ? reportHtmlFrom(st, all, day, heading, site).replace(/(<\/p>)/, `$1${actionHtml(all, day)}`) : reportHtmlFrom(st, all, day, heading, site);
+  return { day, to, subject: `${heading} ${day} — Year 3 Conservative Dentistry`, html, builtAt: new Date().toISOString() };
+}
+export const reportFeed = onRequest({ timeoutSeconds: 120, memory: '1GiB', invoker: 'public' }, async (req, res) => {
+  try {
+    const tok = String(req.get('authorization') || '').replace(/^Bearer\s+/i, '').trim();
+    if (!tok) { res.status(401).json({ error: 'Sign-in token missing' }); return; }
+    const r = await fetch('https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(tok));
+    const ti = r.ok ? await r.json() : {};
+    const email = String(ti.email || '').toLowerCase();
+    if (!email || String(ti.email_verified) === 'false') { res.status(403).json({ error: 'Could not confirm the Google account (add the email scope).' }); return; }
+    const ro = (await db.doc(`roster/${email}`).get()).data();
+    if (!ro || !['director', 'admin'].includes(ro.role)) { res.status(403).json({ error: `${email} is not allowed to send reports.` }); return; }
+    const kind = req.query.kind === 'evening' ? 'evening' : 'morning';
+    const out = await buildReport(kind);
+    await db.collection('audit').add({ at: Date.now(), action: 'report.feed', target: kind, by: email, detail: `${out.day} → ${out.to.length} recipient(s)` });
+    res.json(out);
+  } catch (x) { console.error(x); res.status(500).json({ error: String(x.message || x).slice(0, 200) }); }
 });
