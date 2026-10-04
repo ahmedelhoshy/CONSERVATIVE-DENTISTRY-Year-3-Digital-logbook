@@ -180,7 +180,7 @@ export async function setStage(entryId, stage) { await S.update('entries', entry
 export async function setProbeReading(entryId, mm) { await S.update('entries', entryId, { probeMm: mm, updatedAt: nowMs() }); }
 export async function addPhoto(entryId, file, view = 'occlusal') {
   // 1600 px keeps the periodontal-probe markings readable for Prep Lens (well under the 3 MB upload limit).
-  const { blob, quality } = await compressImage(file, 1600, 0.88);
+  const { blob, quality } = await compressImage(file, 1280, 0.82); // smaller = faster upload on weak lab Wi-Fi; probe marks stay readable
   const path = `photos/${ME.uid}/${entryId}/${Date.now()}.jpg`;
   const url = await S.putFile(path, blob);
   const e = await S.get('entries', entryId);
