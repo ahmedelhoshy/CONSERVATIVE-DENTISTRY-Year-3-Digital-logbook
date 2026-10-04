@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 initializeApp({ credential: applicationDefault(), projectId: process.env.FB_PROJECT_ID });
 const db = getFirestore();
 const day = process.env.CHECK_DAY || '2026-10-03';
-const ONLY = ['Survey', 'Week 3 reviews', 'Today live', 'Roster', 'Staff signed in', 'Prep Lens', 'Photos'];
+const ONLY = ['Lookup 3', 'Survey', 'Week 3 reviews', 'Today live', 'Roster', 'Staff signed in', 'Prep Lens', 'Photos'];
 const note = (t, m) => { if (ONLY.includes(t)) console.log(`::notice title=${t}::${m}`); };
 const day0 = process.env.CHECK_DAY || '2026-10-03';
 try { const es = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).filter((e) => !e.practice);
@@ -27,6 +27,13 @@ try { const es = (await db.collection('entries').where('week', '==', 3).get()).d
     const at = {}; for (const d of (await db.collection('attendance').where('sid', '==', 'lec-3').get()).docs) at[createHash('sha256').update(String(d.data().code)).digest('hex')] = d.data().status + '/' + d.data().method;
     const c = {}; for (const h of LH) { const k = at[h] || 'none'; c[k] = (c[k] || 0) + 1; }
     note('Lecture 3 paper list', JSON.stringify(c)); const LB = ["6aba70637874b311d689e301c15786b66829e1668562d101dd2160f688f6d6ce", "8e2f6c95e7db0f56f528a23ac9f587bb02cace77a368bd527bd5a8b3ddafcd2e", "5ed339f14a3bf161fd96d0aaf3797d377c62d07452677f5f66a3f530ade9dc03", "c71dfa6ddd409c6ea3c581d6d6ef1f350b0760c6c5a8fa9a34d89a94b2f2edc0", "a7cd0a786a0a95a390a12a2aba68e7ca877531f33039a707af389475f5424ae1"]; const cb = {}; for (const h of LB) { const k = at[h] || 'none'; cb[k] = (cb[k] || 0) + 1; } note('Lecture 3 list b', JSON.stringify(cb)); const LC = ["aff236acaa7365c50779aafb2765b38019fb7724746d8d63ae2ade38076ed9ef", "67d4127cc4ae61c39ed4551889ec6e19181d56353393a11ca224df66d8807253"]; note('Lecture 3 list c', LC.map((h) => at[h] || 'none').join(', ')); }
+  { const LK = [["b86c926e52fe4540e79b1fa5164d64ced94f21e5211492d9cd38de022598f25c", 17], ["d3653acbe35508b11d3580fd29d4dcdcc0ae35d6effd79ccb6391fa3caf4e053", 15], ["9a43a955350a17ba23e99530368acb3a3504102dc70f2d8650953a794a2823c9", 13]];
+    const ro = (await db.collection('roster').get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+    const att = (await db.collection('attendance').get()).docs.map((d) => d.data());
+    note('Lookup 3', LK.map(([h, sec], i) => { const rs = ro.filter((x) => x.code != null && createHash('sha256').update(String(x.code)).digest('hex') === h);
+      if (!rs.length) return `#${i + 1}: NOT on roster (stated S${sec})`;
+      return rs.map((r) => { const a = att.filter((x) => String(x.code) === String(r.code) && x.status === 'confirmed');
+        return `#${i + 1}: roster S${r.section} (stated S${sec}) · email ${String(r.id).split('@')[1] || '?'} · signedIn ${!!r.lastLogin} · confirmed lectures ${a.filter((x) => String(x.sid).startsWith('lec')).length} labs ${a.filter((x) => String(x.sid).startsWith('lab')).length}`; }).join(' | '); }).join(' ; ')); }
   note('Photos', `week-3 teeth by section ${JSON.stringify(by)} · storage photos total ${files}, uploaded today ${today}, sizes KB ${sizes.slice(0, 15).join(',')}`); } catch (x) { note('Photos', 'error ' + String(x.message).slice(0, 200)); }
 
 const sess = (await db.collection('sessions').where('date', '==', day).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
