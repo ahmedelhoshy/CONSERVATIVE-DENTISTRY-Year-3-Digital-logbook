@@ -210,13 +210,15 @@ export function Students() {
   const t = today();
   const withRec = new Set((att.rows || []).map((a) => a.sid));
   // Only labs where attendance was actually taken count as held.
-  const labsHeld = (sess.rows || []).filter((s) => s.date < t && (s.status === 'open' || s.status === 'closed' || withRec.has(s.id))).map((s) => s.id);
-  const due = PRACTICAL_WEEKS.filter((w) => w.to < t).reduce((a, w) => a + w.req, 0);
+  const labsHeld = (sess.rows || []).filter((s) => s.type === 'lab' && s.date <= t && (s.status === 'open' || s.status === 'closed' || withRec.has(s.id))).map((s) => s.id);
+  const heldSet = new Set(labsHeld);
+  // Weeks that have started (the current week's requirement is due by its end).
+  const due = PRACTICAL_WEEKS.filter((w) => w.from <= t).reduce((a, w) => a + w.req, 0);
   const past = new Set(PRACTICAL_WEEKS.filter((w) => w.to < t).map((w) => w.w));
   const rows = (studs.rows || []).map((s) => {
     const e = (ents.rows || []).filter((x) => x.uid === s.uid && x.review && !x.practice);
     const done = e.filter((x) => x.review.status === 'Completed').length + (paper.rows || []).filter((p) => p.uid === s.uid && past.has(p.week)).reduce((a, p) => a + (Number(p.teeth) || 0), 0);
-    const labPres = (att.rows || []).filter((a) => a.uid === s.uid && a.type === 'lab' && a.status === 'confirmed').length;
+    const labPres = new Set((att.rows || []).filter((a) => a.uid === s.uid && a.type === 'lab' && a.status === 'confirmed' && heldSet.has(a.sid)).map((a) => a.sid)).size;
     const mean = e.length ? e.reduce((a, x) => a + x.review.grade, 0) / e.length : null;
     return { ...s, done, due, labAtt: labsHeld.length ? Math.round((labPres / labsHeld.length) * 100) : null, mean: mean == null ? null : Math.round(mean * 10) / 10, pending: (ents.rows || []).filter((x) => x.uid === s.uid && x.status === 'submitted').length };
   }).sort((a, b) => String(a.code).localeCompare(String(b.code)));
