@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'preact/hooks';
 import QRCode from 'qrcode';
 import { me, store, today, openSession, closeSession, extendSession, rotateCode, sessionIsOpen, setAttendance, confirmAllRecorded, reviewEntry, rubricFor, isDemo, canEditCourse, currentWeek } from '../lib/logic.js';
+import { SurveyCard } from './survey.jsx';
 import { L, useQuery, useDoc, useNow, Pill, Band, Kpi, Sheet, Empty, Confirm, fmtDate, fmtTime, fmtDT, ago, toast, Bar , labTitle } from '../lib/ui.jsx';
 import { exportXlsx } from '../lib/export.js';
 import { suggestGrade } from '../data/rubrics.js';
@@ -25,6 +26,7 @@ export function Today() {
   const todays = rows.filter((s) => s.date === t);
   const later = rows.filter((s) => s.date > t);
   return <>
+    <SurveyCard u={u} />
     <section class="hero"><span class="eyebrow">{fmtDate(t, { weekday: 'long', day: 'numeric', month: 'long' })} · Week {currentWeek().w}</span><h1>{u.role === 'lecturer' ? 'My sessions' : 'Today'}</h1>
       <p class="muted">{u.role === 'demonstrator' ? `Sections ${secs.join(' & ')}. Open attendance at the start of the lab, confirm each student at the bench, then review their teeth.` : u.role === 'lecturer' ? `Sections ${secs.join(', ') || '—'}. Open attendance at the start of each lab (or your lecture), confirm students at the bench, then review the Lab 1 teeth in the Review queue.` : 'All sessions scheduled today.'}</p></section>
     {(ann.rows || []).length > 0 && <section class="card"><h2>Staff announcements</h2><div class="list">{ann.rows.map((a) => <details class="item" open={a.pinned}><summary>{a.title} <span class="faint">· {fmtDate(a.publishAt, { day: 'numeric', month: 'short' })}</span></summary>{a.imageUrl && <a href={a.imageUrl} target="_blank" rel="noopener"><img src={a.imageUrl} alt={a.title} loading="lazy" style={{ display: 'block', maxWidth: '100%', maxHeight: 420, objectFit: 'contain', borderRadius: 12, marginTop: 8 }} /></a>}{a.body && <div style={{ marginTop: 6 }}>{a.body.split('\n').map((l) => <p dir="auto" style={{ margin: '0 0 4px', minHeight: '0.7em' }}>{l}</p>)}</div>}</details>)}</div></section>}

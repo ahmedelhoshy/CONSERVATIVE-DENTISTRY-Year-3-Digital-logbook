@@ -84,6 +84,14 @@ service cloud.firestore {
       allow delete: if isEditor() || (isStudent() && resource.data.uid == myUid() && resource.data.status == 'draft');
     }
 
+    // Pilot survey: one response per person (id = surveyId_myUid); results are read by leadership only.
+    match /surveys/{id} {
+      allow create, update: if known() && role() in ['student', 'demonstrator', 'lecturer']
+        && id == request.resource.data.sid + '_' + myUid() && request.resource.data.uid == myUid();
+      allow list: if isLeader();
+      allow get: if isLeader() || (known() && (resource == null || resource.data.uid == myUid()));
+    }
+
     // Prep Lens numeric scores for research — leadership only.
     match /research/{id} {
       allow read: if isLeader();

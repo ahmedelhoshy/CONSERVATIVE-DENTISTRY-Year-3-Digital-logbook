@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'preact/hooks';
 import { MyProject } from './projects.jsx';
 import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, makeRequirement, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage, setProbeReading, labNo } from '../lib/logic.js';
+import { SurveyCard } from './survey.jsx';
 import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow , labTitle } from '../lib/ui.jsx';
 import { PRACTICAL_WEEKS, LECTURES, PHOTO_GUIDE, PHOTO_GUIDE_AR, PHOTO_VIEWS, PREP_STAGES, stageCriteria, ORIENTATION_EXERCISES, COURSE } from '../data/course.js';
 import { rubricById, suggestGrade, RUBRICS } from '../data/rubrics.js';
@@ -28,6 +29,7 @@ export function StudentHome({ go }) {
   const done = reviewed.filter((e) => e.review.status === 'Completed' && !e.practice && pastWeeks.has(e.week)).length + (paper.rows || []).filter((p) => pastWeeks.has(p.week)).reduce((a, p) => a + (Number(p.teeth) || 0), 0);
   const fresh = reviewed.filter((e) => e.review.at > Date.now() - 7 * 86400e3 || isDemo()).sort((a, b) => b.review.at - a.review.at).slice(0, 3);
   return <>
+    <SurveyCard u={u} />
     <section class="hero"><span class="eyebrow">{fmtDate(t, { weekday: 'long', day: 'numeric', month: 'long' })} · {L(`Practical week ${wk.w}`, `الأسبوع العملي ${wk.w}`)}</span>
       <h1>{L(`Hello, ${u.name.split(' ')[0]}`, `أهلاً ${u.name.split(' ')[0]}`)}</h1>
       <p class="muted">{wk.topic}</p></section>

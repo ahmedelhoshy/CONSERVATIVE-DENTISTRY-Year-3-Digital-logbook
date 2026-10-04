@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 initializeApp({ credential: applicationDefault(), projectId: process.env.FB_PROJECT_ID });
 const db = getFirestore();
 const day = process.env.CHECK_DAY || '2026-10-03';
-const ONLY = ['Week 3 reviews', 'Today live', 'Roster', 'Staff signed in', 'Prep Lens', 'Photos'];
+const ONLY = ['Survey', 'Week 3 reviews', 'Today live', 'Roster', 'Staff signed in', 'Prep Lens', 'Photos'];
 const note = (t, m) => { if (ONLY.includes(t)) console.log(`::notice title=${t}::${m}`); };
 const day0 = process.env.CHECK_DAY || '2026-10-03';
 try { const es = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).filter((e) => !e.practice);
@@ -74,6 +74,10 @@ note('Duplicates', `students with more than one roster entry: ${Object.values(by
   const by = {}; for (const e of es) { if (!e.review) continue; const k = (e.review.byName || '?') + ' S' + e.section + ' ' + e.status; by[k] = (by[k] || 0) + 1; }
   const hist = es.filter((e) => (e.history || []).some((h) => h.event === 'review-changed' || h.event === 'redo-cleared')).length;
   note('Week 3 reviews', JSON.stringify(by) + ` · teeth with changed reviews ${hist} · drafts ${es.filter((e) => e.status === 'draft').length} · submitted-not-graded ${es.filter((e) => e.status === 'submitted').length}`); }
+{ const sv = (await db.collection('surveys').where('sid', '==', 'pilot-2026-10').get()).docs.map((d) => d.data());
+  const g = {}; for (const r of sv) { const k = r.role === 'student' ? 'students' : 'staff'; const x = g[k] = g[k] || { n: 0, sums: {}, comments: 0 }; x.n++; if (r.comment) x.comments++; for (const [q, v] of Object.entries(r.answers || {})) x.sums[q] = (x.sums[q] || 0) + v; }
+  const out = Object.entries(g).map(([k, x]) => `${k}: ${x.n} responses, ${x.comments} comments, means ` + Object.entries(x.sums).map(([q, v]) => `${q} ${(v / x.n).toFixed(2)}`).join(' '));
+  note('Survey', out.join(' ; ') || 'no responses yet'); }
 const staff = roster.filter((r) => r.role !== 'student');
 note('Staff signed in', `${staff.filter((r) => r.lastLogin).length}/${staff.length} · lecturers with sections ${staff.filter((r) => r.role === 'lecturer' && (r.sections || []).length).length} · demonstrators on all 18 ${staff.filter((r) => r.role === 'demonstrator' && (r.sections || []).length === 18).length}/${staff.filter((r) => r.role === 'demonstrator').length}`);
 const lec3 = staff.filter((r) => (r.lectures || []).includes(3));
