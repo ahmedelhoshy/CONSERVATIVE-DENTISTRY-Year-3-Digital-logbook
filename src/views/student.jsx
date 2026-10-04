@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'preact/hooks';
 import { MyProject } from './projects.jsx';
-import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage, setProbeReading, labNo } from '../lib/logic.js';
+import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, makeRequirement, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage, setProbeReading, labNo } from '../lib/logic.js';
 import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow , labTitle } from '../lib/ui.jsx';
 import { PRACTICAL_WEEKS, LECTURES, PHOTO_GUIDE, PHOTO_GUIDE_AR, PHOTO_VIEWS, PREP_STAGES, stageCriteria, ORIENTATION_EXERCISES, COURSE } from '../data/course.js';
 import { rubricById, suggestGrade, RUBRICS } from '../data/rubrics.js';
@@ -266,6 +266,7 @@ export function EntrySheet({ id, onClose }) {
 
     {rub && <section class="stack"><h3>2 · {L('Self-assessment against the rubric', 'التقييم الذاتي وفق الروبرك')}</h3>
       <p class="faint">{L('Score your own work first. Prep Lens feedback appears after you save.', 'قيّم عملك أولًا. تظهر ملاحظات Prep Lens بعد الحفظ.')}</p>
+      {e.practice && editable && <div class="state pending" style={{ display: 'block' }}><b style={{ fontSize: '1rem' }}>{L('This is a practice tooth — it is not sent to your demonstrator.', 'دي سنة تدريب — مش بتتبعت للمعيد.')}</b> {L('If this is one of your 2 requirement teeth, tap:', 'لو دي واحدة من سنتين المتطلبات، اضغط:')} <button class="btn sm" onClick={async () => { try { await makeRequirement(e.id); toast(L('Now a requirement tooth — add both photos, self-assess, then Submit.', 'بقت سنة متطلبات — أضف الصورتين وقيّم نفسك ثم أرسل.')); } catch (x) { toast(x.code === 'limit' ? L('You already have 2 requirement teeth this week.', 'عندك سنتين متطلبات الأسبوع ده بالفعل.') : x.message); } }}>{L('Make it a requirement tooth', 'حوّلها لسنة متطلبات')}</button></div>}
       {e.practice && <p class="faint">{L('Only the criteria of this step are shown.', 'تظهر بنود هذه الخطوة فقط.')}</p>}
       {crits.map((c) => <div class="crit"><div class="row between"><b>{c.name}</b><span class="faint">{c.group}{c.weight ? ` · ${c.weight} mark${c.weight > 1 ? 's' : ''}` : ''}</span></div>
         <div class="bands">{rub.bands.map((b, i) => <button disabled={!editable} class={(picks && picks[c.id] === b.key ? 'on ' : '') + b.key} onClick={() => setPicks({ ...picks, [c.id]: b.key })}><b>{b.label.replace('Accepted ', '').replace('Unaccepted ', '')}</b>{c.bands[i]}</button>)}</div>

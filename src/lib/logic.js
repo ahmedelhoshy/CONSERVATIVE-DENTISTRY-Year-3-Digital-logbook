@@ -155,6 +155,13 @@ function imageQuality(canvas) {
   return { brightness: Math.round(mean), sharpness: Math.round(sharp), tooDark: mean < 60, tooBright: mean > 220, blurry: sharp < 60 };
 }
 
+// A practice tooth started by mistake can become one of this week's requirement teeth (at most 2 per week).
+export async function makeRequirement(entryId) {
+  const e = await S.get('entries', entryId);
+  const mine = (await S.query('entries', [['uid', '==', ME.uid], ['week', '==', e.week]], {})).filter((x) => !x.practice);
+  if (mine.length >= 2) throw Object.assign(new Error('Two requirement teeth are already recorded for this week.'), { code: 'limit' });
+  await S.update('entries', entryId, { practice: false, stage: 'full', labNo: 1, updatedAt: nowMs() });
+}
 export async function createEntry({ week, rubricId, tooth, label, practice, stage }) {
   const t = nowMs();
   if (!practice) {
