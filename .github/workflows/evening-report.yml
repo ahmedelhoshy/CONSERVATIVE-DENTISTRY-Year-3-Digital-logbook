@@ -2,9 +2,6 @@ name: Evening report (build)
 # Builds today's end-of-day report (about 17:30 Cairo) for the Course Director's team, encrypted, on the evening-report branch.
 # Includes the "Action needed today" checklist (functions/report-lib.js actionHtml).
 on:
-  schedule:
-    - cron: '30 14 * * 0-4,6'   # 17:30 Cairo in summer time
-    - cron: '30 15 * * 0-4,6'   # 17:30 Cairo in winter time
   workflow_dispatch:
   push:
     branches: [main]

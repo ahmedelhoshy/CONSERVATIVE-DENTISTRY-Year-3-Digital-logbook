@@ -1,8 +1,6 @@
 name: Daily report (build)
 # Builds yesterday's report each morning before 09:00 Cairo and publishes it, encrypted, on the daily-report branch.
 on:
-  schedule:
-    - cron: '20 5 * * *'   # 08:20 Cairo in summer time, 07:20 in winter time
   workflow_dispatch:
   push:
     branches: [main]
