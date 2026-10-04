@@ -226,13 +226,15 @@ export function EntrySheet({ id, onClose }) {
   const stage = e.practice ? (e.stage || 'outline') : 'full';
   const crits = rub ? stageCriteria(rub, stage) : [];
   const aiHere = e.ai && (e.ai.stage || 'full') === stage ? e.ai : null;
-  const allPicked = rub && crits.every((c) => picks && picks[c.id]);
+  // Same as the demonstrator: the student marks only the defects; untouched criteria count as acceptable (A).
+  const fullPicks = rub ? Object.fromEntries(crits.map((c) => [c.id, (picks && picks[c.id]) || 'A'])) : {};
+  const allPicked = !!rub;
   const hasView = (v) => (e.photos || []).some((p) => p.view === v);
   const bothPhotos = e.practice ? !!e.photos?.length : hasView('occlusal') && hasView('probe');
   // Prep Lens is used on ONE requirement tooth per week; the second tooth is self-assessed and submitted directly.
   const lensUsedOn = !e.practice && !e.ai ? (weekMine.rows || []).find((x) => x.id !== e.id && !x.practice && x.ai) : null;
   const needGrade = !e.practice;
-  const sugg = rub && picks ? suggestGrade(rub, picks) : null;
+  const sugg = rub ? suggestGrade(rub, fullPicks) : null;
   const onPhoto = async (ev, vw) => {
     const f = ev.target.files && ev.target.files[0]; if (!f) return;
     const v = vw || view; setView(v); setBusy('photo');
@@ -241,11 +243,11 @@ export function EntrySheet({ id, onClose }) {
     setBusy(''); ev.target.value = '';
   };
   const saveAndReveal = async () => {
-    setBusy('self'); await saveSelf(e.id, picks, grade === '' ? null : Number(grade), comment);
+    setBusy('self'); await saveSelf(e.id, fullPicks, grade === '' ? null : Number(grade), comment);
     try { await requestAI(e.id); } catch (x) { toast(x.message && x.message.includes('quota') ? L('Prep Lens daily limit reached — your self-assessment is saved; continue with your demonstrator.', 'تم الوصول للحد اليومي لـ Prep Lens — تم حفظ تقييمك الذاتي؛ تابع مع المعيد.') : L('Prep Lens is unavailable now. Your self-assessment is saved.', 'Prep Lens غير متاح الآن. تم حفظ تقييمك الذاتي.')); }
     setBusy('');
   };
-  const submit = async () => { setBusy('submit'); await saveSelf(e.id, picks, grade === '' ? null : Number(grade), comment); await submitEntry(e.id); setBusy(''); toast(L('Submitted — show the tooth to your demonstrator.', 'تم الإرسال — اعرض السن على المعيد.')); };
+  const submit = async () => { setBusy('submit'); await saveSelf(e.id, fullPicks, grade === '' ? null : Number(grade), comment); await submitEntry(e.id); setBusy(''); toast(L('Submitted — show the tooth to your demonstrator.', 'تم الإرسال — اعرض السن على المعيد.')); };
   return <Sheet onClose={onClose} label="Tooth record">
     <div class="row between"><div><span class="eyebrow">{e.practice ? L('Practice (self-training) · not graded', 'تدريب ذاتي · بدون درجة') : L('Week', 'الأسبوع') + ' ' + e.week} · {fmtDate(e.date)}</span><h2>{rub?.title || e.taskLabel} <span class="mono">#{e.tooth}</span></h2></div><button class="btn sm" onClick={onClose}>{L('Close', 'إغلاق')}</button></div>
     {e.practice && <div class="stack"><span class="eyebrow">{L('Which step are you checking?', 'أي خطوة تراجع الآن؟')}</span><div class="seg" style={{ flexWrap: 'wrap' }}>{PREP_STAGES.map(([k, en, ar]) => <button class={stage === k ? 'on' : ''} onClick={() => setStage(e.id, k)}>{L(en, ar)}</button>)}</div></div>}
@@ -268,10 +270,14 @@ export function EntrySheet({ id, onClose }) {
       <p class="faint">{L('Score your own work first. Prep Lens feedback appears after you save.', 'قيّم عملك أولًا. تظهر ملاحظات Prep Lens بعد الحفظ.')}</p>
       {e.practice && editable && <div class="state pending" style={{ display: 'block' }}><b style={{ fontSize: '1rem' }}>{L('This is a practice tooth — it is not sent to your demonstrator.', 'دي سنة تدريب — مش بتتبعت للمعيد.')}</b> {L('If this is one of your 2 requirement teeth, tap:', 'لو دي واحدة من سنتين المتطلبات، اضغط:')} <button class="btn sm" onClick={async () => { try { await makeRequirement(e.id); toast(L('Now a requirement tooth — add both photos, self-assess, then Submit.', 'بقت سنة متطلبات — أضف الصورتين وقيّم نفسك ثم أرسل.')); } catch (x) { toast(x.code === 'limit' ? L('You already have 2 requirement teeth this week.', 'عندك سنتين متطلبات الأسبوع ده بالفعل.') : x.message); } }}>{L('Make it a requirement tooth', 'حوّلها لسنة متطلبات')}</button></div>}
       {e.practice && <p class="faint">{L('Only the criteria of this step are shown.', 'تظهر بنود هذه الخطوة فقط.')}</p>}
-      {crits.map((c) => <div class="crit"><div class="row between"><b>{c.name}</b><span class="faint">{c.group}{c.weight ? ` · ${c.weight} mark${c.weight > 1 ? 's' : ''}` : ''}</span></div>
-        <div class="bands">{rub.bands.map((b, i) => <button disabled={!editable} class={(picks && picks[c.id] === b.key ? 'on ' : '') + b.key} onClick={() => setPicks({ ...picks, [c.id]: b.key })}><b>{b.label.replace('Accepted ', '').replace('Unaccepted ', '')}</b>{c.bands[i]}</button>)}</div>
-        {aiHere && <div class="row" style={{ gap: 6 }}><span class="faint">Prep Lens:</span>{aiHere.criteria[c.id]?.assessable ? <Band k={aiHere.criteria[c.id].band} /> : <Pill>{L('Not assessable from photo', 'لا يمكن تقييمه من الصورة')}</Pill>}<span class="faint">{aiHere.criteria[c.id]?.comment}</span></div>}
-      </div>)}
+      <p class="faint" style={{ marginTop: -4 }}>{L('Tap only what is wrong in your preparation, then choose how much. Everything not tapped counts as acceptable.', 'دوس بس على العيب الموجود في تحضيرك واختار درجته. أي بند ما دستش عليه بيتحسب مقبول.')}</p>
+      <div class="defects">{crits.map((c) => { const b = fullPicks[c.id]; const on = b !== 'A'; const ai = aiHere?.criteria?.[c.id];
+        return <div class={'defect' + (on ? ' on' : '')}>
+          <button type="button" class={'chip' + (on ? ' on' : '')} disabled={!editable} aria-pressed={on} onClick={() => setPicks({ ...fullPicks, [c.id]: on ? 'A' : 'B' })}>{on ? '✕ ' : ''}{c.name}</button>
+          {on && <div class="seg">{[['B', L('Slight', 'بسيط')], ['C', L('Marked', 'واضح')], ['D', L('Unacceptable', 'غير مقبول')]].map(([k, l]) => <button type="button" disabled={!editable} class={b === k ? 'on' : ''} onClick={() => setPicks({ ...fullPicks, [c.id]: k })}>{l}</button>)}</div>}
+          {on && <div class="faint" style={{ fontSize: '.85rem' }}>{c.bands[rub.bands.findIndex((x) => x.key === b)]}</div>}
+          {ai && <div class="row" style={{ gap: 6 }}><span class="faint">Prep Lens:</span>{ai.assessable ? <Band k={ai.band} /> : <Pill>{L('Not assessable from photo', 'لا يمكن تقييمه من الصورة')}</Pill>}<span class="faint">{ai.comment}</span></div>}
+        </div>; })}</div>
       {needGrade && <div class="grid2"><label class="fld">{L('My overall grade (0–10)', 'درجتي الكلية (٠–١٠)')}<input id="self-grade" type="number" min="0" max="10" step="0.25" value={grade} disabled={!editable} onInput={(ev) => setGrade(ev.target.value)} placeholder={sugg != null ? String(sugg) : ''} /></label>
         <label class="fld">{L('Note for my demonstrator (optional)', 'ملاحظة للمعيد (اختياري)')}<input id="self-note" value={comment} disabled={!editable} onInput={(ev) => setComment(ev.target.value)} /></label></div>}
       {needGrade && sugg != null && <p class="faint">{L(`From your band choices the rubric suggests about ${sugg}/10.`, `حسب اختياراتك يقترح الروبرك حوالي ${sugg}/١٠.`)}</p>}
