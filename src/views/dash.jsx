@@ -6,6 +6,7 @@ import { exportXlsx } from '../lib/export.js';
 import { PRACTICAL_WEEKS, COURSE } from '../data/course.js';
 import { RUBRICS, rubricById } from '../data/rubrics.js';
 import { useProjects, lab2Time } from './projects.jsx';
+import { SurveyResults } from './survey.jsx';
 
 // Loads statistics: live mode reads the nightly aggregate (one document); demo mode computes on the fly.
 function useStats() {
@@ -55,6 +56,7 @@ export function Dashboard({ go } = {}) {
     <section class="row between"><div class="hero"><span class="eyebrow">{lead} dashboard · {COURSE.year}</span><h1>{L('Course overview', 'نظرة عامة على المقرر')}</h1>
       <p class="faint">Period: term start – {fmtDate(st.today, { day: 'numeric', month: 'short', year: 'numeric' })} · Last updated {fmtDT(st.generatedAt)}{isDemo() ? ' (demo, computed live)' : ' · refreshes daily 19:00'}</p></div>
       {full && <button class="btn noprint" onClick={refresh}>Refresh now</button>}</section>
+    {['director', 'admin', 'hod'].includes(u.role) && <SurveyResults />}
     <div class="kpis">
       <Kpi label="Students enrolled" value={T.enrolled} kind="info" sub="18 sections" />
       <Kpi label="Lecture attendance" value={T.lectureAttendance != null ? T.lectureAttendance + '%' : '–'} kind={kindPct(T.lectureAttendance)} sub={`${T.lecturesHeld} lectures counted`} />

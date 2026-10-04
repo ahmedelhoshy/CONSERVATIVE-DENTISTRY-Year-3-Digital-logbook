@@ -1,7 +1,7 @@
 // Short pilot survey (first week of the digital logbook) for the report to the University President.
 // One response per person; results are reported only as anonymous totals.
 import { useState } from 'preact/hooks';
-import { L, useDoc, toast } from '../lib/ui.jsx';
+import { L, useDoc, useQuery, toast } from '../lib/ui.jsx';
 import { store, isDemo } from '../lib/logic.js';
 
 export const SURVEY = { id: 'pilot-2026-10', closes: Date.parse('2026-10-08T21:59:00Z') }; // Thursday 8 Oct, 23:59 Cairo
@@ -52,6 +52,39 @@ export function SurveyCard({ u }) {
         <div class="seg" style={{ flexWrap: 'wrap' }}>{SCALE.map(([v, en2, ar2]) => <button type="button" class={a[k] === v ? 'on' : ''} onClick={() => setA({ ...a, [k]: v })}>{L(en2, ar2)}</button>)}</div></div>)}
       <label class="fld">{L('What worked well, and what should we improve? (optional)', 'إيه اللي كان كويس، وإيه اللي محتاج يتحسن؟ (اختياري)')}<textarea dir="auto" value={comment} maxLength={600} onInput={(ev) => setComment(ev.target.value)} /></label>
       <button class="btn primary" disabled={!done || busy} onClick={send}>{busy ? L('Saving…', 'جارٍ الحفظ…') : L('Send', 'إرسال')}</button>
+    </div>}
+  </section>;
+}
+
+// Results for leaders (Dashboard): counts, average per question, % agree, anonymous comments.
+export function SurveyResults() {
+  const [show, setShow] = useState(false);
+  const q = useQuery(isDemo() ? null : 'surveys', [['sid', '==', SURVEY.id]]);
+  if (isDemo()) return null;
+  const rows = q.rows || [];
+  const group = (stu) => rows.filter((r) => (r.role === 'student') === stu);
+  const block = (title, list, qs) => {
+    if (!list.length) return <div><h3>{title}</h3><p class="faint">No responses yet.</p></div>;
+    return <div><h3>{title} — {list.length} response{list.length === 1 ? '' : 's'}</h3>
+      <div class="tablewrap"><table><thead><tr><th>Question</th><th>Average /5</th><th>Agree or strongly agree</th></tr></thead><tbody>
+        {qs.map(([k, en]) => {
+          const v = list.map((r) => r.answers && r.answers[k]).filter((x) => x >= 1 && x <= 5);
+          const avg = v.length ? (v.reduce((s, x) => s + x, 0) / v.length).toFixed(1) : '–';
+          const agree = v.length ? Math.round((100 * v.filter((x) => x >= 4).length) / v.length) + '%' : '–';
+          return <tr><td>{en}</td><td><b>{avg}</b></td><td>{agree}</td></tr>;
+        })}
+      </tbody></table></div>
+      {show && <ul class="stack" style={{ marginTop: 8 }}>{list.filter((r) => r.comment).map((r) => <li dir="auto">{r.comment}{r.section ? <span class="faint"> · S{r.section}</span> : null}</li>)}</ul>}
+    </div>;
+  };
+  const nComments = rows.filter((r) => r.comment).length;
+  return <section class="card">
+    <h2>Pilot survey results</h2>
+    <p class="faint">Anonymous totals · open until Thursday 8 October 23:59 · updates live</p>
+    {q.error ? <p class="faint">Could not load the survey answers.</p> : q.rows == null ? <p class="faint">Loading…</p> : <div class="stack">
+      {block('Students', group(true), Q_STUDENT)}
+      {block('Demonstrators and supervisors', group(false), Q_STAFF)}
+      {nComments > 0 && <button class="btn sm" onClick={() => setShow(!show)}>{show ? 'Hide comments' : `Show comments (${nComments})`}</button>}
     </div>}
   </section>;
 }
