@@ -110,8 +110,9 @@ export function computeStats({ students, sessions, attendance, entries: allEntri
     const reasons = [];
     const lecAbs = x.lecExp ? 100 - (x.lecPres / x.lecExp) * 100 : 0;
     const labAbs = x.labExp ? 100 - (x.labPres / x.labExp) * 100 : 0;
-    if (lecAbs > absenceLimit) reasons.push(`Lecture absence ${Math.round(lecAbs)}%`);
-    if (labAbs > absenceLimit) reasons.push(`Lab absence ${Math.round(labAbs)}%`);
+    // Absence is judged only once there is a fair basis (at least 3 held sessions of that type).
+    if (x.lecExp >= 3 && lecAbs > absenceLimit) reasons.push(`Lecture absence ${Math.round(lecAbs)}%`);
+    if (x.labExp >= 3 && labAbs > absenceLimit) reasons.push(`Lab absence ${Math.round(labAbs)}%`);
     const gm = mean(x.grades);
     if (gm != null && gm < passMark) reasons.push(`Mean practical grade ${r1(gm)}/10`);
     if (x.due && x.done < x.due * 0.7) reasons.push(`Requirements ${x.done}/${x.due}`);
