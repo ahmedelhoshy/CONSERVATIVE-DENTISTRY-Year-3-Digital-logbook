@@ -489,3 +489,13 @@ for (const d of (await db.collection('materials').get()).docs) {
     await lm.set({ ids: FieldValue.arrayUnion('lec3-paper-2026-10-03-c') }, { merge: true });
   }
 }
+
+// Section 1: nobody attended Saturday's Lab 1 (3 Oct), so Monday's session (5 Oct, 12:00–14:00) is used for the Week 3 molars.
+{
+  const mm = db.doc('config/seededAnnouncements'); const md = new Set((await mm.get()).data()?.ids || []);
+  if (!md.has('s1-makeup-2026-10-05')) {
+    const r = db.doc('sessions/lab-w3-s1-2');
+    if ((await r.get()).exists) await r.update({ makeup: true, req: 2, title: 'Week 3 make-up: Class I preparation on 2 molars (no lab on Saturday)' });
+    await mm.set({ ids: FieldValue.arrayUnion('s1-makeup-2026-10-05') }, { merge: true });
+  }
+}
