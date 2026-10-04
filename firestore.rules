@@ -77,7 +77,8 @@ service cloud.firestore {
       allow update: if (isStudent() && resource.data.uid == myUid() && resource.data.status in ['draft', 'redo']
           && request.resource.data.status in ['draft', 'redo', 'submitted']
           && !(resource.data.get('practice', false) == true && request.resource.data.status == 'submitted')
-          && request.resource.data.get('practice', false) == resource.data.get('practice', false)
+          && (request.resource.data.get('practice', false) == resource.data.get('practice', false)
+            || (resource.data.get('practice', false) == true && request.resource.data.get('practice', false) == false && resource.data.status == 'draft'))
           && unchanged(['uid', 'code', 'section', 'review', 'ai', 'rubricId', 'week']))
         || (isTeacher() && covers(resource.data.section) && unchanged(['uid', 'code', 'section', 'ai']));
       allow delete: if isEditor() || (isStudent() && resource.data.uid == myUid() && resource.data.status == 'draft');
