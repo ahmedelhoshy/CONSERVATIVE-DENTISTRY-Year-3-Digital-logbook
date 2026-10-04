@@ -120,6 +120,24 @@ Lab, 2 molars per week:
 Messages are for general scientific questions only. No photos, work, grades or attendance.`,
     audience: 'students',
   },
+  {
+    id: 'survey-pilot-2026-10-04',
+    title: 'استبيان دقيقتين عن اللوجبوك الرقمي · 2-minute survey',
+    body: `رأيك يهمنا 🙏
+جاوب استبيان قصير (دقيقتين) عن أول أسبوع على اللوجبوك الرقمي. إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع.
+
+• الطلاب: افتح «الرئيسية» ← الكارت اللي فوق «استبيان دقيقتين» ← «جاوب الاستبيان».
+• المعيدين والمشرفين: افتح «Today» ← الكارت اللي فوق ← «Answer the survey».
+• ٥ أسئلة + تعليق اختياري. متاح لحد الخميس ٨ أكتوبر الساعة ١١:٥٩ مساءً.
+
+—
+
+Your opinion matters. Please answer a short anonymous 2-minute survey on the first week of the Digital Logbook.
+Students: Home → the "2-minute survey" card at the top → Answer the survey.
+Demonstrators and supervisors: Today → the card at the top → Answer the survey.
+5 questions + an optional comment. Open until Thursday 8 October, 23:59.`,
+    audience: 'all', imageUrl: null,
+  },
 ];
 const mark = db.doc('config/seededAnnouncements');
 const done = new Set((await mark.get()).data()?.ids || []);
