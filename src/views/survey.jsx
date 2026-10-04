@@ -8,15 +8,17 @@ export const SURVEY = { id: 'pilot-2026-10', opens: Date.parse('2026-10-03T00:00
 
 // After the pilot: a staff-only round every 3 weeks, open Saturday 00:00 → Thursday 23:59 (Cairo).
 const DAY = 86400000;
-const FIRST_STAFF = Date.parse('2026-10-24T00:00:00+03:00'); // Saturday 24 Oct
+// Cairo midnight for a calendar date (Egypt summer time UTC+3 until the last Friday of Oct, then UTC+2 until the last Friday of Apr).
+const cairo = (ymd) => Date.parse(ymd + 'T00:00:00' + (ymd >= '2026-10-30' && ymd < '2027-04-30' ? '+02:00' : '+03:00'));
+const addDays = (ymd, n) => new Date(Date.parse(ymd + 'T12:00:00Z') + n * DAY).toISOString().slice(0, 10);
 const fmtD = (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Cairo' });
 export function surveyRounds(upto = Date.now()) {
   const out = [SURVEY];
   for (let k = 0; k < 20; k++) {
-    const opens = FIRST_STAFF + k * 21 * DAY;
+    const d = addDays('2026-10-24', 21 * k); // Saturdays: 24 Oct, 14 Nov, 5 Dec, 26 Dec …
+    const opens = cairo(d);
     if (opens > upto) break;
-    const id = 'staff-' + new Date(opens + 3 * 3600000).toISOString().slice(0, 10);
-    out.push({ id, opens, closes: opens + 6 * DAY - 60000, roles: ['demonstrator', 'lecturer'], label: `Staff round ${k + 1} (${fmtD(opens)})` });
+    out.push({ id: 'staff-' + d, opens, closes: cairo(addDays(d, 6)) - 60000, roles: ['demonstrator', 'lecturer'], label: `Staff round ${k + 1} (${fmtD(opens)})` });
   }
   return out;
 }
