@@ -233,10 +233,10 @@ export function EntrySheet({ id, onClose }) {
   const lensUsedOn = !e.practice && !e.ai ? (weekMine.rows || []).find((x) => x.id !== e.id && !x.practice && x.ai) : null;
   const needGrade = !e.practice;
   const sugg = rub && picks ? suggestGrade(rub, picks) : null;
-  const onPhoto = async (ev) => {
-    const f = ev.target.files[0]; if (!f) return;
-    setBusy('photo');
-    try { const { quality } = await addPhoto(e.id, f, view); setQ(quality); }
+  const onPhoto = async (ev, vw) => {
+    const f = ev.target.files && ev.target.files[0]; if (!f) return;
+    const v = vw || view; setView(v); setBusy('photo');
+    try { const { quality } = await addPhoto(e.id, f, v); setQ(quality); }
     catch (x) { toast(L('Upload failed — check connection and try again.', 'فشل الرفع — تحقق من الاتصال وحاول مرة أخرى.')); }
     setBusy(''); ev.target.value = '';
   };
@@ -258,7 +258,7 @@ export function EntrySheet({ id, onClose }) {
       <div class="thumbs">{PHOTO_VIEWS.map(([v, en, ar]) => { const ph = (e.photos || []).filter((p) => p.view === v).slice(-1)[0];
         return <figure style={{ margin: 0 }}>{ph ? <img class="photo" src={ph.url} alt={`${en} — tooth ${e.tooth}`} /> : <div class="photo" style={{ display: 'grid', placeItems: 'center', background: 'var(--primary-soft)', color: 'var(--primary)', minHeight: 110 }}>{L('No photo yet', 'لا توجد صورة')}</div>}
           <figcaption class="faint">{L(en, ar)}</figcaption>
-          {editable && <label class="btn sm" style={{ marginTop: 6 }}>{busy === 'photo' && view === v ? L('Uploading…', 'جارٍ الرفع…') : ph ? L('Retake', 'إعادة التصوير') : L('Take photo', 'التقط صورة')}<input type="file" accept="image/*" capture="environment" hidden onClick={() => setView(v)} onChange={onPhoto} /></label>}</figure>; })}</div>
+          {editable && <label class="btn sm" style={{ marginTop: 6, position: 'relative' }}>{busy === 'photo' && view === v ? L('Uploading…', 'جارٍ الرفع…') : ph ? L('Retake', 'إعادة التصوير') : L('Take photo', 'التقط صورة')}<input type="file" accept="image/*" style={{ position: 'absolute', width: 1, height: 1, opacity: 0, overflow: 'hidden' }} onChange={(ev) => onPhoto(ev, v)} /></label>}</figure>; })}</div>
       {q && (q.tooDark || q.blurry || q.tooBright) && <div class="state pending"><b>{L('Consider retaking', 'يُفضل إعادة التصوير')}</b><p>{[q.tooDark && L('too dark', 'مظلمة'), q.tooBright && L('too bright', 'ساطعة جدًا'), q.blurry && L('not sharp', 'غير واضحة')].filter(Boolean).join(' · ')}</p></div>}
 
       {(e.photos || []).some((p) => p.view === 'probe') && <label class="fld" style={{ maxWidth: 260 }}>{L('My probe reading (mm)', 'قراءة البروب (مم)')}<input id="probe-mm" type="number" min="0" max="10" step="0.5" inputMode="decimal" value={e.probeMm ?? ''} disabled={!editable} onChange={(ev) => { const v = ev.target.value; setProbeReading(e.id, v === '' ? null : Math.min(10, Math.max(0, Number(v)))); }} /></label>}
