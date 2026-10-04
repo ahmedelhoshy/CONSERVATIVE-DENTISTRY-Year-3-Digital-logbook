@@ -80,6 +80,10 @@ service cloud.firestore {
           && (request.resource.data.get('practice', false) == resource.data.get('practice', false)
             || (resource.data.get('practice', false) == true && request.resource.data.get('practice', false) == false && resource.data.status == 'draft'))
           && unchanged(['uid', 'code', 'section', 'review', 'ai', 'rubricId', 'week']))
+        // Self-assessment at home: for 48 h after Submit the student may update only their self-assessment.
+        || (isStudent() && resource.data.uid == myUid() && resource.data.status in ['submitted', 'reviewed']
+          && request.time.toMillis() - resource.data.get('submittedAt', 0) < 172800000
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['self', 'updatedAt']))
         || (isTeacher() && covers(resource.data.section) && unchanged(['uid', 'code', 'section', 'ai']));
       allow delete: if isEditor() || (isStudent() && resource.data.uid == myUid() && resource.data.status == 'draft');
     }

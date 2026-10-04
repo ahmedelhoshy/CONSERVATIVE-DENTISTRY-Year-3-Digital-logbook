@@ -138,6 +138,30 @@ Demonstrators and supervisors: Today → the card at the top → Answer the surv
 5 questions + an optional comment. Open until Thursday 8 October, 23:59.`,
     audience: 'all', imageUrl: null,
   },
+  {
+    id: 'lab-flow-2026-10-05',
+    title: 'اللاب أسرع: صورتين ← إرسال · Faster lab: 2 photos → Submit',
+    body: `بناءً على آراء مجلس القسم والمعيدين — ابتداءً من الآن:
+
+في اللاب (دقيقتين):
+١. سجّل الحضور بالـQR.
+٢. لكل سنة: الصورتين (أكلوزال ٩٠° + من الجنب بالبروب).
+٣. اضغط «Submit for demonstrator review» واعرض السنة على المعيد.
+التقييم الذاتي مش مطلوب في اللاب.
+
+في البيت (خلال ٤٨ ساعة من الإرسال):
+• افتح السنة ← «التقييم الذاتي + Prep Lens» ← دوس على العيوب واكتب درجتك ← شوف ملاحظات Prep Lens (سنة واحدة في الأسبوع).
+
+للمعيدين: لو «Self» ظاهر «–» ده طبيعي — الطالب هيقيّم نفسه في البيت. قيّم السنة عادي (العيوب + درجة واحدة).
+
+—
+
+From now on (Board and demonstrator feedback):
+In the lab: attendance QR → 2 photos per tooth → Submit for demonstrator review → show the tooth. No self-assessment in the lab.
+At home, within 48 h of Submit: open the tooth → Self-assessment + Prep Lens.
+Demonstrators: "Self –" is normal now; grade as usual (defects + one grade).`,
+    audience: 'all', imageUrl: null,
+  },
 ];
 const mark = db.doc('config/seededAnnouncements');
 const done = new Set((await mark.get()).data()?.ids || []);

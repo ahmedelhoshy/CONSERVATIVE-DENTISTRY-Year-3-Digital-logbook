@@ -189,8 +189,9 @@ export async function addPhoto(entryId, file, view = 'occlusal') {
   await S.update('entries', entryId, { photos, updatedAt: nowMs() });
   return { quality };
 }
-export async function saveSelf(entryId, picks, grade, comment) {
-  await S.update('entries', entryId, { self: { picks, grade, comment: comment || '', at: nowMs() }, updatedAt: nowMs() });
+export async function saveSelf(entryId, picks, grade, comment, afterReview = false) {
+  // afterReview: saved after the official grade was visible — kept for the student, excluded from calibration statistics.
+  await S.update('entries', entryId, { self: { picks, grade, comment: comment || '', at: nowMs(), ...(afterReview ? { afterReview: true } : {}) }, updatedAt: nowMs() });
 }
 export async function submitEntry(entryId) {
   const e = await S.get('entries', entryId);

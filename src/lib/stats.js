@@ -68,7 +68,7 @@ export function computeStats({ students, sessions, attendance, entries: allEntri
       if (x) x.grades.push(e.review.grade);
       if (sec) {
         sec.grades.push(e.review.grade);
-        if (e.self?.grade != null) { sec.selfGap.push(e.self.grade - e.review.grade); selfN++; if (Math.abs(e.self.grade - e.review.grade) <= 1) selfWithin1++; }
+        if (e.self?.grade != null && !e.self.afterReview) { sec.selfGap.push(e.self.grade - e.review.grade); selfN++; if (Math.abs(e.self.grade - e.review.grade) <= 1) selfWithin1++; }
         if (e.ai?.score != null) { sec.aiGap.push(e.ai.score - e.review.grade); aiN++; if (Math.abs(e.ai.score - e.review.grade) <= 1) aiWithin1++; }
       }
       const by = e.review.byName || e.review.by;

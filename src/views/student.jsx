@@ -225,6 +225,8 @@ export function EntrySheet({ id, onClose }) {
   if (!e) return <Sheet onClose={onClose}><p>{L('Loading…', 'جارٍ التحميل…')}</p></Sheet>;
   const rub = rubricFor(e);
   const editable = e.status === 'draft' || e.status === 'redo';
+  // Self-assessment + Prep Lens are done at home: open while drafting and for 48 h after Submit (Board feedback, 5 Oct 2026).
+  const selfOpen = editable || (!e.practice && ['submitted', 'reviewed'].includes(e.status) && Date.now() - (e.submittedAt || 0) < 48 * 3600e3);
   const stage = e.practice ? (e.stage || 'outline') : 'full';
   const crits = rub ? stageCriteria(rub, stage) : [];
   const aiHere = e.ai && (e.ai.stage || 'full') === stage ? e.ai : null;
@@ -247,11 +249,13 @@ export function EntrySheet({ id, onClose }) {
     setBusy(''); ev.target.value = '';
   };
   const saveAndReveal = async () => {
-    setBusy('self'); await saveSelf(e.id, fullPicks, grade === '' ? null : Number(grade), comment);
+    setBusy('self'); await saveSelf(e.id, fullPicks, grade === '' ? null : Number(grade), comment, !!e.review);
     try { await requestAI(e.id); } catch (x) { toast(x.message && x.message.includes('quota') ? L('Prep Lens daily limit reached — your self-assessment is saved; continue with your demonstrator.', 'تم الوصول للحد اليومي لـ Prep Lens — تم حفظ تقييمك الذاتي؛ تابع مع المعيد.') : L('Prep Lens is unavailable now. Your self-assessment is saved.', 'Prep Lens غير متاح الآن. تم حفظ تقييمك الذاتي.')); }
     setBusy('');
   };
-  const submit = async () => { setBusy('submit'); await saveSelf(e.id, fullPicks, grade === '' ? null : Number(grade), comment); await submitEntry(e.id); setBusy(''); toast(L('Submitted — show the tooth to your demonstrator.', 'تم الإرسال — اعرض السن على المعيد.')); };
+  const hasSelf = grade !== '' || Object.values(fullPicks).some((b) => b !== 'A') || comment.trim();
+  const submit = async () => { setBusy('submit'); if (hasSelf) await saveSelf(e.id, fullPicks, grade === '' ? null : Number(grade), comment, !!e.review); await submitEntry(e.id); setBusy(''); toast(L('Submitted — show the tooth to your demonstrator.', 'تم الإرسال — اعرض السن على المعيد.')); };
+  const saveOnly = async () => { setBusy('save'); try { await saveSelf(e.id, fullPicks, grade === '' ? null : Number(grade), comment, !!e.review); toast(L('Self-assessment saved.', 'تم حفظ التقييم الذاتي.')); } catch (x) { toast(L('Could not save — try again.', 'لم يتم الحفظ — حاول مرة أخرى.')); } setBusy(''); };
   return <Sheet onClose={onClose} label="Tooth record">
     <div class="row between"><div><span class="eyebrow">{e.practice ? L('Practice (self-training) · not graded', 'تدريب ذاتي · بدون درجة') : L('Week', 'الأسبوع') + ' ' + e.week} · {fmtDate(e.date)}</span><h2>{rub?.title || e.taskLabel} <span class="mono">#{e.tooth}</span></h2></div><button class="btn sm" onClick={onClose}>{L('Close', 'إغلاق')}</button></div>
     {e.practice && <div class="stack"><span class="eyebrow">{L('Which step are you checking?', 'أي خطوة تراجع الآن؟')}</span><div class="seg" style={{ flexWrap: 'wrap' }}>{PREP_STAGES.map(([k, en, ar]) => <button class={stage === k ? 'on' : ''} onClick={() => setStage(e.id, k)}>{L(en, ar)}</button>)}</div></div>}
@@ -270,23 +274,29 @@ export function EntrySheet({ id, onClose }) {
       {(e.photos || []).some((p) => p.view === 'probe') && <label class="fld" style={{ maxWidth: 260 }}>{L('My probe reading (mm)', 'قراءة البروب (مم)')}<input id="probe-mm" type="number" min="0" max="10" step="0.5" inputMode="decimal" value={e.probeMm ?? ''} disabled={!editable} onChange={(ev) => { const v = ev.target.value; setProbeReading(e.id, v === '' ? null : Math.min(10, Math.max(0, Number(v)))); }} /></label>}
     </section>
 
-    {rub && <section class="stack"><h3>2 · {L('Self-assessment against the rubric', 'التقييم الذاتي وفق الروبرك')}</h3>
-      <p class="faint">{L('Score your own work first. Prep Lens feedback appears after you save.', 'قيّم عملك أولًا. تظهر ملاحظات Prep Lens بعد الحفظ.')}</p>
+    {editable && !e.practice && <section class="stack"><h3>2 · {L('Submit to your demonstrator', 'أرسل للمعيد')}</h3>
+      {!bothPhotos ? <p class="faint">{L('Add both photos (occlusal 90° and proximal with probe) to submit.', 'أضف الصورتين (أكلوزال ٩٠° ومن الجنب بالبروب) عشان ترسل.')}</p>
+        : <p class="faint">{L('In the lab: photos → Submit. The self-assessment and Prep Lens can be done later at home (within 48 h).', 'في اللاب: الصورتين ← إرسال. التقييم الذاتي وPrep Lens ممكن تعملهم بعدين في البيت (خلال ٤٨ ساعة).')}</p>}
+      <button class="btn gold big" disabled={!bothPhotos || busy} onClick={submit}>{e.status === 'redo' ? L('Resubmit for review', 'أعد الإرسال للتقييم') : L('Submit for demonstrator review', 'أرسل لتقييم المعيد')}</button></section>}
+
+    {rub && (e.practice || selfOpen || e.self) && <section class="stack"><h3>{e.practice ? '2' : '3'} · {e.practice ? L('Self-assessment against the rubric', 'التقييم الذاتي وفق الروبرك') : L('Self-assessment + Prep Lens — at home, within 48 h', 'التقييم الذاتي + Prep Lens — في البيت خلال ٤٨ ساعة')}</h3>
+      <p class="faint">{e.practice ? L('Score your own work first. Prep Lens feedback appears after you save.', 'قيّم عملك أولًا. تظهر ملاحظات Prep Lens بعد الحفظ.') : L('Optional in the lab. Score your own work, then see the Prep Lens notes on your photos.', 'مش لازم في اللاب. قيّم شغلك، وبعدين شوف ملاحظات Prep Lens على صورك.')}</p>
       {e.practice && editable && <div class="state pending" style={{ display: 'block' }}><b style={{ fontSize: '1rem' }}>{L('This is a practice tooth — it is not sent to your demonstrator.', 'دي سنة تدريب — مش بتتبعت للمعيد.')}</b> {L('If this is one of your 2 requirement teeth, tap:', 'لو دي واحدة من سنتين المتطلبات، اضغط:')} <button class="btn sm" onClick={async () => { try { await makeRequirement(e.id); toast(L('Now a requirement tooth — add both photos, self-assess, then Submit.', 'بقت سنة متطلبات — أضف الصورتين وقيّم نفسك ثم أرسل.')); } catch (x) { toast(x.code === 'limit' ? L('You already have 2 requirement teeth this week.', 'عندك سنتين متطلبات الأسبوع ده بالفعل.') : x.message); } }}>{L('Make it a requirement tooth', 'حوّلها لسنة متطلبات')}</button></div>}
       {e.practice && <p class="faint">{L('Only the criteria of this step are shown.', 'تظهر بنود هذه الخطوة فقط.')}</p>}
       <p class="faint" style={{ marginTop: -4 }}>{L('Tap only what is wrong in your preparation, then choose how much. Everything not tapped counts as acceptable.', 'دوس بس على العيب الموجود في تحضيرك واختار درجته. أي بند ما دستش عليه بيتحسب مقبول.')}</p>
       <div class="defects">{crits.map((c) => { const b = fullPicks[c.id]; const on = b !== 'A'; const ai = aiHere?.criteria?.[c.id];
         return <div class={'defect' + (on ? ' on' : '')}>
-          <button type="button" class={'chip' + (on ? ' on' : '')} disabled={!editable} aria-pressed={on} onClick={() => setPicks({ ...fullPicks, [c.id]: on ? 'A' : 'B' })}>{on ? '✕ ' : ''}{c.name}</button>
-          {on && <div class="seg">{[['B', L('Slight', 'بسيط')], ['C', L('Marked', 'واضح')], ['D', L('Unacceptable', 'غير مقبول')]].map(([k, l]) => <button type="button" disabled={!editable} class={b === k ? 'on' : ''} onClick={() => setPicks({ ...fullPicks, [c.id]: k })}>{l}</button>)}</div>}
+          <button type="button" class={'chip' + (on ? ' on' : '')} disabled={!selfOpen} aria-pressed={on} onClick={() => setPicks({ ...fullPicks, [c.id]: on ? 'A' : 'B' })}>{on ? '✕ ' : ''}{c.name}</button>
+          {on && <div class="seg">{[['B', L('Slight', 'بسيط')], ['C', L('Marked', 'واضح')], ['D', L('Unacceptable', 'غير مقبول')]].map(([k, l]) => <button type="button" disabled={!selfOpen} class={b === k ? 'on' : ''} onClick={() => setPicks({ ...fullPicks, [c.id]: k })}>{l}</button>)}</div>}
           {on && <div class="faint" style={{ fontSize: '.85rem' }}>{c.bands[rub.bands.findIndex((x) => x.key === b)]}</div>}
           {ai && <div class="row" style={{ gap: 6 }}><span class="faint">Prep Lens:</span>{ai.assessable ? <Band k={ai.band} /> : <Pill>{L('Not assessable from photo', 'لا يمكن تقييمه من الصورة')}</Pill>}<span class="faint">{ai.comment}</span></div>}
         </div>; })}</div>
-      {needGrade && <div class="grid2"><label class="fld">{L('My overall grade (0–10)', 'درجتي الكلية (٠–١٠)')}<input id="self-grade" type="number" min="0" max="10" step="0.25" value={grade} disabled={!editable} onInput={(ev) => setGrade(ev.target.value)} placeholder={sugg != null ? String(sugg) : ''} /></label>
-        <label class="fld">{L('Note for my demonstrator (optional)', 'ملاحظة للمعيد (اختياري)')}<input id="self-note" value={comment} disabled={!editable} onInput={(ev) => setComment(ev.target.value)} /></label></div>}
+      {needGrade && <div class="grid2"><label class="fld">{L('My overall grade (0–10)', 'درجتي الكلية (٠–١٠)')}<input id="self-grade" type="number" min="0" max="10" step="0.25" value={grade} disabled={!selfOpen} onInput={(ev) => setGrade(ev.target.value)} placeholder={sugg != null ? String(sugg) : ''} /></label>
+        <label class="fld">{L('Note for my demonstrator (optional)', 'ملاحظة للمعيد (اختياري)')}<input id="self-note" value={comment} disabled={!selfOpen} onInput={(ev) => setComment(ev.target.value)} /></label></div>}
       {needGrade && sugg != null && <p class="faint">{L(`From your band choices the rubric suggests about ${sugg}/10.`, `حسب اختياراتك يقترح الروبرك حوالي ${sugg}/١٠.`)}</p>}
-      {editable && !aiHere && lensUsedOn && <p class="faint">{L(`Prep Lens is used on one tooth per week — you used it on #${lensUsedOn.tooth}. Complete your self-assessment and submit this tooth.`, `Prep Lens بيُستخدم على سنة واحدة في الأسبوع — استخدمته على #${lensUsedOn.tooth}. كمّل التقييم الذاتي وأرسل السنة دي.`)}</p>}
-      {editable && !aiHere && !lensUsedOn && <button class="btn" disabled={!allPicked || (needGrade && grade === '') || !bothPhotos || busy} onClick={saveAndReveal}>{busy === 'self' ? L('Prep Lens is reading your photos…', 'Prep Lens يقرأ الصور…') : L('Save and see Prep Lens feedback', 'احفظ واعرض ملاحظات Prep Lens')}</button>}
+      {selfOpen && !aiHere && lensUsedOn && <p class="faint">{L(`Prep Lens is used on one tooth per week — you used it on #${lensUsedOn.tooth}. Your self-assessment of this tooth is still useful.`, `Prep Lens بيُستخدم على سنة واحدة في الأسبوع — استخدمته على #${lensUsedOn.tooth}. التقييم الذاتي للسنة دي لسه مفيد.`)}</p>}
+      {selfOpen && !aiHere && !lensUsedOn && <button class="btn" disabled={!allPicked || (needGrade && grade === '') || !bothPhotos || busy} onClick={saveAndReveal}>{busy === 'self' ? L('Prep Lens is reading your photos…', 'Prep Lens يقرأ الصور…') : L('Save and see Prep Lens feedback', 'احفظ واعرض ملاحظات Prep Lens')}</button>}
+      {selfOpen && !editable && (lensUsedOn || aiHere) && <button class="btn" disabled={!!busy || (needGrade && grade === '')} onClick={saveOnly}>{busy === 'save' ? L('Saving…', 'جارٍ الحفظ…') : L('Save my self-assessment', 'احفظ تقييمي الذاتي')}</button>}
       {aiHere && <div class="state info"><b>Prep Lens{e.practice ? ' · ' + L((PREP_STAGES.find((x) => x[0] === stage) || [])[1] || '', (PREP_STAGES.find((x) => x[0] === stage) || [])[2] || '') : ''}</b>
         {aiHere.depthMm != null && <p><b>{L(`Estimated depth from the probe photo ≈ ${aiHere.depthMm} mm`, `العمق التقريبي من صورة البروب ≈ ${aiHere.depthMm} مم`)}</b></p>}
         <p>{aiHere.summary || ''}</p><p class="faint">{L('Formative notes from your photos — not a grade. Only your demonstrator grades the physical tooth.', 'ملاحظات تعليمية من صورك — ليست درجة. المعيد وحده يقيّم السن الفعلي.')}</p></div>}
@@ -294,9 +304,7 @@ export function EntrySheet({ id, onClose }) {
       {e.practice && (e.aiHistory || []).length > 1 && <details><summary>{L(`Progress on this tooth (${e.aiHistory.length} checks)`, `تقدّمك في هذا السن (${e.aiHistory.length} مراجعة)`)}</summary><div class="list">{e.aiHistory.slice().reverse().map((hx) => <div class="item"><div class="grow"><b>{L((PREP_STAGES.find((x) => x[0] === hx.stage) || PREP_STAGES[3])[1], (PREP_STAGES.find((x) => x[0] === hx.stage) || PREP_STAGES[3])[2])}</b>{hx.depthMm != null && <span class="faint"> · ≈{hx.depthMm} mm</span>}<div class="faint" dir="auto">{hx.summary}</div></div><span class="faint">{ago(hx.at)}</span></div>)}</div></details>}
     </section>}
 
-    {editable && !e.practice && !bothPhotos && <p class="faint">{L('Add both photos (occlusal 90° and proximal with probe) to submit.', 'أضف الصورتين (أكلوزال ٩٠° ومن الجنب بالبروب) عشان ترسل.')}</p>}
-    {editable && !e.practice && <button class="btn gold big" disabled={!allPicked || grade === '' || !bothPhotos || busy} onClick={submit}>{e.status === 'redo' ? L('Resubmit for review', 'أعد الإرسال للتقييم') : L('Submit for demonstrator review', 'أرسل لتقييم المعيد')}</button>}
-    {e.status === 'submitted' && <div class="state pending"><b>{L('Waiting for your demonstrator', 'في انتظار المعيد')}</b><p>{L('Take the tooth to your demonstrator for inspection. Record the official grade in your physical logbook too.', 'اعرض السن على المعيد للفحص، وسجل الدرجة الرسمية في اللوجبوك الورقي أيضًا.')}</p></div>}
+    {e.status === 'submitted' && <div class="state pending"><b>{L('Waiting for your demonstrator', 'في انتظار المعيد')}</b><p>{L('Take the tooth to your demonstrator for inspection. Record the official grade in your physical logbook too. At home (within 48 h): do your self-assessment and Prep Lens above.', 'اعرض السن على المعيد للفحص، وسجل الدرجة الرسمية في اللوجبوك الورقي أيضًا. في البيت (خلال ٤٨ ساعة): اعمل التقييم الذاتي وPrep Lens فوق.')}</p></div>}
     {/* Per-tooth messages to the demonstrator were removed: no work, grades or attendance in messages (Course Director, 2 Oct 2026). */}
   </Sheet>;
 }

@@ -170,7 +170,7 @@ function PrepLensValidation() {
       const lab = entries.filter((e) => !e.practice && e.source !== 'paper' && e.review && typeof e.review.grade === 'number');
       const aiScore = (e) => (rs[e.id]?.score ?? e.ai?.score ?? null);
       const aiPairs = lab.filter((e) => aiScore(e) != null).map((e) => [aiScore(e), e.review.grade]);
-      const selfPairs = lab.filter((e) => typeof e.self?.grade === 'number').map((e) => [e.self.grade, e.review.grade]);
+      const selfPairs = lab.filter((e) => typeof e.self?.grade === 'number' && !e.self.afterReview).map((e) => [e.self.grade, e.review.grade]);
       const crit = {}; const allBand = [];
       for (const e of lab) {
         const rub = rubricById[e.rubricId]; if (!rub || !e.review.picks) continue;
