@@ -69,6 +69,10 @@ note('Duplicates', `students with more than one roster entry: ${Object.values(by
   const rows = PAPER.map((h, i) => `r${i + 4}:${P[i] ? 'P' : 'A'}/${at[h] || 'none'}${ent[h] ? '/' + ent[h].join('+') : ''}`);
   const mism = rows.filter((r, i) => (P[i] === 1) !== (at[PAPER[i]] === 'confirmed' || at[PAPER[i]] === 'recorded'));
   note('S3 paper vs platform', `mismatches ${mism.length}: ${mism.join(' ')} || all: ${rows.join(' ')}`); }
+{ const es = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).filter((e) => !e.practice);
+  const by = {}; for (const e of es) { if (!e.review) continue; const k = (e.review.byName || '?') + ' S' + e.section + ' ' + e.status; by[k] = (by[k] || 0) + 1; }
+  const hist = es.filter((e) => (e.history || []).some((h) => h.event === 'review-changed' || h.event === 'redo-cleared')).length;
+  note('Week 3 reviews', JSON.stringify(by) + ` · teeth with changed reviews ${hist} · drafts ${es.filter((e) => e.status === 'draft').length} · submitted-not-graded ${es.filter((e) => e.status === 'submitted').length}`); }
 const staff = roster.filter((r) => r.role !== 'student');
 note('Staff signed in', `${staff.filter((r) => r.lastLogin).length}/${staff.length} · lecturers with sections ${staff.filter((r) => r.role === 'lecturer' && (r.sections || []).length).length} · demonstrators on all 18 ${staff.filter((r) => r.role === 'demonstrator' && (r.sections || []).length === 18).length}/${staff.filter((r) => r.role === 'demonstrator').length}`);
 const lec3 = staff.filter((r) => (r.lectures || []).includes(3));
