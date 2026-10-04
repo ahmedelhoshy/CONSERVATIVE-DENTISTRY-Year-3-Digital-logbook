@@ -472,3 +472,20 @@ for (const d of (await db.collection('materials').get()).docs) {
     await lm.set({ ids: FieldValue.arrayUnion('lec3-paper-2026-10-03-b') }, { merge: true });
   }
 }
+
+// Lecture 3 (3 Oct): 2 more students confirmed by the class representative with their student numbers.
+{
+  const lm = db.doc('config/seededAnnouncements'); const ld = new Set((await lm.get()).data()?.ids || []);
+  if (!ld.has('lec3-paper-2026-10-03-c')) {
+    const { createHash } = await import('node:crypto'); const H = (x) => createHash('sha256').update(String(x || '')).digest('hex');
+    const LIST = new Set(["aff236acaa7365c50779aafb2765b38019fb7724746d8d63ae2ade38076ed9ef", "67d4127cc4ae61c39ed4551889ec6e19181d56353393a11ca224df66d8807253"]);
+    const sid = 'lec-3'; const sess = (await db.doc('sessions/' + sid).get()).data();
+    const st = (await db.collection('roster').where('role', '==', 'student').get()).docs.map((d) => d.data()).filter((x) => LIST.has(H(x.code)));
+    const t = Date.now();
+    for (const x of st) {
+      const ref = db.doc(`attendance/${sid}_${x.uid}`); if ((await ref.get()).exists) continue;
+      await ref.set({ sid, uid: x.uid, code: x.code || '', name: x.name, section: x.section || null, type: 'lecture', date: sess.date, week: sess.week || null, at: t, status: 'confirmed', method: 'manual', by: 'course-director', byName, decidedAt: t, reason: 'Lecture 3 paper list: present, could not scan the QR (Course Director)' });
+    }
+    await lm.set({ ids: FieldValue.arrayUnion('lec3-paper-2026-10-03-c') }, { merge: true });
+  }
+}
