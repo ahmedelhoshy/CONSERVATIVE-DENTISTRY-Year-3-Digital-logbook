@@ -6,7 +6,8 @@ import { createHash } from 'node:crypto';
 initializeApp({ credential: applicationDefault(), projectId: process.env.FB_PROJECT_ID });
 const db = getFirestore();
 const day = process.env.CHECK_DAY || '2026-10-03';
-const note = (t, m) => console.log(`::notice title=${t}::${m}`);
+const ONLY = ['Week 3 reviews', 'Today live', 'Roster', 'Staff signed in', 'Prep Lens', 'Photos'];
+const note = (t, m) => { if (ONLY.includes(t)) console.log(`::notice title=${t}::${m}`); };
 const day0 = process.env.CHECK_DAY || '2026-10-03';
 try { const es = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).filter((e) => !e.practice);
   const by = {}; for (const e of es) { const k = 'S' + e.section; const b = by[k] = by[k] || { n: 0, photo: 0, nophoto: 0, ai: 0, sub: 0 }; b.n++; if ((e.photos || []).length) b.photo++; else b.nophoto++; if (e.ai) b.ai++; if (e.status !== 'draft') b.sub++; }
