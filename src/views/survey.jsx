@@ -4,7 +4,7 @@ import { useState } from 'preact/hooks';
 import { L, useDoc, useQuery, toast } from '../lib/ui.jsx';
 import { store, isDemo } from '../lib/logic.js';
 
-export const SURVEY = { id: 'pilot-2026-10', opens: Date.parse('2026-10-03T00:00:00+03:00'), closes: Date.parse('2026-10-08T21:59:00Z'), roles: ['student', 'demonstrator', 'lecturer'], label: 'Pilot week (students + staff)' }; // Thursday 8 Oct, 23:59 Cairo
+export const SURVEY = { id: 'pilot-2026-10', opens: Date.parse('2026-10-03T00:00:00+03:00'), closes: Date.parse('2026-10-08T23:59:00+03:00'), roles: ['student', 'demonstrator', 'lecturer'], label: 'Pilot week (students + staff)' }; // Thursday 8 Oct, 23:59 Cairo
 
 // After the pilot: a staff-only round every 3 weeks, open Saturday 00:00 → Thursday 23:59 (Cairo).
 const DAY = 86400000;

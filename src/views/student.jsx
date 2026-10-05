@@ -122,31 +122,51 @@ export function Attend() {
 // In-page QR reader: works inside the already-open logbook, so scanning still works when the network drops.
 function QrScanner({ onResult, onClose }) {
   const vref = useRef(null);
+  const zref = useRef(2);
+  const [zoom, setZoomS] = useState(2);
   const [err, setErr] = useState('');
+  const [optical, setOptical] = useState(false);
+  const trackRef = useRef(null);
+  // Zoom for far seats: optical zoom when the phone supports it, plus a digital crop of the centre at full resolution.
+  const setZoom = (z) => {
+    zref.current = z; setZoomS(z);
+    const t = trackRef.current; const cap = t && t.getCapabilities ? t.getCapabilities() : {};
+    setOptical(!!cap.zoom);
+    if (cap.zoom) { try { t.applyConstraints({ advanced: [{ zoom: Math.min(cap.zoom.max, Math.max(cap.zoom.min, z)) }] }); } catch (x) { /* digital zoom still works */ } }
+  };
   useEffect(() => {
     let stream, timer, stopped = false;
     (async () => {
       try {
         const jsQR = (await import('jsqr')).default;
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+        trackRef.current = stream.getVideoTracks()[0]; setZoom(zref.current);
         const v = vref.current; v.srcObject = stream; await v.play();
         const c = document.createElement('canvas'); const ctx = c.getContext('2d', { willReadFrequently: true });
+        let n = 0;
         const tick = () => {
           if (stopped) return;
           if (v.videoWidth) {
-            const w = Math.min(640, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth);
-            c.width = w; c.height = h; ctx.drawImage(v, 0, 0, w, h);
+            // Alternate between the zoomed centre (small, far QR) and the whole frame (near QR).
+            const t = trackRef.current; const optical = !!(t && t.getCapabilities && t.getCapabilities().zoom);
+            const z = n++ % 2 === 0 && !optical ? zref.current : 1;
+            const sw = v.videoWidth / z, sh = v.videoHeight / z, sx = (v.videoWidth - sw) / 2, sy = (v.videoHeight - sh) / 2;
+            const w = Math.min(800, sw), h = Math.round(sh * w / sw);
+            c.width = w; c.height = h; ctx.drawImage(v, sx, sy, sw, sh, 0, 0, w, h);
             const r = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
             if (r && r.data) { onResult(r.data); return; }
           }
-          timer = setTimeout(tick, 200);
+          timer = setTimeout(tick, 150);
         };
         tick();
       } catch (e) { setErr(L('Camera not available — allow camera access, or type the code instead.', 'الكاميرا غير متاحة — اسمح بالكاميرا أو اكتب الكود.')); }
     })();
     return () => { stopped = true; clearTimeout(timer); if (stream) stream.getTracks().forEach((t) => t.stop()); };
   }, []);
-  return <div class="stack"><video ref={vref} playsInline muted style={{ width: '100%', borderRadius: 14, background: '#10262d', maxHeight: 360, objectFit: 'cover' }} />
+  return <div class="stack"><div style={{ overflow: 'hidden', borderRadius: 14, background: '#10262d', maxHeight: 360 }}>
+      <video ref={vref} playsInline muted style={{ width: '100%', maxHeight: 360, objectFit: 'cover', display: 'block', transform: optical ? 'none' : `scale(${zoom})`, transformOrigin: 'center' }} /></div>
+    <div class="seg" role="group" aria-label="Zoom">{[1, 2, 3, 4].map((z) => <button type="button" class={zoom === z ? 'on' : ''} onClick={() => setZoom(z)}>{z}×</button>)}</div>
+    <p class="faint">{L('Far from the screen? Use 3× or 4×. Or type the 6-digit code shown under the QR.', 'بعيد عن الشاشة؟ استخدم 3× أو 4×. أو اكتب الكود (٦ أرقام) اللي تحت الـQR.')}</p>
     {err && <p class="faint">{err}</p>}<button type="button" class="btn" onClick={onClose}>{L('Cancel', 'إلغاء')}</button></div>;
 }
 
