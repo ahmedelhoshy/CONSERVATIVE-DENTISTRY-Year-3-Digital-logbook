@@ -162,6 +162,37 @@ At home, within 48 h of Submit: open the tooth → Self-assessment + Prep Lens.
 Demonstrators: "Self –" is normal now; grade as usual (defects + one grade).`,
     audience: 'all', imageUrl: null,
   },
+  {
+    id: 'you-said-we-did-2026-10-05',
+    title: 'قلتم… وعملنا 🎬 · You said, we did (+ 2-minute video)',
+    videoUrl: site + '/guides/Digital_Logbook_Services_Tour.mp4',
+    body: `شكرًا لـ٦٥ طالب و٢١ عضو مجلس قسم جاوبوا الاستبيان. ده اللي اتغير بناءً على ملاحظاتكم:
+
+📌 الحضور بالـQR (أكتر شكوى):
+• زرار تكبير 3× و4× في الكاميرا عشان تمسح من آخر المدرج.
+• الأسهل: اكتب الكود (٦ أرقام) اللي تحت الـQR — من غير كاميرا.
+• لو النت فصل، الحضور بيتحفظ على الموبايل ويتبعت لوحده. متمسحش مرتين.
+
+📌 اللاب أسرع:
+• صورتين بس لكل سنة، وبعدين «Submit» — والتقييم الذاتي وPrep Lens في البيت خلال ٤٨ ساعة.
+
+📌 درجتك وملاحظات المعيد:
+• العيوب اللي المعيد علّم عليها بتظهر لك مع الدرجة، عشان تعرف تحسّن إيه.
+
+📌 هنكرر الاستبيان بشكل دوري (الهيئة المعاونة كل ٣ أسابيع) ونعدّل أول بأول.
+
+▶ فيديو دقيقتين بيشرح كل خدمات المنصة — فوق.
+
+—
+
+Thank you to the 65 students and 21 Department Board members who answered the survey. What changed because of your notes:
+• QR attendance: 3× / 4× zoom for far seats; or simply type the 6-digit code; check-ins are saved offline and sent automatically.
+• Faster lab: 2 photos → Submit. Self-assessment and Prep Lens at home within 48 h.
+• Your grade comes with the defects your demonstrator marked.
+• We will repeat short surveys regularly (staff every 3 weeks) and keep adjusting.
+▶ A 2-minute video tour of all services is above.`,
+    audience: 'all', imageUrl: null,
+  },
 ];
 const mark = db.doc('config/seededAnnouncements');
 const done = new Set((await mark.get()).data()?.ids || []);
