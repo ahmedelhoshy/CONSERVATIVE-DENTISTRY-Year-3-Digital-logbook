@@ -1,0 +1,33 @@
+name: Staff stats (encrypted)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      FB_PROJECT_ID: ${{ vars.FB_PROJECT_ID || 'digitallogbook-dfc3e' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: functions/package-lock.json }
+      - run: cd functions && npm ci
+      - run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
+      - name: Build
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+        run: cd functions && node staff-stats.mjs "$RUNNER_TEMP/out.json"
+      - name: Encrypt and publish
+        run: |
+          set -e
+          cd "$RUNNER_TEMP"
+          openssl rand -hex 32 > k.txt
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in out.json -out out.enc -pass file:k.txt
+          openssl pkeyutl -encrypt -pubin -inkey "$GITHUB_WORKSPACE/functions/export_public.pem" -pkeyopt rsa_padding_mode:oaep -in k.txt -out key.enc
+          mkdir pub && cp out.enc key.enc pub/
+          cd pub && git init -q -b staff-stats && git add . \
+            && git -c user.name=logbook-bot -c user.email=logbook-bot@users.noreply.github.com commit -qm "Section export" \
+            && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" staff-stats
+      - if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json" "$RUNNER_TEMP/out.json" "$RUNNER_TEMP/k.txt"
