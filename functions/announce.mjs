@@ -593,3 +593,29 @@ for (const d of (await db.collection('materials').get()).docs) {
 • Surveys: repeated regularly, every 3 weeks for staff.
 • The 2-minute video plays inside this announcement (▶ next to the title).` });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Updated: you said, we did'); } }
+
+// 5 Oct: staff "You said, we did" after the staff/board survey (25 responses).
+{ const id = 'staff-you-said-we-did-2026-10-05'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) {
+    await db.doc('announcements/' + id).set({ title: 'آراء الهيئة المعاونة والمجلس… وما تم · Staff survey: you said, we did', videoUrl: site + '/guides/Digital_Logbook_Services_Tour.mp4', audience: 'staff', sections: [], pinned: true, publishAt: Date.now(), by: owner || 'system', byName, imageUrl: null, imagePath: null,
+      body: `شكرًا لكل من شارك في الاستبيان (٢٥ إجابة — ١٠٠٪ مع الاستمرار). ده اللي اتعمل:
+
+• وقت السكشن: الطالب في اللاب يصوّر صورتين ثم Submit بس. اختيارات التقييم الذاتي وPrep Lens اتنقلت للبيت (خلال ٤٨ ساعة) — يعني مفيش اختيارات قبل الإرسال.
+• صورة البروب: إعادة التصوير بتستبدل القديمة، والطالب ممكن يرفعها بعد السكشن.
+• الحضور: الطالب يقدر يكتب الكود (٦ أرقام) بدل المسح، والكاميرا فيها تكبير 3×/4×. كشف الإكسل الورقي مستمر كاحتياطي لحد الأسبوع الخامس.
+• الشبكة: الحضور والبيانات بتتحفظ على الموبايل لو النت فصل. وتم رفع طلب رسمي لتقوية الـWi-Fi في منطقة المعامل والعيادات.
+• المعايرة (Calibration): جلسة قصيرة في الأسبوع الرابع — كل المعيدين يقيّموا نفس السنون على المنصة ونقارن النتائج.
+• التدريب: ورشة عمل قصيرة للوجبوك الرقمي (هيتحدد ميعادها)، وفيديو الدقيقتين فوق.
+• المنصة لا تغني عن سؤال المشرف في السكشن — Prep Lens للتدريب في البيت.
+• الاستبيان هيتكرر كل ٣ أسابيع للهيئة المعاونة، ونعدّل أول بأول.
+
+—
+
+Thank you (25 responses — 100% recommend continuing). What we changed:
+• Section time: in the lab, students take 2 photos and Submit only; self-assessment and Prep Lens moved home (within 48 h).
+• Attendance: students can type the 6-digit code; the scanner has 3×/4× zoom. The paper Excel backup continues until Week 5.
+• Network: data is saved on the phone when the connection drops; a formal request for lab and clinic Wi-Fi has been raised.
+• Calibration: a short session in Week 4 — all demonstrators grade the same teeth on the platform and we compare.
+• Training: a short workshop (date to follow) and the 2-minute video above.
+• Staff survey repeats every 3 weeks, and we keep adjusting.` });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: staff you said, we did'); } }
