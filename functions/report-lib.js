@@ -5,9 +5,10 @@ export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&am
 // Report recipients come from the roster, so adding or removing staff on the People page updates the lists.
 
 export async function loadAll(db) {
-  const [students, sessions, attendance, entries, research, cfg, paperwork] = await Promise.all([
+  const [students, sessions, attendance, entries, research, cfg, paperwork, staff] = await Promise.all([
     db.collection('roster').where('role', '==', 'student').get(), db.collection('sessions').get(), db.collection('attendance').get(),
     db.collection('entries').get(), db.collection('research').get(), db.doc('config/course').get(), db.collection('paperwork').get(),
+    db.collection('roster').where('role', 'in', ['demonstrator', 'lecturer']).get(),
   ]);
   const rs = {}; research.docs.forEach((d) => { rs[d.id] = d.data().score; });
   const ents = entries.docs.map((d) => { const e = { id: d.id, ...d.data() }; if (e.ai && rs[d.id] != null) e.ai = { ...e.ai, score: rs[d.id] }; return e; });
@@ -15,6 +16,7 @@ export async function loadAll(db) {
     students: students.docs.map((d) => ({ id: d.id, ...d.data(), uid: String(d.data().code) })),
     sessions: sessions.docs.map((d) => ({ id: d.id, ...d.data() })), attendance: attendance.docs.map((d) => ({ id: d.id, ...d.data() })),
     entries: ents, config: cfg.exists ? cfg.data() : {}, paperwork: paperwork.docs.map((d) => d.data()),
+    staff: staff.docs.map((d) => ({ id: d.id, email: d.id, ...d.data() })),
   };
 }
 export function reportHtml(st, all, day, heading, siteUrl = '') {
@@ -64,4 +66,16 @@ export function actionHtml(all, day) {
   }
   const open = rows.filter((r) => r.includes('#B3261E')).length;
   return `<h3>Action needed today (${day})</h3>${rows.length ? `<p>${open ? `<b>${open}</b> session(s) need attention before the day closes.` : 'Everything for today is complete.'}</p><table cellpadding="6" style="border-collapse:collapse;border:1px solid #D3DDDA"><tr style="background:#E8EEEC"><th align="left">Session</th><th align="left">Time</th><th align="left">Still open</th></tr>${rows.join('')}</table>` : '<p>No sessions scheduled today.</p>'}`;
+}
+
+// Staff platform-compliance KPI as an email-safe table with bars.
+export function complianceHtml(k) {
+  if (!k || !k.rows.length) return '';
+  const C = { signed: '#2a78d6', attendance: '#eb6834', grading: '#1baf7a', defects: '#eda100', timely: '#e87ba4' };
+  const bar = (r) => '<table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:220px"><tr>' + Object.entries(r.parts).filter(([, v]) => v > 0).map(([k2, v]) => `<td style="background:${C[k2]};height:12px;width:${Math.round(2.2 * v)}px;border-right:2px solid #fff"></td>`).join('') + `<td style="width:${Math.round(2.2 * (100 - r.score))}px"></td></tr></table>`;
+  return `<h3 style="color:#10424a;margin:22px 0 4px">Staff platform compliance (KPI)</h3>
+<p style="margin:0 0 8px;color:#555;font-size:13px">Average score <b>${k.mean}/100</b> · ${k.active} of ${k.rows.length} staff actively using the platform (score ≥ 40) · ${k.notSignedIn} not signed in yet. Score = signed in 15 · confirms lab attendance 25 · grades teeth on the platform 30 · marks defects when grade &lt; 10 20 · grades during the section 10.</p>
+<p style="margin:0 0 8px;font-size:12px"><span style="color:#2a78d6">■</span> Signed in &nbsp;<span style="color:#eb6834">■</span> Attendance &nbsp;<span style="color:#1baf7a">■</span> Grading &nbsp;<span style="color:#eda100">■</span> Defects &nbsp;<span style="color:#e87ba4">■</span> In-section</p>
+<table cellpadding="5" style="border-collapse:collapse;font-size:13px">${k.rows.map((r) => `<tr style="border-bottom:1px solid #eee"><td>${esc(r.name)}${r.role === 'lecturer' ? ' <span style="color:#888">(Sup.)</span>' : ''}</td><td>${bar(r)}</td><td style="text-align:right"><b>${r.score}</b></td><td style="color:#777">${r.confirmed} check-ins · ${r.graded} teeth</td></tr>`).join('')}</table>
+<p style="color:#888;font-size:12px">A low score can also mean no section yet this week or grading on paper. It measures platform use, not teaching quality.</p>`;
 }

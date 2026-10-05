@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { me, store, today, isDemo } from '../lib/logic.js';
-import { computeStats } from '../lib/stats.js';
+import { computeStats, computeCompliance, COMPLIANCE_PARTS } from '../lib/stats.js';
 import { L, useDoc, Kpi, Pill, Bar, Empty, MiniChart, fmtDT, fmtDate, toast, Band } from '../lib/ui.jsx';
 import { exportXlsx } from '../lib/export.js';
 import { PRACTICAL_WEEKS, COURSE } from '../data/course.js';
@@ -36,6 +36,29 @@ function useStats() {
 
 const kindPct = (v, good = 85, warn = 75) => (v == null ? '' : v >= good ? 'good' : v >= warn ? 'warn' : 'bad');
 
+
+// Staff platform-compliance KPI (Course Director, HoD, Vice Dean).
+const KPI_COL = { signed: '#2a78d6', attendance: '#eb6834', grading: '#1baf7a', defects: '#eda100', timely: '#e87ba4' };
+function ComplianceKpi() {
+  const [k, setK] = useState(null);
+  useEffect(() => { (async () => {
+    try {
+      const [staff, entries, attendance] = await Promise.all([store().query('roster', [['role', 'in', ['demonstrator', 'lecturer']]]), store().query('entries', []), store().query('attendance', [['type', '==', 'lab']])]);
+      setK(computeCompliance({ staff: staff.map((x) => ({ ...x, email: x.email || x.id })), entries, attendance }));
+    } catch (x) { setK({ error: x.message }); }
+  })(); }, []);
+  return <section class="card"><div class="row between"><h2>Staff platform compliance (KPI)</h2>{k && !k.error && <span class="kpi" style={{ padding: '4px 12px' }}><span class="v mono">{k.mean}</span>/100</span>}</div>
+    <p class="faint">Signed in 15 · confirms lab attendance 25 · grades teeth on the platform 30 · marks defects when grade &lt; 10 20 · grades during the section 10. Measures platform use, not teaching quality.</p>
+    {!k ? <p class="faint">Loading…</p> : k.error ? <p class="faint">Could not load: {k.error}</p> : <>
+      <p>{k.active} of {k.rows.length} staff actively using the platform (score ≥ 40) · {k.notSignedIn} not signed in yet.</p>
+      <div class="row" style={{ gap: 12, flexWrap: 'wrap', fontSize: '.85rem' }}>{COMPLIANCE_PARTS.map(([key, label]) => <span><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: KPI_COL[key], marginInlineEnd: 4 }} />{label}</span>)}</div>
+      <div class="list" style={{ marginTop: 8 }}>{k.rows.map((r) => <div class="item" style={{ alignItems: 'center' }}>
+        <div style={{ width: 200, flexShrink: 0 }}><b>{r.name}</b>{r.role === 'lecturer' && <span class="faint"> (Sup.)</span>}<div class="faint" style={{ fontSize: '.8rem' }}>{r.confirmed} check-ins · {r.graded} teeth</div></div>
+        <div class="grow" style={{ display: 'flex', height: 14, background: 'var(--line, #eee)', borderRadius: 4, overflow: 'hidden' }}>{COMPLIANCE_PARTS.map(([key]) => r.parts[key] > 0 && <div title={`${key}: ${r.parts[key]}`} style={{ width: r.parts[key] + '%', background: KPI_COL[key], borderInlineEnd: '2px solid var(--surface, #fff)' }} />)}</div>
+        <b class="mono" style={{ width: 36, textAlign: 'end' }}>{r.score}</b></div>)}</div></>}
+  </section>;
+}
+
 export function Dashboard({ go } = {}) {
   const u = me();
   const { st, refresh } = useStats();
@@ -57,6 +80,7 @@ export function Dashboard({ go } = {}) {
       <p class="faint">Period: term start – {fmtDate(st.today, { day: 'numeric', month: 'short', year: 'numeric' })} · Last updated {fmtDT(st.generatedAt)}{isDemo() ? ' (demo, computed live)' : ' · refreshes daily 19:00'}</p></div>
       {full && <button class="btn noprint" onClick={refresh}>Refresh now</button>}</section>
     {['director', 'admin', 'hod'].includes(u.role) && <SurveyResults />}
+    {['director', 'admin', 'hod', 'vicedean'].includes(u.role) && !isDemo() && <ComplianceKpi />}
     <div class="kpis">
       <Kpi label="Students enrolled" value={T.enrolled} kind="info" sub="18 sections" />
       <Kpi label="Lecture attendance" value={T.lectureAttendance != null ? T.lectureAttendance + '%' : '–'} kind={kindPct(T.lectureAttendance)} sub={`${T.lecturesHeld} lectures counted`} />

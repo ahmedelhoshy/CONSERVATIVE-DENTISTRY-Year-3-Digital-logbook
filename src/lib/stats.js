@@ -138,3 +138,24 @@ export function computeStats({ students, sessions, attendance, entries: allEntri
 }
 
 function median(a) { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+
+// ---------- Staff platform-compliance KPI (Course Director, 6 Oct 2026) ----------
+// Score 0–100 per section staff member: signed in 15 · lab attendance confirmed on the platform 25 (full at 25 check-ins)
+// · teeth graded on the platform 30 (full at 30) · defects marked when grade < 10: 20 × share · graded within 3 h of Submit (median) 10.
+export const COMPLIANCE_PARTS = [['signed', 'Signed in', 15], ['attendance', 'Confirms attendance on platform', 25], ['grading', 'Grades teeth on platform', 30], ['defects', 'Marks defects when grade < 10', 20], ['timely', 'Grades during the section', 10]];
+export function computeCompliance({ staff, entries, attendance }) {
+  const people = staff.filter((s) => s.role === 'demonstrator' || (s.role === 'lecturer' && (s.sections || []).length));
+  const att = {}; for (const a of attendance) if (a.status === 'confirmed' && a.type !== 'lecture' && a.by && a.method !== 'qr-auto') att[a.by] = (att[a.by] || 0) + 1;
+  const rev = {}; for (const e of entries) if (!e.practice && e.review && e.review.by && !String(e.review.byName || '').includes('paper')) (rev[e.review.by] = rev[e.review.by] || []).push(e);
+  const med = (xs) => { const s = [...xs].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : null; };
+  const rows = people.map((s) => {
+    const id = String(s.email || s.id || '').toLowerCase(); const L = rev[id] || []; const below = L.filter((e) => e.review.grade < 10);
+    const withDef = below.filter((e) => Object.values(e.review.picks || {}).some((b) => b && b !== 'A')).length;
+    const ta = L.filter((e) => e.submittedAt).map((e) => (e.review.at - e.submittedAt) / 3600e3);
+    const parts = { signed: s.lastLogin ? 15 : 0, attendance: Math.round(25 * Math.min(att[id] || 0, 25) / 25), grading: Math.round(30 * Math.min(L.length, 30) / 30),
+      defects: below.length ? Math.round(20 * withDef / below.length) : 0, timely: ta.length && med(ta) <= 3 ? 10 : 0 };
+    return { name: s.name, role: s.role, parts, score: Object.values(parts).reduce((a, b) => a + b, 0), confirmed: att[id] || 0, graded: L.length, defectShare: below.length ? Math.round(100 * withDef / below.length) : null };
+  }).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  const mean = rows.length ? Math.round(rows.reduce((a, r) => a + r.score, 0) / rows.length) : null;
+  return { rows, mean, active: rows.filter((r) => r.score >= 40).length, notSignedIn: rows.filter((r) => !r.parts.signed).length };
+}

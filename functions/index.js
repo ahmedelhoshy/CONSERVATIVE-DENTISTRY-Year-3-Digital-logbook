@@ -14,11 +14,11 @@ import { defineString } from 'firebase-functions/params';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import nodemailer from 'nodemailer';
 import * as XLSX from 'xlsx';
-import { computeStats } from './shared/stats.js';
+import { computeStats, computeCompliance } from './shared/stats.js';
 import { PRACTICAL_WEEKS, COURSE, PREP_STAGES, stageCriteria } from './shared/course.js';
 import { rubricById } from './shared/rubrics.js';
 import { buildKnowledge } from './knowledge.js';
-import { cairoDate, esc, loadAll as loadAllFrom, reportHtml as reportHtmlFrom, actionHtml } from './report-lib.js';
+import { cairoDate, esc, loadAll as loadAllFrom, reportHtml as reportHtmlFrom, actionHtml, complianceHtml } from './report-lib.js';
 const loadAll = () => loadAllFrom(db);
 const reportHtml = (st, all, day, heading) => reportHtmlFrom(st, all, day, heading, SITE_URL.value());
 
@@ -254,7 +254,9 @@ async function buildReport(kind) {
   const heading = evening ? 'End-of-day report' : 'Daily report';
   const site = 'https://digitallogbook-dfc3e.web.app';
   const html = evening ? reportHtmlFrom(st, all, day, heading, site).replace(/(<\/p>)/, `$1${actionHtml(all, day)}`) : reportHtmlFrom(st, all, day, heading, site);
-  return { day, to, subject: `${heading} ${day} — Year 3 Conservative Dentistry`, html, builtAt: new Date().toISOString() };
+  const kpi = complianceHtml(computeCompliance({ staff: raw.staff || [], entries: raw.entries, attendance: raw.attendance }));
+  const html2 = kpi ? (html.includes('</body>') ? html.replace('</body>', kpi + '</body>') : html + kpi) : html;
+  return { day, to, subject: `${heading} ${day} — Year 3 Conservative Dentistry`, html: html2, builtAt: new Date().toISOString() };
 }
 export const reportFeed = onRequest({ timeoutSeconds: 120, memory: '1GiB', invoker: 'public' }, async (req, res) => {
   try {
