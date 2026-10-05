@@ -628,3 +628,17 @@ Thank you (25 responses — 100% recommend continuing). What we changed:
       .replace('وتم رفع طلب رسمي لتقوية الـWi-Fi في منطقة المعامل والعيادات.', 'وهيتم رفع طلب رسمي لتقوية الـWi-Fi في منطقة المعامل والعيادات ضمن تقرير المشروع.')
       .replace('a formal request for lab and clinic Wi-Fi has been raised.', 'a formal request for lab and clinic Wi-Fi will be included in the project report.') });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Fixed staff announcement'); } }
+
+// 5 Oct: Course Director's rule — no evaluation in private messages.
+{ const id = 'staff-rule-no-private-eval'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) { const r = db.doc('announcements/staff-grading-2026-10-04'); const d = (await r.get()).data();
+    if (d) await r.update({ pinned: true, publishAt: Date.now(), body: `⚠️ قاعدة: لا تقييم في الرسائل الخاصة
+• التقييم بيتم بس في السكشن، على السنة الفعلية قدامك، من الـReview queue.
+• لا تقييم ولا آراء على صور السنون في الرسائل الخاصة أو الواتساب. لو طالب بعت، الرد: «اعرض السنة في السكشن الجاي».
+
+⚠️ Rule: no evaluation in private messages. Grade only in the section, on the physical tooth, from the Review queue. Do not grade or comment on tooth photos sent by private message or WhatsApp — reply: "Show the tooth in the next section."
+
+—
+
+` + d.body });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Added rule to staff grading announcement'); } }
