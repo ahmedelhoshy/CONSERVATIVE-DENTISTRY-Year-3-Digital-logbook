@@ -656,3 +656,9 @@ For extra Class I practice, use the Prep Lens practice app (button below).
 • Private practice only — it does NOT count toward requirements, is not sent to your demonstrator and has no grade.
 • Official requirements are recorded only on this platform (My lab → New tooth → 2 photos → Submit) and graded in the section on the physical tooth.` });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: Class I practice app'); } }
+
+// 6 Oct: staff survey count updated to 30 responses.
+{ const id = 'staff-you-said-count-30'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) { const r = db.doc('announcements/staff-you-said-we-did-2026-10-05'); const d = (await r.get()).data();
+    if (d) await r.update({ body: d.body.replace('(٢٥ إجابة — ١٠٠٪ مع الاستمرار)', '(٣٠ إجابة — ١٠٠٪ مع الاستمرار)').replace('(25 responses — 100% recommend continuing)', '(30 responses — 100% recommend continuing)') });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Updated staff survey count'); } }
