@@ -199,19 +199,21 @@ export function MyLab() {
       {practice.length > 0 && <div class="list">{practice.slice(0, 8).map((e) => <div class="item click" onClick={() => setOpen(e.id)}><div class="grow"><b>{rubricById[e.rubricId]?.title}</b> <span class="mono">#{e.tooth}</span><div class="faint">{fmtDate(e.date)} · {L(`${(e.aiHistory || []).length} Prep Lens check(s)`, `${(e.aiHistory || []).length} مراجعة Prep Lens`)}{e.ai?.depthMm ? ` · ≈${e.ai.depthMm} mm` : ''}</div></div><Pill kind="info">{L((PREP_STAGES.find((x) => x[0] === e.stage) || PREP_STAGES[3])[1], (PREP_STAGES.find((x) => x[0] === e.stage) || PREP_STAGES[3])[2])}</Pill></div>)}</div>}</section>
     {byWeek.length ? byWeek.map(([w, list]) => <section class="card"><h3>{L(`Week ${w}`, `الأسبوع ${w}`)}</h3><div class="list">{list.map((e) => { const [t, k] = entryLabel(e); return <div class="item click" onClick={() => setOpen(e.id)}><div class="grow"><b>{rubricById[e.rubricId]?.title || e.taskLabel}</b> <span class="mono">#{e.tooth}</span><div class="faint">{fmtDate(e.date)}{e.ai ? ' · Prep Lens ✓' : ''}</div></div><div class="stack" style={{ alignItems: 'flex-end', gap: 4 }}><Pill kind={k}>{t}</Pill><span class="faint">{L('Self', 'ذاتي')} <b class="mono">{e.self?.grade ?? '–'}</b> · {L('Official', 'رسمي')} <b class="mono">{e.review?.grade ?? '–'}</b></span></div></div>; })}</div></section>)
       : <Empty>{L('No teeth recorded yet. Tap “New tooth” in the lab.', 'لا توجد أسنان مسجلة بعد. اضغط "سن جديد" في اللاب.')}</Empty>}
-    {starting && <NewTooth wk={wk} onClose={() => setStarting(false)} onCreated={(id) => { setStarting(false); setOpen(id); }} />}
+    {starting && <NewTooth wk={wk} used={allRows.filter((x) => x.week === wk.w && !x.practice).map((x) => String(x.tooth))} onClose={() => setStarting(false)} onCreated={(id) => { setStarting(false); setOpen(id); }} />}
     {practicing && <PracticeTooth wk={wk} onClose={() => setPracticing(false)} onCreated={(id) => { setPracticing(false); setOpen(id); }} />}
     {open && <EntrySheet id={open} onClose={() => setOpen(null)} />}
   </>;
 }
 
-function NewTooth({ wk, onClose, onCreated }) {
+function NewTooth({ wk, used = [], onClose, onCreated }) {
   const tasks = wk.tasks.filter((t) => t.rubric);
   const [ti, setTi] = useState(0);
-  const [tooth, setTooth] = useState(tasks[0]?.teeth[0] || '');
+  // Default to a tooth not used yet this week, so the 2nd requirement tooth is not left as #36 by mistake.
+  const firstFree = (tk) => (tk?.teeth || []).find((x) => !used.includes(String(x))) || tk?.teeth[0] || '';
+  const [tooth, setTooth] = useState(firstFree(tasks[0]));
   const t = tasks[ti];
   return <Sheet onClose={onClose} label="New tooth"><h2>{L('New tooth', 'سن جديد')}</h2>
-    <label class="fld">{L('Exercise', 'التمرين')}<select id="nt-task" value={ti} onChange={(e) => { setTi(+e.target.value); setTooth(tasks[+e.target.value].teeth[0] || ''); }}>{tasks.map((x, i) => <option value={i}>{rubricById[x.rubric].title}</option>)}</select></label>
+    <label class="fld">{L('Exercise', 'التمرين')}<select id="nt-task" value={ti} onChange={(e) => { setTi(+e.target.value); setTooth(firstFree(tasks[+e.target.value])); }}>{tasks.map((x, i) => <option value={i}>{rubricById[x.rubric].title}</option>)}</select></label>
     <label class="fld">{L('Tooth (FDI number)', 'رقم السن (FDI)')}<select id="nt-tooth" value={tooth} onChange={(e) => setTooth(e.target.value)}>{(t?.teeth || []).map((x) => <option value={x}>#{x}</option>)}</select></label>
     {rubricById[t?.rubric]?.needsConfirmation && <p class="faint">{rubricById[t.rubric].source}</p>}
     <div class="row"><button class="btn primary" onClick={async () => onCreated(await createEntry({ week: wk.w, rubricId: t.rubric, tooth }))}>{L('Start', 'ابدأ')}</button><button class="btn" onClick={onClose}>{L('Cancel', 'إلغاء')}</button></div></Sheet>;
