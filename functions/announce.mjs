@@ -642,3 +642,17 @@ Thank you (25 responses — 100% recommend continuing). What we changed:
 
 ` + d.body });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Added rule to staff grading announcement'); } }
+
+// 5 Oct: Class I Prep Lens practice app (private practice, not counted).
+{ const id = 'class-i-practice-app-2026-10-05'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) {
+    await db.doc('announcements/' + id).set({ title: 'تطبيق تدريب Class I (تدريب خاص) · Class I practice app', audience: 'all', sections: [], pinned: true, publishAt: Date.now(), by: owner || 'system', byName, imageUrl: null, imagePath: null,
+      linkUrl: 'https://class-i-prep-lens.ahmed-elhoshy.chatgpt.site/', linkLabel: 'افتح تطبيق التدريب · Open the practice app',
+      body: `للتدريب الإضافي على تحضير Class I، استخدم تطبيق Prep Lens للتدريب (الزرار تحت).
+• تدريب خاص بيك — مش بيتحسب في المتطلبات ومش بيتبعت للمعيد ومالوش درجة.
+• المتطلبات الرسمية بتتسجل بس من المنصة دي (اللاب ← سنة جديدة ← صورتين ← Submit) وبتتقيّم في السكشن على السنة الفعلية.
+
+For extra Class I practice, use the Prep Lens practice app (button below).
+• Private practice only — it does NOT count toward requirements, is not sent to your demonstrator and has no grade.
+• Official requirements are recorded only on this platform (My lab → New tooth → 2 photos → Submit) and graded in the section on the physical tooth.` });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: Class I practice app'); } }
