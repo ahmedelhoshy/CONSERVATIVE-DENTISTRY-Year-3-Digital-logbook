@@ -619,3 +619,12 @@ Thank you (25 responses — 100% recommend continuing). What we changed:
 • Training: a short workshop (date to follow) and the 2-minute video above.
 • Staff survey repeats every 3 weeks, and we keep adjusting.` });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: staff you said, we did'); } }
+
+// 5 Oct: correct two lines in the staff announcement.
+{ const id = 'staff-you-said-fix-v2'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) { const r = db.doc('announcements/staff-you-said-we-did-2026-10-05'); const d = (await r.get()).data();
+    if (d) await r.update({ body: d.body
+      .replace('• صورة البروب: إعادة التصوير بتستبدل القديمة، والطالب ممكن يرفعها بعد السكشن.\n', '• صورة البروب: «إعادة التصوير» بتستبدل القديمة على طول.\n')
+      .replace('وتم رفع طلب رسمي لتقوية الـWi-Fi في منطقة المعامل والعيادات.', 'وهيتم رفع طلب رسمي لتقوية الـWi-Fi في منطقة المعامل والعيادات ضمن تقرير المشروع.')
+      .replace('a formal request for lab and clinic Wi-Fi has been raised.', 'a formal request for lab and clinic Wi-Fi will be included in the project report.') });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Fixed staff announcement'); } }
