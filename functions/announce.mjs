@@ -572,3 +572,24 @@ for (const d of (await db.collection('materials').get()).docs) {
     await mm.set({ ids: FieldValue.arrayUnion('s1-makeup-2026-10-05') }, { merge: true });
   }
 }
+
+// 5 Oct: shorter wording for "You said, we did" (Course Director's text).
+{ const id = 'you-said-we-did-short-v2'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) {
+    const r = db.doc('announcements/you-said-we-did-2026-10-05');
+    if ((await r.get()).exists) await r.update({ body: `شكرًا لكل من جاوب الاستبيان. ده اللي اتغير بناءً على ملاحظاتكم:
+
+• الحضور بالـQR: تكبير 3× / 4× في الكاميرا، أو ببساطة اكتب الكود (٦ أرقام). الحضور بيتحفظ حتى لو النت فصل.
+• لاب أسرع: صورتين ثم Submit، والتقييم الذاتي وPrep Lens في البيت.
+• الدرجات: بتشوف العيوب اللي المعيد علّم عليها.
+• الاستبيانات: هتتكرر بانتظام، وكل ٣ أسابيع للهيئة المعاونة.
+• فيديو الدقيقتين بيشتغل جوه الإعلان ده (▶ جنب العنوان).
+
+—
+
+• QR attendance: 3× / 4× zoom, or simply type the 6-digit code. Check-ins are saved even when the network drops.
+• Faster lab: 2 photos, then Submit, with self-assessment and Prep Lens at home.
+• Grades: you see the defects your demonstrator marked.
+• Surveys: repeated regularly, every 3 weeks for staff.
+• The 2-minute video plays inside this announcement (▶ next to the title).` });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Updated: you said, we did'); } }
