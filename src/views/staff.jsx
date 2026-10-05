@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'preact/hooks';
 import QRCode from 'qrcode';
-import { me, store, today, openSession, closeSession, extendSession, rotateCode, sessionIsOpen, setAttendance, confirmAllRecorded, reviewEntry, rubricFor, isDemo, canEditCourse, currentWeek } from '../lib/logic.js';
+import { me, store, today, openSession, closeSession, extendSession, rotateCode, sessionIsOpen, setAttendance, confirmAllRecorded, reviewEntry, submitEntry, rubricFor, isDemo, canEditCourse, currentWeek } from '../lib/logic.js';
 import { SurveyCard } from './survey.jsx';
 import { L, useQuery, useDoc, useNow, Pill, Band, Kpi, Sheet, Empty, Confirm, fmtDate, fmtTime, fmtDT, ago, toast, Bar , labTitle } from '../lib/ui.jsx';
 import { exportXlsx } from '../lib/export.js';
@@ -119,13 +119,16 @@ export function ReviewQueue() {
   const u = me();
   const secs = mySections(u);
   const [sec, setSec] = useState(secs.length > 2 ? 'all' : secs[0]);
-  const filters = [['status', '==', 'submitted']];
+  const boss = ['director', 'admin'].includes(u.role);
+  const [drafts, setDrafts] = useState(false);
+  const filters = [['status', drafts ? 'in' : '==', drafts ? ['submitted', 'draft'] : 'submitted']];
   if (sec !== 'all') filters.push(['section', '==', Number(sec)]); else if (!['director', 'admin', 'hod'].includes(u.role)) filters.push(['section', 'in', secs.slice(0, 10)]);
   const q = useQuery('entries', filters, { orderBy: 'createdAt' });
   const [open, setOpen] = useState(null);
   const rows = q.rows || [];
   return <>
-    <section class="hero"><h1>Review queue</h1><p class="muted">Teeth submitted by students and waiting for inspection. Examine the physical tooth before saving a grade; Prep Lens output is supporting information only.</p></section>
+    <section class="hero"><h1>Review queue</h1><p class="muted">Teeth submitted by students and waiting for inspection. Examine the physical tooth before saving a grade; Prep Lens output is supporting information only.</p>
+      {boss && <label class="row" style={{ gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={drafts} onChange={(ev) => setDrafts(ev.target.checked)} /> Course Director: also show teeth not yet submitted (drafts) — you can admit and grade them</label>}</section>
     <div class="row"><label class="fld" style={{ maxWidth: 220 }}>Section<select id="rq-section" value={sec} onChange={(e) => setSec(e.target.value)}>{secs.length > 2 && <option value="all">All sections</option>}{secs.map((s) => <option value={s}>Section {s}</option>)}</select></label><Pill kind={rows.length ? 'warn' : 'good'}>{rows.length} waiting</Pill></div>
     <section class="card"><div class="list">{rows.length ? rows.map((e) => <div class="item click" onClick={() => setOpen(e.id)}><div class="grow"><b>{e.name}</b> <span class="mono faint">{e.code}</span> <span class="faint">· S{e.section}</span><div class="faint">{rubricFor(e)?.title} · <span class="mono">#{e.tooth}</span> · week {e.week}</div></div><div class="stack" style={{ alignItems: 'flex-end', gap: 4 }}><span class="faint">{ago(e.submittedAt || e.createdAt)}</span><span class="faint">Self <b class="mono">{e.self?.grade ?? '–'}</b></span></div></div>) : <Empty>Nothing waiting. Well done.</Empty>}</div></section>
     {open && <ReviewSheet id={open} onClose={() => setOpen(null)} />}
@@ -148,22 +151,36 @@ export function ReviewSheet({ id, onClose }) {
   if (!e) return <Sheet onClose={onClose}><p>Loading…</p></Sheet>;
   const rub = rubricFor(e);
   const readOnly = ['hod', 'vicedean', 'dean'].includes(u.role);
+  // Course Director / admin supervise all sections: they may admit a tooth and grade it without a confirmed attendance record.
+  const boss = ['director', 'admin'].includes(u.role);
   // Overall grading: the demonstrator marks only the defects; untouched criteria count as acceptable (A).
   const full = rub ? Object.fromEntries(rub.criteria.map((c) => [c.id, (picks && picks[c.id]) || 'A'])) : {};
   const defects = rub ? rub.criteria.filter((c) => full[c.id] !== 'A') : [];
   const sugg = rub ? suggestGrade(rub, full) : null;
   const weekAtt = (attended.rows || []).filter((a) => a.week === e.week && a.status === 'confirmed').length;
+  const attOk = weekAtt > 0 || boss;
+  const markPresent = async () => {
+    try {
+      const ss = (await store().query('sessions', [['section', '==', e.section]])).filter((x) => x.type === 'lab' && Number(x.week) === Number(e.week)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      const s = ss.find((x) => x.date === e.date) || ss[0];
+      if (!s) { toast('No lab session found for this week.'); return; }
+      await setAttendance(s, { uid: e.uid, code: e.code, name: e.name, section: e.section }, 'confirmed', 'Admitted by the Course Director');
+      toast('Marked present');
+    } catch (x) { toast('Could not mark present: ' + x.message); }
+  };
   const changing = e.review && Number(grade) !== e.review.grade;
   const save = async (redo) => {
     setBusy(true);
     const auto = defects.length ? 'Defects: ' + defects.map((c) => `${c.name} — ${c.bands[rub.bands.findIndex((b) => b.key === full[c.id])]}`).join('; ') + '.' : 'No defects noted.';
-    try { await reviewEntry(e, { picks: full, mode: 'overall', grade: Number(grade), status, feedback: feedback.trim() ? feedback : auto, reason, redo, rejectPhoto: rejectPhoto || null }); toast('Saved'); onClose(); }
+    try { if (boss && e.status === 'draft') await submitEntry(e.id); await reviewEntry(e, { picks: full, mode: 'overall', grade: Number(grade), status, feedback: feedback.trim() ? feedback : auto, reason, redo, rejectPhoto: rejectPhoto || null }); toast('Saved'); onClose(); }
     catch (x) { toast(x.message); }
     setBusy(false);
   };
   return <Sheet onClose={onClose} label="Review">
     <div class="row between"><div><span class="eyebrow">Section {e.section} · week {e.week} · {fmtDate(e.date)}</span><h2>{e.name} <span class="mono faint">{e.code}</span></h2><p class="muted">{rub?.title} · <span class="mono">#{e.tooth}</span></p></div><button class="btn sm" onClick={onClose}>Close</button></div>
-    {weekAtt === 0 && !readOnly && <div class="state failed"><b>No confirmed lab attendance this week</b><p>Official grades need physical attendance. Confirm the student's attendance for this week's lab first (Today → the lab → Confirm or Mark present), then grade the tooth.</p></div>}
+    {weekAtt === 0 && !readOnly && !boss && <div class="state failed"><b>No confirmed lab attendance this week</b><p>Official grades need physical attendance. Confirm the student's attendance for this week's lab first (Today → the lab → Confirm or Mark present), then grade the tooth.</p></div>}
+    {weekAtt === 0 && boss && <div class="state pending" style={{ display: 'block' }}><b>No confirmed lab attendance this week</b> — as Course Director you can still grade. <button class="btn sm" onClick={markPresent}>Mark present (Course Director)</button></div>}
+    {e.status === 'draft' && boss && <div class="state pending" style={{ display: 'block' }}><b>Not submitted by the student yet.</b> Saving a grade admits the tooth on the student's behalf.</div>}
     {e.photos?.length ? <div class="thumbs">{e.photos.map((p) => <a href={p.url} target="_blank" rel="noopener"><img class="photo" src={p.url} alt={`${p.view} view`} /></a>)}</div> : <p class="faint">No photos attached.</p>}
     {e.self?.comment && <p><b>Student note:</b> {e.self.comment}</p>}
     <div class="row"><span class="faint">Student self-grade</span><b class="mono">{e.self?.grade ?? '–'}</b>{e.probeMm != null && <><span class="faint">· probe reading</span><b class="mono">{e.probeMm} mm</b></>}{e.ai && <button class="btn sm" onClick={() => setShowAI(!showAI)}>{showAI ? 'Hide' : 'Show'} Prep Lens feedback</button>}</div>
@@ -187,12 +204,12 @@ export function ReviewSheet({ id, onClose }) {
       {changing && <label class="fld">Reason for changing the saved grade (audit log)<input id="rv-reason" value={reason} onInput={(ev) => setReason(ev.target.value)} /></label>}
       <details><summary>Photo unclear?</summary><label class="fld" style={{ marginTop: 8 }}>Reject photo and ask for a new one — reason<input id="rv-reject" value={rejectPhoto} onInput={(ev) => setRejectPhoto(ev.target.value)} placeholder="e.g. not at 90°, no probe for scale" /></label></details>
       {(() => { const why = [];
-        if (weekAtt === 0) why.push('the student has no confirmed attendance this week');
+        if (!attOk) why.push('the student has no confirmed attendance this week');
         if (grade === '') why.push('enter the official grade');
         if (changing && !reason.trim()) why.push('give a reason for changing the saved grade');
         return why.length ? <div class="state pending" role="status" style={{ display: "block", padding: 12 }}><b style={{ fontSize: "1rem" }}>To save:</b> {why.join(' · ')}.</div> : null; })()}
-      <div class="row"><button class="btn primary" disabled={busy || weekAtt === 0 || grade === '' || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
-        <button class="btn danger" disabled={busy || weekAtt === 0 || grade === '' || (!feedback.trim() && !defects.length)} onClick={() => { if (confirm('This sends the tooth BACK to the student to correct and resubmit. To simply grade it, press Cancel and use "Save evaluation".')) save(true); }}>Save & ask to correct</button></div>
+      <div class="row"><button class="btn primary" disabled={busy || !attOk || grade === '' || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
+        <button class="btn danger" disabled={busy || !attOk || grade === '' || (!feedback.trim() && !defects.length)} onClick={() => { if (confirm('This sends the tooth BACK to the student to correct and resubmit. To simply grade it, press Cancel and use "Save evaluation".')) save(true); }}>Save & ask to correct</button></div>
     </>}
     {e.history?.length > 0 && <details><summary>History ({e.history.length})</summary><div class="list">{e.history.map((ev) => <div class="item faint">{fmtDT(ev.at)} · {ev.event}{ev.by ? ' · ' + ev.by : ''}{ev.reason ? ' · ' + ev.reason : ''}</div>)}</div></details>}
   </Sheet>;
