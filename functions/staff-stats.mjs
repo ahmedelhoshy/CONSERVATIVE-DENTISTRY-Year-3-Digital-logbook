@@ -16,6 +16,7 @@ const out = {
       defects: Object.values(e.review.picks || {}).filter((b) => b && b !== 'A').length, bands: Object.values(e.review.picks || {}).filter((b) => b && b !== 'A'), feedbackLen: (e.review.feedback || '').length } : null,
     redo: (e.history || []).filter((h) => h.event === 'resubmitted').length, changed: (e.history || []).filter((h) => h.event === 'review-changed').length })),
   surveys: (await db.collection('surveys').get()).docs.map((d) => d.data()).map((v) => ({ sid: v.sid, role: v.role, section: v.section || null, answers: v.answers || {}, comment: v.comment || '', at: v.at || null })),
+  messages: (await db.collection('messages').get()).docs.map((d) => d.data()).map((m) => ({ uid: String(m.uid || ''), section: m.section || null, from: m.from || null, fromName: m.fromName || null, fromRole: m.fromRole || null, at: m.at || null })),
   attendance: att.filter((a) => a.type === 'lab').map((a) => ({ section: a.section, week: a.week, status: a.status, method: a.method, by: a.by || null, byName: a.byName || null, at: a.at || null, decidedAt: a.decidedAt || null })),
 };
 writeFileSync(process.argv[2], JSON.stringify(out));
