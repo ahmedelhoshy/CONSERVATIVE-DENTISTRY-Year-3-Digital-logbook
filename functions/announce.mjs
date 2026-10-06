@@ -672,3 +672,14 @@ For extra Class I practice, use the Prep Lens practice app (button below).
       await ref.set({ sid, uid: code, code, name: r.name, section: r.section, type: 'lab', date: s.date, week: s.week || 3, at: Date.now(), status: 'confirmed', method: 'manual', by: owner || 'system', byName, decidedAt: Date.now(), reason: 'Present — confirmed by demonstrator Asmaa Badr (her manual save failed on her phone)' });
       await db.collection('audit').add({ at: Date.now(), by: owner || 'system', byName, byRole: 'director', action: 'attendance.manual', target: `${sid}_${code}`, before: 'none', after: 'confirmed', reason: 'Demonstrator Asmaa Badr reported present; app save failed' }); n++; }
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('S14 lab 2 manual attendance added:', n); } }
+
+// 6 Oct: updated tour video (new opening, lecture then lab attendance) + backup link hosted on GitHub.
+{ const id = 'tour-video-v2-backup-link'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) {
+    const backup = 'https://raw.githubusercontent.com/ahmedelhoshy/CONSERVATIVE-DENTISTRY-Year-3-Digital-logbook/main/public/guides/Digital_Logbook_Services_Tour.mp4';
+    const note = '\n\n🎬 الفيديو اتحدّث (حضور المحاضرة ثم حضور المعمل). لو الفيديو مش بيشتغل هنا، استخدم الرابط الاحتياطي تحت.\nThe tour video was updated (lecture attendance, then lab attendance). If it does not play here, use the backup link below.';
+    for (const aid of ['you-said-we-did-2026-10-05', 'staff-you-said-we-did-2026-10-05']) {
+      const r = db.doc('announcements/' + aid); const d = (await r.get()).data(); if (!d) continue;
+      await r.update({ videoUrl: site + '/guides/Digital_Logbook_Services_Tour.mp4?v=2', linkUrl: backup, linkLabel: 'رابط احتياطي للفيديو · Backup video link',
+        body: d.body.includes('Backup') ? d.body : d.body + note, publishAt: Date.now() }); }
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Updated tour video + backup link'); } }
