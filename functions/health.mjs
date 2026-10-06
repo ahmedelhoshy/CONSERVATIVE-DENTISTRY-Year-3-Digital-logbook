@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 initializeApp({ credential: applicationDefault(), projectId: process.env.FB_PROJECT_ID });
 const db = getFirestore();
 const day = process.env.CHECK_DAY || '2026-10-03';
-const ONLY = ['Lookup 3', 'Survey', 'Week 3 reviews', 'Today live', 'Roster', 'Staff signed in', 'Prep Lens', 'Photos'];
+const ONLY = ['Lookup S14', 'Lookup 3', 'Survey', 'Week 3 reviews', 'Today live', 'Roster', 'Staff signed in', 'Prep Lens', 'Photos'];
 const note = (t, m) => { if (ONLY.includes(t)) console.log(`::notice title=${t}::${m}`); };
 const day0 = process.env.CHECK_DAY || '2026-10-03';
 try { const es = (await db.collection('entries').where('week', '==', 3).get()).docs.map((d) => d.data()).filter((e) => !e.practice);
@@ -34,6 +34,12 @@ try { const es = (await db.collection('entries').where('week', '==', 3).get()).d
       if (!rs.length) return `#${i + 1}: NOT on roster (stated S${sec})`;
       return rs.map((r) => { const a = att.filter((x) => String(x.code) === String(r.code) && x.status === 'confirmed');
         return `#${i + 1}: roster S${r.section} (stated S${sec}) · email ${String(r.id).split('@')[1] || '?'} · signedIn ${!!r.lastLogin} · confirmed lectures ${a.filter((x) => String(x.sid).startsWith('lec')).length} labs ${a.filter((x) => String(x.sid).startsWith('lab')).length}`; }).join(' | '); }).join(' ; ')); }
+  { const LK = ["ed070cbb37545006805c188700190a4ce2e60f1f36ee3254029186e5d18c5d23", "5bf6e67787dcaf0eda67e82ef84b409c662fd1613072b26f6536e4cdd57d6f95", "2a9a966c7caa6a3a5c016fe6203c4c5cf89a24ec9f4b5c5b251c7512f42ced37", "24a6333a484887077ab1ab6788038feb99c6bf9ffe53226ff6dd06fa327e1a99", "5d10e361e5c7d73ad6e72ec84c835bf5344a9cbbc37714b683f5e2bad8b510a9", "5a3ada6ed4e0d6ead0f79e9a9dcfea1e5f317d8a5217d8e54dabdb32a8f5f01b"];
+    const ro = (await db.collection('roster').where('section', '==', 14).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+    const sess = (await db.doc('sessions/lab-w3-s14-2').get()).data() || {};
+    const at = (await db.collection('attendance').where('sid', '==', 'lab-w3-s14-2').get()).docs.map((d) => ({ id: d.id, ...d.data() }));
+    note('Lookup S14', `session status ${sess.status} date ${sess.date} week ${sess.week} type ${sess.type} section ${sess.section} · att ${at.length} · ` + LK.map((h, i) => { const r = ro.find((x) => createHash('sha256').update(String(x.code)).digest('hex') === h); if (!r) return `#${i + 1}: not in S14`;
+      return `#${i + 1}: uid ${r.uid === undefined ? 'MISSING' : typeof r.uid + (String(r.uid) === String(r.code) ? '=code' : '!=code')} code ${typeof r.code} name ${r.name ? 'ok' : 'MISSING'} section ${typeof r.section} role ${r.role} keys ${Object.keys(r).sort().join('/')}`; }).join(' ; ')); }
   note('Photos', `week-3 teeth by section ${JSON.stringify(by)} · storage photos total ${files}, uploaded today ${today}, sizes KB ${sizes.slice(0, 15).join(',')}`); } catch (x) { note('Photos', 'error ' + String(x.message).slice(0, 200)); }
 
 const sess = (await db.collection('sessions').where('date', '==', day).get()).docs.map((d) => ({ id: d.id, ...d.data() }));
