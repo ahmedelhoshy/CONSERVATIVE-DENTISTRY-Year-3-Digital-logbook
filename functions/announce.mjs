@@ -662,3 +662,13 @@ For extra Class I practice, use the Prep Lens practice app (button below).
   if (!m.includes(id)) { const r = db.doc('announcements/staff-you-said-we-did-2026-10-05'); const d = (await r.get()).data();
     if (d) await r.update({ body: d.body.replace('(٢٥ إجابة — ١٠٠٪ مع الاستمرار)', '(٣٠ إجابة — ١٠٠٪ مع الاستمرار)').replace('(25 responses — 100% recommend continuing)', '(30 responses — 100% recommend continuing)') });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Updated staff survey count'); } }
+
+// 6 Oct: S14 Lab 2 — 5 students present per demonstrator Asmaa Badr; her manual save failed on her phone.
+{ const id = 'att-s14-lab2-manual-2026-10-06'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) { const sid = 'lab-w3-s14-2'; const s = (await db.doc('sessions/' + sid).get()).data();
+    const codes = ['42240258', '42240267', '42240278', '42240288', '42240296']; let n = 0;
+    for (const code of codes) { const r = (await db.collection('roster').where('code', '==', code).limit(1).get()).docs[0]?.data(); if (!r || !s) continue;
+      const ref = db.doc(`attendance/${sid}_${code}`); if ((await ref.get()).exists) continue;
+      await ref.set({ sid, uid: code, code, name: r.name, section: r.section, type: 'lab', date: s.date, week: s.week || 3, at: Date.now(), status: 'confirmed', method: 'manual', by: owner || 'system', byName, decidedAt: Date.now(), reason: 'Present — confirmed by demonstrator Asmaa Badr (her manual save failed on her phone)' });
+      await db.collection('audit').add({ at: Date.now(), by: owner || 'system', byName, byRole: 'director', action: 'attendance.manual', target: `${sid}_${code}`, before: 'none', after: 'confirmed', reason: 'Demonstrator Asmaa Badr reported present; app save failed' }); n++; }
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('S14 lab 2 manual attendance added:', n); } }

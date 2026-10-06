@@ -80,7 +80,7 @@ export function SessionPanel({ id, onClose }) {
         {canManage && r && r.status !== 'rejected' && <button class="btn sm danger" onClick={() => setAsk({ st, status: 'rejected' })}>Reject</button>}
         {canManage && r && r.status === 'rejected' && <button class="btn sm" onClick={() => setAsk({ st, status: 'confirmed' })}>Correct</button>}</div></div>; })}
       {shown.length > 200 && <p class="faint">Showing 200 of {shown.length}. Use search.</p>}</div>
-    {ask && <Confirm text={`${ask.status === 'confirmed' ? 'Record as present' : 'Reject check-in'}: ${ask.st.name}`} needReason yes="Save" onNo={() => setAsk(null)} onYes={async (reason) => { await setAttendance(s, ask.st, ask.status, reason); setAsk(null); }} />}
+    {ask && <Confirm text={`${ask.status === 'confirmed' ? 'Record as present' : 'Reject check-in'}: ${ask.st.name}`} needReason yes="Save" onNo={() => setAsk(null)} onYes={async (reason) => { try { await setAttendance(s, ask.st, ask.status, reason); setAsk(null); toast('Saved'); } catch (x) { toast('Not saved: ' + (x.code || x.message || 'error') + ' — check the connection and try again, or send a screenshot to the Course Director.'); } }} />}
     {proj && <Projector session={s} onClose={() => setProj(false)} />}
   </Sheet>;
 }

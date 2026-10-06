@@ -119,7 +119,8 @@ export async function setAttendance(session, student, status, reason) {
   };
   await S.set('attendance', id, rec);
   const correction = prev && prev.status !== 'recorded' && prev.status !== status;
-  if (correction || (!prev && status === 'confirmed')) await audit('attendance.' + (correction ? 'correct' : 'manual'), id, prev ? prev.status : 'none', status, reason);
+  // The record above is what counts; an audit-log failure must not hide a saved attendance.
+  if (correction || (!prev && status === 'confirmed')) await audit('attendance.' + (correction ? 'correct' : 'manual'), id, prev ? prev.status : 'none', status, reason).catch((x) => console.warn('audit', x));
 }
 export async function confirmAllRecorded(sessionId) {
   const recs = await S.query('attendance', [['sid', '==', sessionId], ['status', '==', 'recorded']]);
