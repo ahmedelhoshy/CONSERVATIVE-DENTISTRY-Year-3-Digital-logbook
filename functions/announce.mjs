@@ -683,3 +683,11 @@ For extra Class I practice, use the Prep Lens practice app (button below).
       await r.update({ videoUrl: site + '/guides/Digital_Logbook_Services_Tour.mp4?v=2', linkUrl: backup, linkLabel: 'رابط احتياطي للفيديو · Backup video link',
         body: d.body.includes('Backup') ? d.body : d.body + note, publishAt: Date.now() }); }
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Updated tour video + backup link'); } }
+
+// 7 Oct: student survey extended to Saturday 10 Oct, 08:00 (staff still close Thursday 8 Oct, 23:59).
+{ const id = 'survey-students-extend-sat-0800'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) { const r = db.doc('announcements/survey-pilot-2026-10-04'); const d = (await r.get()).data();
+    if (d) await r.update({ publishAt: Date.now(), body: d.body
+      .replace('• ٥ أسئلة + تعليق اختياري. متاح لحد الخميس ٨ أكتوبر الساعة ١١:٥٩ مساءً.', '• ٥ أسئلة + تعليق اختياري.\n• الطلاب: تم مد الاستبيان لحد السبت ١٠ أكتوبر الساعة ٨ الصبح.\n• المعيدين والمشرفين: لحد الخميس ٨ أكتوبر الساعة ١١:٥٩ مساءً.')
+      .replace('5 questions + an optional comment. Open until Thursday 8 October, 23:59.', '5 questions + an optional comment.\nStudents: extended until Saturday 10 October, 8:00 am.\nDemonstrators and supervisors: until Thursday 8 October, 23:59.') });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Survey: students extended to Sat 08:00'); } }

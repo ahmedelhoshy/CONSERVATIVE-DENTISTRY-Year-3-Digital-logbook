@@ -4,7 +4,7 @@ import { useState } from 'preact/hooks';
 import { L, useDoc, useQuery, toast } from '../lib/ui.jsx';
 import { store, isDemo } from '../lib/logic.js';
 
-export const SURVEY = { id: 'pilot-2026-10', opens: Date.parse('2026-10-03T00:00:00+03:00'), closes: Date.parse('2026-10-08T23:59:00+03:00'), roles: ['student', 'demonstrator', 'lecturer'], label: 'Pilot week (students + staff)' }; // Thursday 8 Oct, 23:59 Cairo
+export const SURVEY = { id: 'pilot-2026-10', opens: Date.parse('2026-10-03T00:00:00+03:00'), closes: Date.parse('2026-10-08T23:59:00+03:00'), roles: ['student', 'demonstrator', 'lecturer'], label: 'Pilot week (students + staff)', studentCloses: Date.parse('2026-10-10T08:00:00+03:00') }; // staff: Thu 8 Oct 23:59; students: Sat 10 Oct 08:00 Cairo
 
 // After the pilot: a staff-only round every 3 weeks, open Saturday 00:00 → Thursday 23:59 (Cairo).
 const DAY = 86400000;
@@ -22,7 +22,8 @@ export function surveyRounds(upto = Date.now()) {
   }
   return out;
 }
-const openRound = (role, now = Date.now()) => surveyRounds(now).find((r) => r.roles.includes(role) && now >= r.opens && now <= r.closes) || null;
+const closesFor = (r, role) => (role === 'student' && r.studentCloses) || r.closes;
+const openRound = (role, now = Date.now()) => surveyRounds(now).find((r) => r.roles.includes(role) && now >= r.opens && now <= closesFor(r, role)) || null;
 
 const Q_STUDENT = [
   ['easy', 'Signing in and using the platform is easy.', 'الدخول على المنصة واستخدامها سهل.'],
@@ -65,7 +66,7 @@ export function SurveyCard({ u }) {
   };
   return <section class="card lead">
     <h2>{round.id === SURVEY.id ? L('2-minute survey: the first week of the digital logbook', 'استبيان دقيقتين: أول أسبوع للوجبوك الرقمي') : '2-minute staff survey: the last 3 weeks on the digital logbook'}</h2>
-    <p class="muted">{round.id === SURVEY.id ? L('Your answers are anonymous and will be included as totals in a report on the project. Open until Thursday 8 October.', 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد الخميس ٨ أكتوبر.') : `Staff survey every 3 weeks · anonymous totals · open until Thursday ${fmtD(round.closes)}.`}</p>
+    <p class="muted">{round.id === SURVEY.id ? L(u.role === 'student' ? 'Your answers are anonymous and will be included as totals in a report on the project. Open until Saturday 10 October, 8:00 am.' : 'Your answers are anonymous and will be included as totals in a report on the project. Open until Thursday 8 October.', u.role === 'student' ? 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد السبت ١٠ أكتوبر الساعة ٨ الصبح.' : 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد الخميس ٨ أكتوبر.') : `Staff survey every 3 weeks · anonymous totals · open until Thursday ${fmtD(round.closes)}.`}</p>
     {!open ? <button class="btn primary" onClick={() => setOpen(true)}>{L('Answer the survey', 'جاوب الاستبيان')}</button> : <div class="stack">
       {qs.map(([k, en, ar], i) => <div class="crit"><b dir="auto">{i + 1}. {L(en, ar)}</b>
         <div class="seg" style={{ flexWrap: 'wrap' }}>{SCALE.map(([v, en2, ar2]) => <button type="button" class={a[k] === v ? 'on' : ''} onClick={() => setA({ ...a, [k]: v })}>{L(en2, ar2)}</button>)}</div></div>)}
@@ -103,7 +104,7 @@ export function SurveyResults() {
   return <section class="card">
     <div class="row between"><h2>Survey results</h2>
       {rounds.length > 1 && <select value={rid} onChange={(e) => { setRid(e.target.value); setShow(false); }}>{rounds.map((r) => <option value={r.id}>{r.label}</option>)}</select>}</div>
-    <p class="faint">Anonymous totals · {Date.now() <= cur.closes ? `open until ${fmtD(cur.closes)} 23:59 · updates live` : `closed ${fmtD(cur.closes)}`} · next staff round every 3 weeks from Sat 24 Oct</p>
+    <p class="faint">Anonymous totals · {Date.now() <= closesFor(cur, 'student') ? (cur.studentCloses ? `students open until ${fmtD(cur.studentCloses)} 08:00 · staff until ${fmtD(cur.closes)} 23:59 · updates live` : `open until ${fmtD(cur.closes)} 23:59 · updates live`) : `closed ${fmtD(closesFor(cur, 'student'))}`} · next staff round every 3 weeks from Sat 24 Oct</p>
     {q.error ? <p class="faint">Could not load the survey answers.</p> : q.rows == null ? <p class="faint">Loading…</p> : <div class="stack">
       {cur.roles.includes('student') && block('Students', group(true), Q_STUDENT)}
       {block('Demonstrators and supervisors', group(false), Q_STAFF)}
