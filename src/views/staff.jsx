@@ -121,16 +121,18 @@ export function ReviewQueue() {
   const [sec, setSec] = useState(secs.length > 2 ? 'all' : secs[0]);
   const boss = ['director', 'admin'].includes(u.role);
   const [drafts, setDrafts] = useState(false);
-  const filters = [['status', drafts ? 'in' : '==', drafts ? ['submitted', 'draft'] : 'submitted']];
+  const [done, setDone] = useState(false);
+  const filters = [done ? ['status', '==', 'reviewed'] : ['status', drafts ? 'in' : '==', drafts ? ['submitted', 'draft'] : 'submitted']];
   if (sec !== 'all') filters.push(['section', '==', Number(sec)]); else if (!['director', 'admin', 'hod'].includes(u.role)) filters.push(['section', 'in', secs.slice(0, 10)]);
   const q = useQuery('entries', filters, { orderBy: 'createdAt' });
   const [open, setOpen] = useState(null);
-  const rows = q.rows || [];
+  const since = Date.now() - 2 * 86400000;
+  const rows = done ? (q.rows || []).filter((e) => (e.review?.at || 0) >= since).sort((a, b) => (b.review?.at || 0) - (a.review?.at || 0)) : (q.rows || []);
   return <>
     <section class="hero"><h1>Review queue</h1><p class="muted">Teeth submitted by students and waiting for inspection. Examine the physical tooth before saving a grade; Prep Lens output is supporting information only.</p>
       {boss && <label class="row" style={{ gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={drafts} onChange={(ev) => setDrafts(ev.target.checked)} /> Course Director: also show teeth not yet submitted (drafts) — you can admit and grade them</label>}</section>
-    <div class="row"><label class="fld" style={{ maxWidth: 220 }}>Section<select id="rq-section" value={sec} onChange={(e) => setSec(e.target.value)}>{secs.length > 2 && <option value="all">All sections</option>}{secs.map((s) => <option value={s}>Section {s}</option>)}</select></label><Pill kind={rows.length ? 'warn' : 'good'}>{rows.length} waiting</Pill></div>
-    <section class="card"><div class="list">{rows.length ? rows.map((e) => <div class="item click" onClick={() => setOpen(e.id)}><div class="grow"><b>{e.name}</b> <span class="mono faint">{e.code}</span> <span class="faint">· S{e.section}</span><div class="faint">{rubricFor(e)?.title} · <span class="mono">#{e.tooth}</span> · week {e.week}</div></div><div class="stack" style={{ alignItems: 'flex-end', gap: 4 }}><span class="faint">{ago(e.submittedAt || e.createdAt)}</span><span class="faint">Self <b class="mono">{e.self?.grade ?? '–'}</b></span></div></div>) : <Empty>Nothing waiting. Well done.</Empty>}</div></section>
+    <div class="row"><label class="fld" style={{ maxWidth: 220 }}>Section<select id="rq-section" value={sec} onChange={(e) => setSec(e.target.value)}>{secs.length > 2 && <option value="all">All sections</option>}{secs.map((s) => <option value={s}>Section {s}</option>)}</select></label><div class="seg"><button class={!done ? 'on' : ''} onClick={() => setDone(false)}>Waiting</button><button class={done ? 'on' : ''} onClick={() => setDone(true)}>Graded (last 48 h)</button></div>{done ? <Pill kind="good">{rows.length} graded</Pill> : <Pill kind={rows.length ? 'warn' : 'good'}>{rows.length} waiting</Pill>}</div>
+    <section class="card"><div class="list">{rows.length ? rows.map((e) => <div class="item click" onClick={() => setOpen(e.id)}><div class="grow"><b>{e.name}</b> <span class="mono faint">{e.code}</span> <span class="faint">· S{e.section}</span><div class="faint">{rubricFor(e)?.title} · <span class="mono">#{e.tooth}</span> · week {e.week}</div></div><div class="stack" style={{ alignItems: 'flex-end', gap: 4 }}>{done ? <><b class="mono" style={{ fontSize: '1.25em' }}>{e.review?.grade ?? '–'}</b><span class="faint">{e.review?.byName || ''} · {ago(e.review?.at)}</span></> : <><span class="faint">{ago(e.submittedAt || e.createdAt)}</span><span class="faint">Self <b class="mono">{e.self?.grade ?? '–'}</b></span></>}</div></div>) : <Empty>{done ? 'No teeth graded in the last 48 hours.' : 'Nothing waiting. Well done.'}</Empty>}</div></section>
     {open && <ReviewSheet id={open} onClose={() => setOpen(null)} />}
   </>;
 }
