@@ -21,8 +21,8 @@ const out = {
   messages: (await db.collection('messages').get()).docs.map((d) => d.data()).map((m) => ({ uid: String(m.uid || ''), section: m.section || null, from: m.from || null, fromName: m.fromName || null, fromRole: m.fromRole || null, at: m.at || null })),
   sessions: sessions.map((x) => ({ id: x.id, type: x.type, section: x.section ?? null, week: x.week ?? null, lectureNo: x.lectureNo ?? null, date: x.date || null, status: x.status || null, required: x.attendanceRequired !== false })),
   // Per-student aggregates for the student KPI dashboard (no names or student numbers).
-  students: allRoster.filter((r) => r.role === 'student').map((r, i) => { const uid = String(r.uid || r.code || r.id);
-    const mine = att.filter((a) => String(a.uid) === uid && a.status === 'confirmed'); const t = ents.filter((e) => String(e.uid) === uid);
+  students: allRoster.filter((r) => r.role === 'student').map((r, i) => { const ids = new Set([r.uid, r.code, r.id].filter(Boolean).map(String)); const me = (x) => ids.has(String(x.uid || '')) || ids.has(String(x.code || ''));
+    const mine = att.filter((a) => me(a) && a.status === 'confirmed'); const t = ents.filter(me);
     return { i, section: r.section ?? null, signedIn: !!r.lastLogin, lab: mine.filter((a) => a.type === 'lab').map((a) => a.sid), lec: mine.filter((a) => a.type === 'lecture').map((a) => a.sid),
       teeth: t.map((e) => ({ week: e.week, status: e.status, grade: e.review?.grade ?? null, paper: e.source === 'paper' })) }; }),
   attendance: att.filter((a) => a.type === 'lab').map((a) => ({ section: a.section, week: a.week, status: a.status, method: a.method, by: a.by || null, byName: a.byName || null, at: a.at || null, decidedAt: a.decidedAt || null })),
