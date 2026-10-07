@@ -691,3 +691,21 @@ For extra Class I practice, use the Prep Lens practice app (button below).
       .replace('• ٥ أسئلة + تعليق اختياري. متاح لحد الخميس ٨ أكتوبر الساعة ١١:٥٩ مساءً.', '• ٥ أسئلة + تعليق اختياري.\n• الطلاب: تم مد الاستبيان لحد السبت ١٠ أكتوبر الساعة ٨ الصبح.\n• المعيدين والمشرفين: لحد الخميس ٨ أكتوبر الساعة ١١:٥٩ مساءً.')
       .replace('5 questions + an optional comment. Open until Thursday 8 October, 23:59.', '5 questions + an optional comment.\nStudents: extended until Saturday 10 October, 8:00 am.\nDemonstrators and supervisors: until Thursday 8 October, 23:59.') });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Survey: students extended to Sat 08:00'); } }
+
+// 7 Oct: thank-you to staff after the NAQAAE committee lab visit.
+{ const id = 'staff-thanks-naqaae-2026-10-07'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) {
+    await db.doc('announcements/' + id).set({ title: 'شكرًا لكم 🌟 · Thank you — NAQAAE visit', audience: 'staff', sections: [], pinned: true, publishAt: Date.now(), by: owner || 'system', byName, imageUrl: null, imagePath: null,
+      body: `النهاردة لجنة الهيئة القومية لضمان جودة التعليم والاعتماد مرّت على المعامل، وشافت سير العمل الرقمي على الطبيعة: الحضور بالكود والـQR، وتصوير السنة وإرسالها، وتقييم المعيد على المنصة. واللجنة أبدت إعجابها بالتنظيم والتحول الرقمي.
+
+ده نجاحكم أنتم: المعيدين والمشرفين اللي شغّلوا المنصة في كل سكشن رغم ضغط الشغل والشبكة، والطلاب اللي التزموا بالخطوات.
+شكرًا لكل واحد فيكم. نكمّل ونطوّر سوا.
+
+—
+
+Today the NAQAAE accreditation committee toured our labs and saw the digital workflow live: attendance by code or QR, two photos and Submit, and grading on the platform. The committee was impressed by the workflow and the digital transformation.
+
+This success belongs to you: demonstrators and supervisors who ran the platform in every section despite the workload and the network, and students who followed the steps. Thank you all. We keep improving together.
+
+أ.د. أحمد الحوشي · Prof. Dr. Ahmed El-Hoshy, Course Director` });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: staff thanks NAQAAE'); } }
