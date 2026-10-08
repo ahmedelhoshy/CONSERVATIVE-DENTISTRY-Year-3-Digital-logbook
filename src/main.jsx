@@ -14,6 +14,7 @@ import { SessionsAdmin, Content, Announcements, People, Settings, AuditLog } fro
 import { Dashboard, Reports } from './views/dash.jsx';
 import { Projects } from './views/projects.jsx';
 import { Login } from './views/login.jsx';
+import { Rules, VERSION, COPYRIGHT } from './views/rules.jsx';
 import { firebaseConfig } from './firebase-config.js';
 
 const cfg = firebaseConfig;
@@ -30,6 +31,7 @@ const NAV = {
   vicedean: [['dash', 'Dashboard'], ['projects', 'Projects'], ['messages', 'Messages'], ['reports', 'Reports']],
   dean: [['dash', 'Dashboard'], ['projects', 'Projects'], ['messages', 'Messages'], ['reports', 'Reports']],
 };
+for (const r of ['demonstrator', 'lecturer', 'director', 'hod', 'vicedean', 'dean']) NAV[r].push(['rules', 'Rules & terms']);
 NAV.admin = NAV.director;
 const ROLE_LABEL = { student: 'Student', demonstrator: 'Demonstrator', lecturer: 'Lecturer', director: 'Course Director', hod: 'Head of Department', dean: 'Dean of the Faculty', vicedean: 'Vice Dean — Student Affairs', admin: 'Administrator' };
 
@@ -56,6 +58,7 @@ function View({ route, go }) {
     case 'dash': return <Dashboard {...common} />;
     case 'reports': return <Reports {...common} />;
     case 'projects': return <Projects {...common} />;
+    case 'rules': return <Rules {...common} />;
     default: return <p>Not found</p>;
   }
 }
@@ -95,7 +98,8 @@ function Shell({ onSignOut, onSwitch }) {
     </header>
     {isDemo() && <DemoBar onSwitch={onSwitch} />}
     {!student && <nav class="staffnav noprint" aria-label="Sections">{nav.map(([k, l]) => <button class={route === k ? 'on' : ''} onClick={() => go(k)}>{l}</button>)}</nav>}
-    <main id="main"><View route={route} go={go} /></main>
+    <main id="main"><View route={route} go={go} />
+      <footer class="legal noprint"><button class="linkbtn" onClick={() => go('rules')}>{L('Rules, terms & limitations', 'القواعد وشروط الاستخدام')}</button> · {COPYRIGHT} · {L('Version', 'الإصدار')} {VERSION}</footer></main>
     {student && <nav class="tabbar noprint" aria-label="Sections">{nav.map(([k, en, ar, ic]) => <button class={route === k ? 'on' : ''} onClick={() => go(k)}><Icon n={ic} /><span>{L(en, ar)}</span></button>)}</nav>}
   </div>;
 }
@@ -163,6 +167,7 @@ function Welcome({ onDone }) {
     <p class="w-motto-en">On our way to the complete digital transformation of our faculty</p>
     {!speaking ? <button class="btn primary w-go" onClick={enter}>🔊 ادخل · Enter</button> : <p class="w-sub">🔊 …</p>}
     <button class="w-skip" onClick={finish}>تخطي · Skip</button>
+    <p class="w-en" style={{ marginTop: 18, fontSize: '.8rem' }}>Digital Logbook v1.0 · © 2026 Prof. Dr. Ahmed Zoheir El-Hoshy</p>
   </div>;
 }
 function WithWelcome({ children }) { const [show, setShow] = useState(needWelcome()); return show ? <Welcome onDone={() => setShow(false)} /> : children; }
