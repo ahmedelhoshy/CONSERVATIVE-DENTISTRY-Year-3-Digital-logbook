@@ -50,7 +50,7 @@ export function Rules() {
     <section class="card lead"><h2>{L('9. Copyright', '٩. حقوق الملكية')}</h2>
       <p dir="auto"><b>{COPYRIGHT}. {L('All rights reserved.', 'جميع الحقوق محفوظة.')}</b></p>
       <p dir="auto">{L('Digital Logbook, version 1.0 (2026). Designed and developed by Prof. Dr. Ahmed Zoheir El-Hoshy, Course Director, for the Department of Conservative Dentistry, Faculty of Dentistry, Cairo University.', 'اللوجبوك الرقمي، الإصدار ١٫٠ (٢٠٢٦). تصميم وتطوير أ.د. أحمد زهير الحوشي، منسق المقرر، لقسم العلاج التحفظي، كلية طب الأسنان، جامعة القاهرة.')}</p>
-      <p dir="auto">{L('The platform\'s design, workflow, rubrics, content, videos and the Prep Lens tool may not be copied, reproduced, adapted or distributed, in whole or in part, without the written permission of the author.', 'لا يجوز نسخ أو إعادة إنتاج أو تعديل أو توزيع تصميم المنصة أو سير العمل أو الروبريكات أو المحتوى أو الفيديوهات أو أداة Prep Lens، كليًا أو جزئيًا، بدون إذن كتابي من المؤلف.')}</p>
+      <p dir="auto">{L('Copying, redistributing, adding to or changing the design, workflow, rubrics, content, videos or Prep Lens, in whole or in part, is prohibited. Any violation exposes the violator to legal accountability under intellectual property laws.', 'حقوق الطبع محفوظة للأستاذ الدكتور أحمد زهير الحوشي، وأي توزيع أو إضافة أو تغيير في التصميم أو سير العمل (Workflow) أو الروبريكات (Rubrics) أو المحتوى (Contents) أو الفيديوهات (Videos) أو أداة Prep Lens ممنوع، وإلا يعرّض المخالف للمساءلة القانونية طبقًا لقوانين حقوق الملكية الفكرية.')}</p>
       <p class="faint" dir="auto">{L('Questions about these rules: contact the Course Director through Messages.', 'للاستفسار عن هذه القواعد: تواصل مع منسق المقرر من خلال الرسائل.')}</p></section>
   </>;
 }
