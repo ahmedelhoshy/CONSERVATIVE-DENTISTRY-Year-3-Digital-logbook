@@ -99,7 +99,7 @@ function Shell({ onSignOut, onSwitch }) {
     {isDemo() && <DemoBar onSwitch={onSwitch} />}
     {!student && <nav class="staffnav noprint" aria-label="Sections">{nav.map(([k, l]) => <button class={route === k ? 'on' : ''} onClick={() => go(k)}>{l}</button>)}</nav>}
     <main id="main"><View route={route} go={go} />
-      <footer class="legal noprint"><button class="linkbtn" onClick={() => go('rules')}>{L('Rules, terms & limitations', 'القواعد وشروط الاستخدام')}</button> · {COPYRIGHT} · {L('Version', 'الإصدار')} {VERSION}</footer></main>
+      <footer class="legal noprint"><button class="linkbtn" onClick={() => replayWelcome()}>{L('🔊 Welcome', '🔊 الترحيب')}</button> · <button class="linkbtn" onClick={() => go('rules')}>{L('Rules, terms & limitations', 'القواعد وشروط الاستخدام')}</button> · {COPYRIGHT} · {L('Version', 'الإصدار')} {VERSION}</footer></main>
     {student && <nav class="tabbar noprint" aria-label="Sections">{nav.map(([k, en, ar, ic]) => <button class={route === k ? 'on' : ''} onClick={() => go(k)}><Icon n={ic} /><span>{L(en, ar)}</span></button>)}</nav>}
   </div>;
 }
@@ -143,12 +143,12 @@ function LiveApp() {
 }
 
 
-// Opening screen: faculty logo + spoken welcome (American English voice), once a day per device.
-const welcomeKey = () => 'welcome-' + new Date().toISOString().slice(0, 10);
-function needWelcome() { try { return !params.has('nowelcome') && !localStorage.getItem(welcomeKey()); } catch (e) { return false; } }
+// Opening screen: faculty logo + spoken welcome (American English voice). Shown each time the site is opened (once per browser session); ?welcome forces it.
+const welcomeKey = () => 'welcome-seen';
+function needWelcome() { if (params.has('welcome')) return true; try { return !params.has('nowelcome') && !sessionStorage.getItem(welcomeKey()); } catch (e) { return true; } }
 function Welcome({ onDone }) {
   const [speaking, setSpeaking] = useState(false);
-  const finish = () => { try { localStorage.setItem(welcomeKey(), '1'); } catch (e) {} onDone(); };
+  const finish = () => { try { sessionStorage.setItem(welcomeKey(), '1'); } catch (e) {} onDone(); };
   const enter = () => {
     try {
       const au = new Audio('/welcome.mp3');
@@ -170,7 +170,8 @@ function Welcome({ onDone }) {
     <p class="w-en" style={{ marginTop: 18, fontSize: '.8rem' }}>Digital Logbook v1.0 · © 2026 Prof. Dr. Ahmed Zoheir El-Hoshy</p>
   </div>;
 }
-function WithWelcome({ children }) { const [show, setShow] = useState(needWelcome()); return show ? <Welcome onDone={() => setShow(false)} /> : children; }
+let replayWelcome = () => {};
+function WithWelcome({ children }) { const [show, setShow] = useState(needWelcome()); replayWelcome = () => setShow(true); return show ? <Welcome onDone={() => setShow(false)} /> : children; }
 
 async function boot() {
   setLang(lang());
