@@ -194,3 +194,16 @@ details.item > summary{cursor:pointer}
 .defect.on { border-color: var(--bad); background: var(--bad-soft); }
 .defect .chip { text-align: start; background: none; border: 0; padding: 6px 2px; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; min-height: 40px; }
 .defect.on .chip { color: var(--bad); }
+
+/* Opening welcome screen */
+.welcome{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 30%,#1a5a64,#10424a 60%,#0b2f35);color:#fff}
+.welcome img{width:150px;height:150px;border-radius:50%;background:#fff;padding:6px;box-shadow:0 0 0 4px #c9a24a,0 10px 30px rgba(0,0,0,.35);animation:wIn .9s ease-out}
+.welcome img.pulse{animation:wPulse 1.6s ease-in-out infinite}
+.welcome h1{margin:14px 0 0;font-size:1.9rem;color:#fff}.welcome .w-sub{margin:0;font-size:1.1rem;color:#d7e9ec}.welcome .w-en{margin:2px 0 0;font-size:.9rem;color:#a9c9ce}
+.welcome .w-bar{width:90px;height:4px;background:#c9a24a;border-radius:2px;margin:14px 0}
+.welcome .w-motto{margin:0;font-size:1.25rem;font-weight:700;color:#f3d48a}.welcome .w-motto-en{margin:0 0 18px;font-size:.95rem;color:#e8d9b0}
+.welcome .w-go{font-size:1.15rem;padding:12px 30px;background:#c9a24a;border-color:#c9a24a;color:#10424a}
+.welcome .w-skip{margin-top:14px;background:none;border:0;color:#a9c9ce;text-decoration:underline;cursor:pointer;font-size:.9rem}
+@keyframes wIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:none}}
+@keyframes wPulse{0%,100%{box-shadow:0 0 0 4px #c9a24a,0 0 0 0 rgba(201,162,74,.6)}50%{box-shadow:0 0 0 4px #c9a24a,0 0 0 18px rgba(201,162,74,0)}}
+@media (prefers-reduced-motion:reduce){.welcome img,.welcome img.pulse{animation:none}}

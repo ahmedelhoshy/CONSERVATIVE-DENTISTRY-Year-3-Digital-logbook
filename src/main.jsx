@@ -138,12 +138,47 @@ function LiveApp() {
   return <Login state={state} setState={setState} />;
 }
 
+
+// Opening screen: faculty logo + spoken Arabic welcome (device voice), once a day per device.
+const WELCOME_AR = 'مرحبًا بكم في لوحة المتابعة الرقمية لقسم العلاج التحفظي، كلية طب الأسنان، جامعة القاهرة. في طريقنا نحو التحول الرقمي الكامل لكليتنا.';
+const welcomeKey = () => 'welcome-' + new Date().toISOString().slice(0, 10);
+function needWelcome() { try { return !params.has('nowelcome') && !localStorage.getItem(welcomeKey()); } catch (e) { return false; } }
+function Welcome({ onDone }) {
+  const [speaking, setSpeaking] = useState(false);
+  const finish = () => { try { localStorage.setItem(welcomeKey(), '1'); window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} onDone(); };
+  const enter = () => {
+    const synth = window.speechSynthesis;
+    if (!synth) { finish(); return; }
+    try {
+      const u = new SpeechSynthesisUtterance(WELCOME_AR);
+      const v = synth.getVoices().filter((x) => /^ar/i.test(x.lang));
+      u.voice = v.find((x) => /EG/i.test(x.lang)) || v.find((x) => /SA/i.test(x.lang)) || v[0] || null;
+      u.lang = u.voice ? u.voice.lang : 'ar-EG'; u.rate = 0.92;
+      u.onend = finish; u.onerror = finish;
+      setSpeaking(true); synth.cancel(); synth.speak(u);
+      setTimeout(finish, 16000);
+    } catch (e) { finish(); }
+  };
+  return <div class="welcome" role="dialog" aria-label="Welcome">
+    <img src="/cu-logo.png" alt="Faculty of Dentistry, Cairo University" class={speaking ? 'pulse' : ''} />
+    <h1 dir="rtl">قسم العلاج التحفظي</h1>
+    <p class="w-sub" dir="rtl">كلية طب الأسنان — جامعة القاهرة</p>
+    <p class="w-en">Department of Conservative Dentistry · Faculty of Dentistry · Cairo University</p>
+    <div class="w-bar" />
+    <p class="w-motto" dir="rtl">في طريقنا نحو التحول الرقمي الكامل لكليتنا</p>
+    <p class="w-motto-en">On our way to the complete digital transformation of our faculty</p>
+    {!speaking ? <button class="btn primary w-go" onClick={enter}>🔊 ادخل · Enter</button> : <p class="w-sub">🔊 …</p>}
+    <button class="w-skip" onClick={finish}>تخطي · Skip</button>
+  </div>;
+}
+function WithWelcome({ children }) { const [show, setShow] = useState(needWelcome()); return show ? <Welcome onDone={() => setShow(false)} /> : children; }
+
 async function boot() {
   setLang(lang());
   document.getElementById('app').textContent = '';
-  if (wantDemo) { setStore(demoStore); render(<DemoApp />, document.getElementById('app')); return; }
+  if (wantDemo) { setStore(demoStore); render(<WithWelcome><DemoApp /></WithWelcome>, document.getElementById('app')); return; }
   const { initFire } = await import('./lib/store-fire.js');
   setStore(initFire(cfg));
-  render(<LiveApp />, document.getElementById('app'));
+  render(<WithWelcome><LiveApp /></WithWelcome>, document.getElementById('app'));
 }
 boot();
