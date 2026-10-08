@@ -112,3 +112,29 @@ export function SurveyResults() {
     </div>}
   </section>;
 }
+
+// Board / staff survey (Google Form, 4–6 Oct 2026, 30 responses). Anonymous totals only; no names or comments.
+const BOARD = { n: 30, when: '4–6 Oct 2026', mean: 4.07, agree: 79,
+  items: [['The platform makes attendance recording more transparent and accurate', 'المنصة تزيد من شفافية ودقة تسجيل الحضور', 4.03, 77],
+    ['QR attendance is practical in labs and lectures', 'تسجيل الحضور بالـQR عملي في المعامل والمحاضرات', 4.0, 80],
+    ['Self-assessment with Prep Lens (AI) supports student learning', 'التقييم الذاتي مع Prep Lens يدعم تعلم الطالب', 3.97, 70],
+    ['Defects-based grading is consistent with the department rubric', 'التقييم بتحديد العيوب متسق مع روبريك القسم', 4.07, 83],
+    ['Dashboards help supervisors and leaders follow progress', 'لوحات المتابعة تساعد المشرفين والقيادات', 4.23, 83],
+    ['The platform supports quality assurance and accreditation', 'المنصة تدعم ضمان الجودة والاعتماد', 4.1, 77],
+    ['I recommend continuing and extending it to other years and courses', 'أوصي بالاستمرار والتعميم على فرق ومقررات أخرى', 4.1, 80]],
+  seen: [['Yes, in the lab or lecture', 12], ['Yes, through a presentation or video', 14], ['Not yet', 4]],
+  rec: [['Continue as is', 15], ['Continue with modifications', 15], ['Stop', 0]] };
+export function BoardSurveyResults() {
+  const b = BOARD;
+  return <section class="card">
+    <div class="row between"><h2>{L('Department board & staff survey', 'استبيان مجلس القسم وأعضاء هيئة التدريس')}</h2><span class="faint">Google Form · {b.when}</span></div>
+    <p class="faint">{b.n} responses · overall mean <b>{b.mean}</b>/5 · <b>{b.agree}%</b> agree or strongly agree · anonymous totals</p>
+    <div class="tablewrap"><table><thead><tr><th>Statement</th><th class="n">Mean /5</th><th class="n">Agree</th></tr></thead><tbody>
+      {b.items.map(([en, ar, m, a]) => <tr><td dir="auto">{L(en, ar)}</td><td class="n"><b>{m.toFixed(2)}</b></td><td class="n">{a}%</td></tr>)}
+    </tbody></table></div>
+    <div class="row" style={{ gap: 24, flexWrap: 'wrap', marginTop: 8 }}>
+      <div><b>Overall recommendation</b><div class="faint">{b.rec.map(([k, v]) => `${k}: ${v}`).join(' · ')}</div></div>
+      <div><b>Have seen the platform in use</b><div class="faint">{b.seen.map(([k, v]) => `${k}: ${v}`).join(' · ')}</div></div>
+    </div>
+  </section>;
+}
