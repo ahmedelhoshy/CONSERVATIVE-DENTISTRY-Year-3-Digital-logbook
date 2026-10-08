@@ -108,6 +108,7 @@ export function SurveyResults() {
     {q.error ? <p class="faint">Could not load the survey answers.</p> : q.rows == null ? <p class="faint">Loading…</p> : <div class="stack">
       {cur.roles.includes('student') && block('Students', group(true), Q_STUDENT)}
       {block('Demonstrators and supervisors', group(false), Q_STAFF)}
+      {cur.id === SURVEY.id && <BoardBlock platformN={group(false).length} />}
       {nComments > 0 && <button class="btn sm" onClick={() => setShow(!show)}>{show ? 'Hide comments' : `Show comments (${nComments})`}</button>}
     </div>}
   </section>;
@@ -124,17 +125,14 @@ const BOARD = { n: 30, when: '4–6 Oct 2026', mean: 4.07, agree: 79,
     ['I recommend continuing and extending it to other years and courses', 'أوصي بالاستمرار والتعميم على فرق ومقررات أخرى', 4.1, 80]],
   seen: [['Yes, in the lab or lecture', 12], ['Yes, through a presentation or video', 14], ['Not yet', 4]],
   rec: [['Continue as is', 15], ['Continue with modifications', 15], ['Stop', 0]] };
-export function BoardSurveyResults() {
+function BoardBlock({ platformN = 0 }) {
   const b = BOARD;
-  return <section class="card">
-    <div class="row between"><h2>{L('Department board & staff survey', 'استبيان مجلس القسم وأعضاء هيئة التدريس')}</h2><span class="faint">Google Form · {b.when}</span></div>
-    <p class="faint">{b.n} responses · overall mean <b>{b.mean}</b>/5 · <b>{b.agree}%</b> agree or strongly agree · anonymous totals</p>
+  return <div class="stack" style={{ gap: 6 }}>
+    <h3 style={{ margin: '8px 0 0' }}>Demonstrators and supervisors — department survey (Google Form) · {b.n} responses</h3>
+    <p class="faint" style={{ margin: 0 }}>Same staff, answered on the department Google Form ({b.when}). Staff total: <b>{b.n + platformN}</b> responses ({platformN} on the platform + {b.n} on the form). Overall mean <b>{b.mean}</b>/5 · <b>{b.agree}%</b> agree or strongly agree · anonymous totals.</p>
     <div class="tablewrap"><table><thead><tr><th>Statement</th><th class="n">Mean /5</th><th class="n">Agree</th></tr></thead><tbody>
       {b.items.map(([en, ar, m, a]) => <tr><td dir="auto">{L(en, ar)}</td><td class="n"><b>{m.toFixed(2)}</b></td><td class="n">{a}%</td></tr>)}
     </tbody></table></div>
-    <div class="row" style={{ gap: 24, flexWrap: 'wrap', marginTop: 8 }}>
-      <div><b>Overall recommendation</b><div class="faint">{b.rec.map(([k, v]) => `${k}: ${v}`).join(' · ')}</div></div>
-      <div><b>Have seen the platform in use</b><div class="faint">{b.seen.map(([k, v]) => `${k}: ${v}`).join(' · ')}</div></div>
-    </div>
-  </section>;
+    <p class="faint" style={{ margin: 0 }}><b>Overall recommendation:</b> {b.rec.map(([k, v]) => `${k} ${v}`).join(' · ')}<br /><b>Have seen the platform in use:</b> {b.seen.map(([k, v]) => `${k} ${v}`).join(' · ')}</p>
+  </div>;
 }
