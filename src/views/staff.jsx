@@ -115,6 +115,9 @@ export function Projector({ session, onClose }) {
 }
 
 // ---------------- Review ----------------
+// Accept Arabic digits (٨٫٥), Persian digits and a comma decimal (8,5) from phone keyboards.
+const normGrade = (v) => String(v || '').replace(/[\u0660-\u0669]/g, (d) => d.charCodeAt(0) - 0x660).replace(/[\u06F0-\u06F9]/g, (d) => d.charCodeAt(0) - 0x6F0).replace(/[\u066B,،]/g, '.').replace(/[^0-9.]/g, '');
+
 export function ReviewQueue() {
   const u = me();
   const secs = mySections(u);
@@ -170,6 +173,7 @@ export function ReviewSheet({ id, onClose }) {
       toast('Marked present');
     } catch (x) { toast('Could not mark present: ' + x.message); }
   };
+  const gradeOk = grade !== '' && Number.isFinite(Number(grade)) && Number(grade) >= 0 && Number(grade) <= 10;
   const changing = e.review && Number(grade) !== e.review.grade;
   const save = async (redo) => {
     setBusy(true);
@@ -200,7 +204,7 @@ export function ReviewSheet({ id, onClose }) {
         <div class="bands">{rub.bands.map((b, i) => <button disabled={readOnly} class={(picks && picks[c.id] === b.key ? 'on ' : '') + b.key} onClick={() => setPicks({ ...picks, [c.id]: b.key })}><b>{b.label.replace('Accepted ', '').replace('Unaccepted ', '')}</b>{c.bands[i]}</button>)}</div></div>)}
     </section>}
     {!readOnly && <>
-      <div class="grid2"><label class="fld">Overall grade (0–10){sugg != null ? ` · from the defects marked: about ${sugg}` : ''}<input id="rv-grade" type="number" min="0" max="10" step="0.25" value={grade} onInput={(ev) => setGrade(ev.target.value)} placeholder={sugg != null ? String(sugg) : ''} /></label>
+      <div class="grid2"><label class="fld">Overall grade (0–10){sugg != null ? ` · from the defects marked: about ${sugg}` : ''}<input id="rv-grade" type="text" inputMode="decimal" autoComplete="off" value={grade} onInput={(ev) => setGrade(normGrade(ev.target.value))} placeholder={sugg != null ? String(sugg) : ''} /></label>
         <label class="fld">Requirement status<select id="rv-status" value={status} onChange={(ev) => setStatus(ev.target.value)}>{TOOTH_STATUS.map((t) => <option>{t}</option>)}</select></label></div>
       <label class="fld">Comment to the student (optional — the defects marked are sent automatically)<textarea id="rv-feedback" value={feedback} onInput={(ev) => setFeedback(ev.target.value)} placeholder="Optional" /></label>
       {changing && <label class="fld">Reason for changing the saved grade (audit log)<input id="rv-reason" value={reason} onInput={(ev) => setReason(ev.target.value)} /></label>}
@@ -208,10 +212,11 @@ export function ReviewSheet({ id, onClose }) {
       {(() => { const why = [];
         if (!attOk) why.push('the student has no confirmed attendance this week');
         if (grade === '') why.push('enter the official grade');
+        else if (!gradeOk) why.push('the grade must be a number from 0 to 10 (e.g. 8.5)');
         if (changing && !reason.trim()) why.push('give a reason for changing the saved grade');
         return why.length ? <div class="state pending" role="status" style={{ display: "block", padding: 12 }}><b style={{ fontSize: "1rem" }}>To save:</b> {why.join(' · ')}.</div> : null; })()}
-      <div class="row"><button class="btn primary" disabled={busy || !attOk || grade === '' || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
-        <button class="btn danger" disabled={busy || !attOk || grade === '' || (!feedback.trim() && !defects.length)} onClick={() => { if (confirm('This sends the tooth BACK to the student to correct and resubmit. To simply grade it, press Cancel and use "Save evaluation".')) save(true); }}>Save & ask to correct</button></div>
+      <div class="row"><button class="btn primary" disabled={busy || !attOk || !gradeOk || (changing && !reason.trim())} onClick={() => save(false)}>Save evaluation</button>
+        <button class="btn danger" disabled={busy || !attOk || !gradeOk || (!feedback.trim() && !defects.length)} onClick={() => { if (confirm('This sends the tooth BACK to the student to correct and resubmit. To simply grade it, press Cancel and use "Save evaluation".')) save(true); }}>Save & ask to correct</button></div>
     </>}
     {e.history?.length > 0 && <details><summary>History ({e.history.length})</summary><div class="list">{e.history.map((ev) => <div class="item faint">{fmtDT(ev.at)} · {ev.event}{ev.by ? ' · ' + ev.by : ''}{ev.reason ? ' · ' + ev.reason : ''}</div>)}</div></details>}
   </Sheet>;
