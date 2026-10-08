@@ -143,9 +143,10 @@ function LiveApp() {
 }
 
 
-// Opening screen: faculty logo + spoken welcome (American English voice). Shown each time the site is opened (once per browser session); ?welcome forces it.
+// Opening screen: faculty logo + spoken welcome (American English voice). Shown every time the site is opened; ?welcome forces it.
 const welcomeKey = () => 'welcome-seen';
-function needWelcome() { if (params.has('welcome')) return true; try { return !params.has('nowelcome') && !sessionStorage.getItem(welcomeKey()); } catch (e) { return true; } }
+// Every time the site is opened (including refresh). Skipped only for attendance QR links, so check-in stays one tap.
+function needWelcome() { if (params.has('welcome')) return true; return !params.has('nowelcome') && !(deepLink && deepLink.sid); }
 function Welcome({ onDone }) {
   const [speaking, setSpeaking] = useState(false);
   const finish = () => { try { sessionStorage.setItem(welcomeKey(), '1'); } catch (e) {} onDone(); };
