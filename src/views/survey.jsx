@@ -1,7 +1,7 @@
 // Short pilot survey (first week of the digital logbook) for the report to the University President.
 // One response per person; results are reported only as anonymous totals.
 import { useState } from 'preact/hooks';
-import { L, useDoc, useQuery, toast } from '../lib/ui.jsx';
+import { L, useDoc, useQuery, toast, Sheet } from '../lib/ui.jsx';
 import { store, isDemo } from '../lib/logic.js';
 
 export const SURVEY = { id: 'pilot-2026-10', opens: Date.parse('2026-10-03T00:00:00+03:00'), closes: Date.parse('2026-10-08T23:59:00+03:00'), roles: ['student', 'demonstrator', 'lecturer'], label: 'Pilot week (students + staff)', studentCloses: Date.parse('2026-10-10T08:00:00+03:00') }; // staff: Thu 8 Oct 23:59; students: Sat 10 Oct 08:00 Cairo
@@ -52,6 +52,7 @@ export function SurveyCard({ u }) {
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
+  const [pop, setPop] = useState(isStudent); // students who have not answered see it as a pop-up once per visit
   const qs = isStudent ? Q_STUDENT : Q_STAFF;
   if (!active || mine === undefined) return null;
   if (mine) return <section class="card"><p class="faint">{L('Thank you — your survey answers are saved.', 'شكرًا — إجاباتك على الاستبيان اتسجلت.')}</p></section>;
@@ -64,15 +65,23 @@ export function SurveyCard({ u }) {
     } catch (x) { toast(L('Could not save — try again.', 'لم يتم الحفظ — حاول مرة أخرى.')); }
     setBusy(false);
   };
-  return <section class="card lead">
-    <h2>{round.id === SURVEY.id ? L('2-minute survey: the first week of the digital logbook', 'استبيان دقيقتين: أول أسبوع للوجبوك الرقمي') : '2-minute staff survey: the last 3 weeks on the digital logbook'}</h2>
-    <p class="muted">{round.id === SURVEY.id ? L(u.role === 'student' ? 'Your answers are anonymous and will be included as totals in a report on the project. Open until Saturday 10 October, 8:00 am.' : 'Your answers are anonymous and will be included as totals in a report on the project. Open until Thursday 8 October.', u.role === 'student' ? 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد السبت ١٠ أكتوبر الساعة ٨ الصبح.' : 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد الخميس ٨ أكتوبر.') : `Staff survey every 3 weeks · anonymous totals · open until Thursday ${fmtD(round.closes)}.`}</p>
-    {!open ? <button class="btn primary" onClick={() => setOpen(true)}>{L('Answer the survey', 'جاوب الاستبيان')}</button> : <div class="stack">
+  const form = <div class="stack">
       {qs.map(([k, en, ar], i) => <div class="crit"><b dir="auto">{i + 1}. {L(en, ar)}</b>
         <div class="seg" style={{ flexWrap: 'wrap' }}>{SCALE.map(([v, en2, ar2]) => <button type="button" class={a[k] === v ? 'on' : ''} onClick={() => setA({ ...a, [k]: v })}>{L(en2, ar2)}</button>)}</div></div>)}
       <label class="fld">{L('What worked well, and what should we improve? (optional)', 'إيه اللي كان كويس، وإيه اللي محتاج يتحسن؟ (اختياري)')}<textarea dir="auto" value={comment} maxLength={600} onInput={(ev) => setComment(ev.target.value)} /></label>
       <button class="btn primary" disabled={!done || busy} onClick={send}>{busy ? L('Saving…', 'جارٍ الحفظ…') : L('Send', 'إرسال')}</button>
-    </div>}
+    </div>;
+  if (pop) return <Sheet onClose={() => setPop(false)} label="Survey">
+    <span class="eyebrow" style={{ color: '#b03a36' }}>{L('Urgent · 2 minutes · anonymous', 'عاجل · دقيقتين · مجهول الهوية')}</span>
+    <h2 style={{ margin: 0 }}>{L('Before you continue: please answer the student survey', 'قبل ما تكمل: من فضلك جاوب استبيان الطلاب')}</h2>
+    <p class="muted" style={{ margin: 0 }}>{L('Official survey of the Department of Conservative Dentistry. Your opinion helps us improve the platform and solve your problems. Closes Saturday 10 October, 8:00 am.', 'استبيان رسمي من قسم العلاج التحفظي. رأيك بيساعدنا نحسّن المنصة ونحل مشاكلك. يُغلق السبت ١٠ أكتوبر الساعة ٨ الصبح.')}</p>
+    {form}
+    <button class="btn" onClick={() => setPop(false)}>{L('Later', 'لاحقًا')}</button>
+  </Sheet>;
+  return <section class="card lead">
+    <h2>{round.id === SURVEY.id ? L('2-minute survey: the first week of the digital logbook', 'استبيان دقيقتين: أول أسبوع للوجبوك الرقمي') : '2-minute staff survey: the last 3 weeks on the digital logbook'}</h2>
+    <p class="muted">{round.id === SURVEY.id ? L(u.role === 'student' ? 'Your answers are anonymous and will be included as totals in a report on the project. Open until Saturday 10 October, 8:00 am.' : 'Your answers are anonymous and will be included as totals in a report on the project. Open until Thursday 8 October.', u.role === 'student' ? 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد السبت ١٠ أكتوبر الساعة ٨ الصبح.' : 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد الخميس ٨ أكتوبر.') : `Staff survey every 3 weeks · anonymous totals · open until Thursday ${fmtD(round.closes)}.`}</p>
+    {!open ? <button class="btn primary" onClick={() => setOpen(true)}>{L('Answer the survey', 'جاوب الاستبيان')}</button> : form}
   </section>;
 }
 
