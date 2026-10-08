@@ -709,3 +709,13 @@ This success belongs to you: demonstrators and supervisors who ran the platform 
 
 أ.د. أحمد الحوشي · Prof. Dr. Ahmed El-Hoshy, Course Director` });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: staff thanks NAQAAE'); } }
+
+// 8 Oct: Course Director's LinkedIn post (link button).
+{ const id = 'linkedin-post-2026-10-08'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) {
+    await db.doc('announcements/' + id).set({ title: 'منشور منسق المقرر على LinkedIn · Course Director\'s LinkedIn post', audience: 'all', sections: [], pinned: true, publishAt: Date.now(), by: owner || 'system', byName, imageUrl: null, imagePath: null,
+      linkUrl: 'https://lnkd.in/p/eJh-Fmd6', linkLabel: 'افتح المنشور · Open the post',
+      body: `نشر أ.د. أحمد الحوشي منشورًا جديدًا على LinkedIn. اضغط الزرار تحت لقراءته، ويسعدنا تفاعلكم ومشاركتكم 👍
+
+Prof. Dr. Ahmed El-Hoshy has shared a new post on LinkedIn. Tap the button below to read it — your likes, comments and shares are welcome 👍` });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: LinkedIn post'); } }
