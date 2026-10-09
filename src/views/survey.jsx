@@ -4,7 +4,7 @@ import { useState } from 'preact/hooks';
 import { L, useDoc, useQuery, toast, Sheet } from '../lib/ui.jsx';
 import { store, isDemo } from '../lib/logic.js';
 
-export const SURVEY = { id: 'pilot-2026-10', opens: Date.parse('2026-10-03T00:00:00+03:00'), closes: Date.parse('2026-10-08T23:59:00+03:00'), roles: ['student', 'demonstrator', 'lecturer'], label: 'Pilot week (students + staff)', studentCloses: Date.parse('2026-10-10T08:00:00+03:00') }; // staff: Thu 8 Oct 23:59; students: Sat 10 Oct 08:00 Cairo
+export const SURVEY = { id: 'pilot-2026-10', opens: Date.parse('2026-10-03T00:00:00+03:00'), closes: Date.parse('2026-10-08T23:59:00+03:00'), roles: ['student', 'demonstrator', 'lecturer'], label: 'Pilot week (students + staff)', studentCloses: Date.parse('2026-10-10T23:30:00+03:00') }; // staff: Thu 8 Oct 23:59; students: Sat 10 Oct 23:30 Cairo
 
 // After the pilot: a staff-only round every 3 weeks, open Saturday 00:00 → Thursday 23:59 (Cairo).
 const DAY = 86400000;
@@ -72,15 +72,15 @@ export function SurveyCard({ u }) {
       <button class="btn primary" disabled={!done || busy} onClick={send}>{busy ? L('Saving…', 'جارٍ الحفظ…') : L('Send', 'إرسال')}</button>
     </div>;
   if (pop) return <Sheet onClose={() => setPop(false)} label="Survey">
-    <span class="eyebrow" style={{ color: '#b03a36' }}>{L('Urgent · 2 minutes · anonymous', 'عاجل · دقيقتين · مجهول الهوية')}</span>
+    <span class="eyebrow" style={{ color: '#b03a36' }}>{L('Mandatory · 2 minutes · anonymous', 'إلزامي · دقيقتين · مجهول الهوية')}</span>
     <h2 style={{ margin: 0 }}>{L('Before you continue: please answer the student survey', 'قبل ما تكمل: من فضلك جاوب استبيان الطلاب')}</h2>
-    <p class="muted" style={{ margin: 0 }}>{L('Official survey of the Department of Conservative Dentistry. Your opinion helps us improve the platform and solve your problems. Closes Saturday 10 October, 8:00 am.', 'استبيان رسمي من قسم العلاج التحفظي. رأيك بيساعدنا نحسّن المنصة ونحل مشاكلك. يُغلق السبت ١٠ أكتوبر الساعة ٨ الصبح.')}</p>
+    <p class="muted" style={{ margin: 0 }}>{L('Official survey of the Department of Conservative Dentistry. Your opinion helps us improve the platform and solve your problems. Mandatory · closes Saturday 10 October, 11:30 pm.', 'استبيان رسمي من قسم العلاج التحفظي. رأيك بيساعدنا نحسّن المنصة ونحل مشاكلك. إلزامي · يُغلق السبت ١٠ أكتوبر الساعة ١١:٣٠ مساءً.')}</p>
     {form}
     <button class="btn" onClick={() => setPop(false)}>{L('Later', 'لاحقًا')}</button>
   </Sheet>;
   return <section class="card lead">
     <h2>{round.id === SURVEY.id ? L('2-minute survey: the first week of the digital logbook', 'استبيان دقيقتين: أول أسبوع للوجبوك الرقمي') : '2-minute staff survey: the last 3 weeks on the digital logbook'}</h2>
-    <p class="muted">{round.id === SURVEY.id ? L(u.role === 'student' ? 'Your answers are anonymous and will be included as totals in a report on the project. Open until Saturday 10 October, 8:00 am.' : 'Your answers are anonymous and will be included as totals in a report on the project. Open until Thursday 8 October.', u.role === 'student' ? 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد السبت ١٠ أكتوبر الساعة ٨ الصبح.' : 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد الخميس ٨ أكتوبر.') : `Staff survey every 3 weeks · anonymous totals · open until Thursday ${fmtD(round.closes)}.`}</p>
+    <p class="muted">{round.id === SURVEY.id ? L(u.role === 'student' ? 'Your answers are anonymous and will be included as totals in a report on the project. Mandatory · open until Saturday 10 October, 11:30 pm.' : 'Your answers are anonymous and will be included as totals in a report on the project. Open until Thursday 8 October.', u.role === 'student' ? 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. إلزامي · متاح لحد السبت ١٠ أكتوبر الساعة ١١:٣٠ مساءً.' : 'إجاباتك مجهولة الهوية وهتدخل كأرقام إجمالية في تقرير عن المشروع. متاح لحد الخميس ٨ أكتوبر.') : `Staff survey every 3 weeks · anonymous totals · open until Thursday ${fmtD(round.closes)}.`}</p>
     {!open ? <button class="btn primary" onClick={() => setOpen(true)}>{L('Answer the survey', 'جاوب الاستبيان')}</button> : form}
   </section>;
 }
@@ -113,7 +113,7 @@ export function SurveyResults() {
   return <section class="card">
     <div class="row between"><h2>Survey results</h2>
       {rounds.length > 1 && <select value={rid} onChange={(e) => { setRid(e.target.value); setShow(false); }}>{rounds.map((r) => <option value={r.id}>{r.label}</option>)}</select>}</div>
-    <p class="faint">Anonymous totals · {Date.now() <= closesFor(cur, 'student') ? (cur.studentCloses ? `students open until ${fmtD(cur.studentCloses)} 08:00 · staff until ${fmtD(cur.closes)} 23:59 · updates live` : `open until ${fmtD(cur.closes)} 23:59 · updates live`) : `closed ${fmtD(closesFor(cur, 'student'))}`} · next staff round every 3 weeks from Sat 24 Oct</p>
+    <p class="faint">Anonymous totals · {Date.now() <= closesFor(cur, 'student') ? (cur.studentCloses ? `students open until ${fmtD(cur.studentCloses)} 23:30 · staff until ${fmtD(cur.closes)} 23:59 · updates live` : `open until ${fmtD(cur.closes)} 23:59 · updates live`) : `closed ${fmtD(closesFor(cur, 'student'))}`} · next staff round every 3 weeks from Sat 24 Oct</p>
     {q.error ? <p class="faint">Could not load the survey answers.</p> : q.rows == null ? <p class="faint">Loading…</p> : <div class="stack">
       {cur.roles.includes('student') && block('Students', group(true), Q_STUDENT)}
       {block('Demonstrators and supervisors', group(false), Q_STAFF)}

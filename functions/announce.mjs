@@ -719,3 +719,28 @@ This success belongs to you: demonstrators and supervisors who ran the platform 
 
 Prof. Dr. Ahmed El-Hoshy has shared a new post on LinkedIn. Tap the button below to read it — your likes, comments and shares are welcome 👍` });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: LinkedIn post'); } }
+
+// 9 Oct: student survey — mandatory, extended to Sat 10 Oct 23:30 (Course Director's wording).
+{ const id = 'survey-mandatory-2026-10-09'; const m = (await mark.get()).data()?.ids || [];
+  if (!m.includes(id)) {
+    await db.doc('announcements/' + id).set({ title: '⚠️ استبيان الطلاب إلزامي · Student survey is MANDATORY', audience: 'students', sections: [], pinned: true, publishAt: Date.now(), by: owner || 'system', byName, imageUrl: null, imagePath: null,
+      body: `ملء الاستبيان إلزامي لكل الطلاب، وهو جزء من تفاعلكم مع القسم ومن التطوير المستمر للمنصة. نحتاج رأيكم لتطوير الخدمات المقدمة لكم.
+
+حتى الآن جاوب ١٣٢ طالبًا فقط من ٥١٢ — وده مؤشر مقلق قد يهدد استمرار المنصة. في انتظار رأي كل واحد فيكم.
+
+• افتح المنصة ← الاستبيان هيظهر لك أول ما تفتح ← ٥ أسئلة ← إرسال (دقيقتين، مجهول الهوية).
+• آخر موعد: السبت ١٠ أكتوبر الساعة ١١:٣٠ مساءً.
+
+—
+
+Filling in the survey is mandatory for all students. It is part of your interaction with the department and of the continuous upgrade of the platform. We need your opinion to upscale the services for students.
+
+Only 132 of 512 students have answered so far. This is an alarming sign that might risk the platform's continuity. We are waiting for all your opinions.
+
+• Open the platform → the survey appears as soon as you open it → 5 questions → Send (2 minutes, anonymous).
+• Deadline: Saturday 10 October, 11:30 pm.
+
+Prof. Dr. Ahmed El-Hoshy — Course Director` });
+    const r = db.doc('announcements/survey-pilot-2026-10-04'); const d = (await r.get()).data();
+    if (d) await r.update({ body: d.body.replace('• الطلاب: تم مد الاستبيان لحد السبت ١٠ أكتوبر الساعة ٨ الصبح.', '• الطلاب: تم مد الاستبيان لحد السبت ١٠ أكتوبر الساعة ١١:٣٠ مساءً.').replace('Students: extended until Saturday 10 October, 8:00 am.', 'Students: extended until Saturday 10 October, 11:30 pm.') });
+    await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: survey mandatory'); } }
