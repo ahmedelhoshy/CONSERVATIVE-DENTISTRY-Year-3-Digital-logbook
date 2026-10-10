@@ -19,7 +19,7 @@ export function Today() {
   const secs = mySections(u);
   const rows = (q.rows || []).filter((s) => {
     if (['director', 'admin'].includes(u.role)) return true;
-    if (s.type === 'lecture') return u.role === 'lecturer' && (u.lectures || []).includes(s.lectureNo);
+    if (s.type === 'lecture') return ['lecturer', 'hod', 'vicedean', 'dean'].includes(u.role); // any lecturer can open any lecture (they cover for each other)
     return secs.includes(s.section);
   }).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
   const ann = useQuery('announcements', [['audience', 'in', ['staff', 'all']]], { orderBy: 'publishAt', desc: true, limit: 3 });
