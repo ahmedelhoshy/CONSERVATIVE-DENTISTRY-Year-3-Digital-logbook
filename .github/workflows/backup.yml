@@ -2,12 +2,13 @@ name: Backup (encrypted)
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 18 * * 4'   # every Thursday 21:00 Cairo (before the weekend)
+    - cron: '0 21 * * *'   # every night 00:00 Cairo (UTC+3)
 permissions:
   contents: write
 jobs:
   backup:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     env:
       FB_PROJECT_ID: ${{ vars.FB_PROJECT_ID || 'digitallogbook-dfc3e' }}
     steps:
@@ -16,22 +17,36 @@ jobs:
         with: { node-version: 20, cache: npm, cache-dependency-path: functions/package-lock.json }
       - run: cd functions && npm ci
       - run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "$RUNNER_TEMP/sa.json"
-      - name: Export all collections
+      - name: Get the previous summary (to back up only new files and report changes)
+        run: |
+          git clone -q --depth 1 -b backups "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "$RUNNER_TEMP/store" 2>/dev/null || { mkdir -p "$RUNNER_TEMP/store" && cd "$RUNNER_TEMP/store" && git init -q -b backups; }
+      - name: Export all collections + uploaded files
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
-        run: cd functions && node backup.mjs "$RUNNER_TEMP/out.json"
-      - name: Encrypt and store on the 'backups' branch (one file per run, history kept)
+        run: mkdir -p "$RUNNER_TEMP/files" && cd functions && node backup.mjs "$RUNNER_TEMP/out.json" "$RUNNER_TEMP/summary.json" "$RUNNER_TEMP/store/latest_summary.json" "$RUNNER_TEMP/files"
+      - name: Encrypt; store data + counts-only summary on the 'backups' branch; new files as an encrypted artifact
+        id: enc
         run: |
           set -e
           cd "$RUNNER_TEMP"
-          STAMP=$(TZ=Africa/Cairo date +%Y-%m-%d_%H%M)
+          STAMP=$(TZ=Africa/Cairo date +%Y-%m-%d_%H%M); echo "stamp=$STAMP" >> "$GITHUB_OUTPUT"
           gzip -9 out.json
           openssl rand -hex 32 > k.txt
           openssl enc -aes-256-cbc -pbkdf2 -salt -in out.json.gz -out "backup_$STAMP.enc" -pass file:k.txt
           openssl pkeyutl -encrypt -pubin -inkey "$GITHUB_WORKSPACE/functions/export_public.pem" -pkeyopt rsa_padding_mode:oaep -in k.txt -out "backup_$STAMP.key"
-          git clone -q --depth 1 -b backups "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" store 2>/dev/null || { mkdir store && cd store && git init -q -b backups && cd ..; }
+          if [ -n "$(ls -A files)" ]; then tar -C files -czf files.tgz . && openssl enc -aes-256-cbc -pbkdf2 -salt -in files.tgz -out "files_$STAMP.enc" -pass file:k.txt && cp "backup_$STAMP.key" "files_$STAMP.key"; fi
           cp "backup_$STAMP.enc" "backup_$STAMP.key" store/
+          cp summary.json "store/summary_$STAMP.json"; cp summary.json store/latest_summary.json
           cd store && git add . && git -c user.name=logbook-bot -c user.email=logbook-bot@users.noreply.github.com commit -qm "Backup $STAMP" \
             && git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" backups
+      - name: Keep the new uploaded files (encrypted) for 90 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: files_${{ steps.enc.outputs.stamp }}
+          path: |
+            ${{ runner.temp }}/files_*.enc
+            ${{ runner.temp }}/files_*.key
+          if-no-files-found: ignore
+          retention-days: 90
       - if: always()
-        run: rm -f "$RUNNER_TEMP/sa.json" "$RUNNER_TEMP/out.json" "$RUNNER_TEMP/out.json.gz" "$RUNNER_TEMP/k.txt"
+        run: rm -rf "$RUNNER_TEMP/sa.json" "$RUNNER_TEMP/out.json" "$RUNNER_TEMP/out.json.gz" "$RUNNER_TEMP/k.txt" "$RUNNER_TEMP/files" "$RUNNER_TEMP/files.tgz"
