@@ -309,7 +309,7 @@ export function EntrySheet({ id, onClose }) {
       <div class="defects">{crits.map((c) => { const b = fullPicks[c.id]; const on = b !== 'A'; const ai = aiHere?.criteria?.[c.id];
         return <div class={'defect' + (on ? ' on' : '')}>
           <button type="button" class={'chip' + (on ? ' on' : '')} disabled={!selfOpen} aria-pressed={on} onClick={() => setPicks({ ...fullPicks, [c.id]: on ? 'A' : 'B' })}>{on ? '✕ ' : ''}{c.name}</button>
-          {on && <div class="seg">{[['B', L('Slight', 'بسيط')], ['C', L('Marked', 'واضح')], ['D', L('Unacceptable', 'غير مقبول')]].map(([k, l]) => <button type="button" disabled={!selfOpen} class={b === k ? 'on' : ''} onClick={() => setPicks({ ...fullPicks, [c.id]: k })}>{l}</button>)}</div>}
+          {on && <div class="seg">{[['B', L('Good', 'جيد')], ['C', L('Needs adjustment', 'يحتاج تعديل')], ['D', L('Unaccepted', 'غير مقبول')]].map(([k, l]) => <button type="button" disabled={!selfOpen} class={b === k ? 'on' : ''} onClick={() => setPicks({ ...fullPicks, [c.id]: k })}>{l}</button>)}</div>}
           {on && <div class="faint" style={{ fontSize: '.85rem' }}>{c.bands[rub.bands.findIndex((x) => x.key === b)]}</div>}
           {ai && <div class="row" style={{ gap: 6 }}><span class="faint">Prep Lens:</span>{ai.assessable ? <Band k={ai.band} /> : <Pill>{L('Not assessable from photo', 'لا يمكن تقييمه من الصورة')}</Pill>}<span class="faint">{ai.comment}</span></div>}
         </div>; })}</div>

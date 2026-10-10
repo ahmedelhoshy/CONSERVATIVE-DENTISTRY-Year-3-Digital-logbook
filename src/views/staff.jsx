@@ -194,7 +194,7 @@ export function ReviewSheet({ id, onClose }) {
       <div class="defects">{rub.criteria.map((c) => { const b = full[c.id]; const on = b !== 'A'; const si = e.self?.picks?.[c.id]; const ai = e.ai?.criteria?.[c.id];
         return <div class={'defect' + (on ? ' on' : '')}>
           <button type="button" class={'chip' + (on ? ' on' : '')} aria-pressed={on} onClick={() => setPicks({ ...full, [c.id]: on ? 'A' : 'B' })}>{on ? '✕ ' : ''}{c.name}{si && si !== 'A' ? <span class="faint"> · student {si}</span> : ''}{showAI && ai?.assessable && ai.band !== 'A' ? <span class="faint"> · AI {ai.band}</span> : ''}</button>
-          {on && <div class="seg">{[['B', 'Slight'], ['C', 'Marked'], ['D', 'Unacceptable']].map(([k, l]) => <button type="button" class={b === k ? 'on' : ''} onClick={() => setPicks({ ...full, [c.id]: k })}>{l}</button>)}</div>}
+          {on && <div class="seg">{[['B', 'Good'], ['C', 'Needs adjustment'], ['D', 'Unaccepted']].map(([k, l]) => <button type="button" class={b === k ? 'on' : ''} onClick={() => setPicks({ ...full, [c.id]: k })}>{l}</button>)}</div>}
           {on && <div class="faint" style={{ fontSize: '.85rem' }}>{c.bands[rub.bands.findIndex((x) => x.key === b)]}</div>}
         </div>; })}</div>
       {defects.length === 0 && <p class="faint">No defects marked — the tooth will be recorded as meeting every criterion.</p>}
