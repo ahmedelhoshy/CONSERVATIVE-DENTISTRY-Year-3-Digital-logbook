@@ -744,3 +744,19 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     const r = db.doc('announcements/survey-pilot-2026-10-04'); const d = (await r.get()).data();
     if (d) await r.update({ body: d.body.replace('• الطلاب: تم مد الاستبيان لحد السبت ١٠ أكتوبر الساعة ٨ الصبح.', '• الطلاب: تم مد الاستبيان لحد السبت ١٠ أكتوبر الساعة ١١:٣٠ مساءً.').replace('Students: extended until Saturday 10 October, 8:00 am.', 'Students: extended until Saturday 10 October, 11:30 pm.') });
     await mark.set({ ids: FieldValue.arrayUnion(id) }, { merge: true }); console.log('Posted: survey mandatory'); } }
+
+// Sat 10 Oct: survey reminder for Section 16 only (no names: the survey pop-up already shows only to students who have not answered).
+{
+  const sm = db.doc('config/seededAnnouncements'); const sd = new Set((await sm.get()).data()?.ids || []);
+  const id = 'survey-s16-2026-10-10';
+  if (!sd.has(id)) {
+    await db.doc(`announcements/${id}`).set({
+      title: 'Section 16 · الاستبيان يُغلق الليلة ١١:٣٠ م · Survey closes tonight 11:30 pm',
+      body: 'طلاب سكشن ١٦ 🌷\nلسه ١٣ طالب من السكشن ما ملوش الاستبيان الإلزامي. لو الاستبيان ظهر لك أول ما فتحت المنصة، يبقى إنت منهم — جاوب دلوقتي (٥ أسئلة، دقيقتين).\nالاستبيان بيقفل الليلة الساعة ١١:٣٠ مساءً. ادخل على المنصة وسجّل دخول بإيميل الكلية، والاستبيان هيظهر تلقائيًا.\n\nSection 16: 13 students have not answered the mandatory survey yet. If the survey pops up when you open the platform, you are one of them: please answer now (5 questions, 2 minutes). It closes tonight at 11:30 pm.\n\nد. أمير حافظ · أ.د. أحمد الحوشي',
+      audience: 'sections', sections: [16], pinned: true, imageUrl: null, imagePath: null,
+      publishAt: Date.now(), expiresAt: Date.parse('2026-10-10T23:30:00+03:00'), by: 'ahmed.elhoshy@dentistry.cu.edu.eg', byName: 'Prof. Dr. Ahmed El-Hoshy',
+    });
+    await sm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('Posted', id);
+  }
+}
