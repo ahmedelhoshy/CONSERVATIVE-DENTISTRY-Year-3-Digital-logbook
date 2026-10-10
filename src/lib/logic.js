@@ -34,7 +34,8 @@ export async function audit(action, target, before, after, reason) {
 }
 
 // ---------- sessions & attendance ----------
-export function sessionIsOpen(s, t = nowMs()) { return s && s.status === 'open' && s.closesAt && t < s.closesAt; }
+// opensAt (optional): a session pre-opened in advance (e.g. a lecture with a fixed slide code) only accepts check-ins from that time.
+export function sessionIsOpen(s, t = nowMs()) { return s && s.status === 'open' && s.closesAt && t < s.closesAt && t >= (s.opensAt || 0); }
 
 // Cairo wall-clock time -> epoch ms (handles Egypt's summer time).
 export function cairoMs(date, time) {
@@ -52,8 +53,9 @@ function syncUntil(s, closesAt) {
 }
 export async function openSession(sid, minutes = COURSE.attendanceWindowMin) {
   const t = nowMs(); const s = await S.get('sessions', sid);
-  const closesAt = t + minutes * 60e3;
-  await S.update('sessions', sid, { status: 'open', openedAt: t, closesAt, syncUntil: syncUntil(s, closesAt), openedBy: ME.uid, openedByName: ME.name });
+  // A pre-opened session (opensAt) keeps its longer window; opening by hand only makes it start now.
+  const closesAt = Math.max(t + minutes * 60e3, s && s.opensAt && s.closesAt ? s.closesAt : 0);
+  await S.update('sessions', sid, { status: 'open', openedAt: t, opensAt: t, closesAt, syncUntil: Math.max(syncUntil(s, closesAt), (s && s.syncUntil) || 0), openedBy: ME.uid, openedByName: ME.name });
   await rotateCode(sid, true);
 }
 export async function extendSession(sid, minutes = 5) {

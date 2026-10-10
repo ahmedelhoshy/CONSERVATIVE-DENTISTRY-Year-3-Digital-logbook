@@ -760,3 +760,16 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Posted', id);
   }
 }
+
+// Lecture 5 (Sat 17 Oct): attendance opens by itself at 12:00 and stays open for the whole lecture (until 13:00, 5-min sync grace).
+// Students use the fixed code printed on the slide (or scan its QR); nobody has to press "Open attendance".
+{
+  const lm = db.doc('config/seededAnnouncements'); const ld = new Set((await lm.get()).data()?.ids || []);
+  if (!ld.has('lec5-auto-open')) {
+    const opensAt = Date.parse('2026-10-17T12:00:00+03:00'), closesAt = Date.parse('2026-10-17T13:00:00+03:00');
+    await db.doc('codes/lec-5').set({ fixed: '417263', cur: '417263', all: ['417263'], recent: ['417263'], hist: [], at: Date.now() }, { merge: true });
+    await db.doc('sessions/lec-5').set({ status: 'open', opensAt, openedAt: opensAt, closesAt, syncUntil: closesAt + 300000, openedBy: 'system', openedByName: 'Auto-open (lecture)' }, { merge: true });
+    await lm.set({ ids: FieldValue.arrayUnion('lec5-auto-open') }, { merge: true });
+    console.log('Lecture 5 set to auto-open 12:00–13:00 with fixed code');
+  }
+}
