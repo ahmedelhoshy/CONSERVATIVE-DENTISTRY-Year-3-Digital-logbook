@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'preact/hooks';
 import { MyProject } from './projects.jsx';
 import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, makeRequirement, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage, setProbeReading, labNo } from '../lib/logic.js';
 import { SurveyCard } from './survey.jsx';
-import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow , labTitle } from '../lib/ui.jsx';
+import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow , labTitle, LensVerdict } from '../lib/ui.jsx';
 import { PRACTICAL_WEEKS, LECTURES, PHOTO_GUIDE, PHOTO_GUIDE_AR, PHOTO_VIEWS, PREP_STAGES, stageCriteria, ORIENTATION_EXERCISES, COURSE } from '../data/course.js';
 import { rubricById, suggestGrade, RUBRICS } from '../data/rubrics.js';
 
@@ -311,7 +311,7 @@ export function EntrySheet({ id, onClose }) {
           <button type="button" class={'chip' + (on ? ' on' : '')} disabled={!selfOpen} aria-pressed={on} onClick={() => setPicks({ ...fullPicks, [c.id]: on ? 'A' : 'B' })}>{on ? '✕ ' : ''}{c.name}</button>
           {on && <div class="seg">{[['B', L('Good', 'جيد')], ['C', L('Needs adjustment', 'يحتاج تعديل')], ['D', L('Unaccepted', 'غير مقبول')]].map(([k, l]) => <button type="button" disabled={!selfOpen} class={b === k ? 'on' : ''} onClick={() => setPicks({ ...fullPicks, [c.id]: k })}>{l}</button>)}</div>}
           {on && <div class="faint" style={{ fontSize: '.85rem' }}>{c.bands[rub.bands.findIndex((x) => x.key === b)]}</div>}
-          {ai && <div class="row" style={{ gap: 6 }}><span class="faint">Prep Lens:</span>{ai.assessable ? <Band k={ai.band} /> : <Pill>{L('Not assessable from photo', 'لا يمكن تقييمه من الصورة')}</Pill>}<span class="faint">{ai.comment}</span></div>}
+          {ai && <div class="row" style={{ gap: 6 }}><span class="faint">Prep Lens:</span>{ai.assessable ? <LensVerdict k={ai.band} ar={L('', 'ar') === 'ar'} /> : <Pill>{L('Not assessable from photo', 'لا يمكن تقييمه من الصورة')}</Pill>}<span class="faint">{ai.comment}</span></div>}
         </div>; })}</div>
       {needGrade && <div class="grid2"><label class="fld">{L('My overall grade (0–10)', 'درجتي الكلية (٠–١٠)')}<input id="self-grade" type="number" min="0" max="10" step="0.25" value={grade} disabled={!selfOpen} onInput={(ev) => setGrade(ev.target.value)} placeholder={sugg != null ? String(sugg) : ''} /></label>
         <label class="fld">{L('Note for my demonstrator (optional)', 'ملاحظة للمعيد (اختياري)')}<input id="self-note" value={comment} disabled={!selfOpen} onInput={(ev) => setComment(ev.target.value)} /></label></div>}

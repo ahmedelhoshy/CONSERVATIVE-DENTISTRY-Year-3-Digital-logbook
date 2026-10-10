@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'preact/hooks';
 import QRCode from 'qrcode';
 import { me, store, today, openSession, closeSession, extendSession, rotateCode, sessionIsOpen, setAttendance, confirmAllRecorded, reviewEntry, submitEntry, rubricFor, isDemo, canEditCourse, currentWeek } from '../lib/logic.js';
 import { SurveyCard } from './survey.jsx';
-import { L, useQuery, useDoc, useNow, Pill, Band, Kpi, Sheet, Empty, Confirm, fmtDate, fmtTime, fmtDT, ago, toast, Bar , labTitle } from '../lib/ui.jsx';
+import { L, useQuery, useDoc, useNow, Pill, Band, Kpi, Sheet, Empty, Confirm, fmtDate, fmtTime, fmtDT, ago, toast, Bar , labTitle, LensVerdict } from '../lib/ui.jsx';
 import { exportXlsx } from '../lib/export.js';
 import { suggestGrade } from '../data/rubrics.js';
 import { TOOTH_STATUS, PRACTICAL_WEEKS } from '../data/course.js';
@@ -200,7 +200,7 @@ export function ReviewSheet({ id, onClose }) {
       {defects.length === 0 && <p class="faint">No defects marked — the tooth will be recorded as meeting every criterion.</p>}
     </section>}
     {rub && readOnly && <section class="stack"><h3>Your evaluation of the physical tooth</h3>
-      {rub.criteria.map((c) => <div class="crit"><div class="row between"><b>{c.name}</b><span class="row" style={{ gap: 6 }}><span class="faint">Self</span><Band k={e.self?.picks?.[c.id]} />{showAI && <><span class="faint">AI</span>{e.ai?.criteria?.[c.id]?.assessable ? <Band k={e.ai.criteria[c.id].band} /> : <Band k={null} title="Not assessable from photo" />}</>}</span></div>
+      {rub.criteria.map((c) => <div class="crit"><div class="row between"><b>{c.name}</b><span class="row" style={{ gap: 6 }}><span class="faint">Self</span><Band k={e.self?.picks?.[c.id]} />{showAI && <><span class="faint">AI</span>{e.ai?.criteria?.[c.id]?.assessable ? <LensVerdict k={e.ai.criteria[c.id].band} /> : <Band k={null} title="Not assessable from photo" />}</>}</span></div>
         <div class="bands">{rub.bands.map((b, i) => <button disabled={readOnly} class={(picks && picks[c.id] === b.key ? 'on ' : '') + b.key} onClick={() => setPicks({ ...picks, [c.id]: b.key })}><b>{b.label.replace('Accepted ', '').replace('Unaccepted ', '')}</b>{c.bands[i]}</button>)}</div></div>)}
     </section>}
     {!readOnly && <>

@@ -47,6 +47,9 @@ export function toast(msg, ms = 2600) {
 
 // ---------- small components ----------
 export const Band = ({ k, title }) => <span class={'band ' + (k || 'N')} title={title}>{k || '–'}</span>;
+// Prep Lens verdict in plain words (same terms as grading): A/B = Good, C = Needs adjustment, D = Unaccepted.
+export const LENS_TERMS = { A: ['Good', 'جيد'], B: ['Good', 'جيد'], C: ['Needs adjustment', 'يحتاج تعديل'], D: ['Unaccepted', 'غير مقبول'] };
+export const LensVerdict = ({ k, ar }) => <span class={'band ' + (k || 'N')} style={{ width: 'auto', padding: '0 8px' }}>{k && LENS_TERMS[k] ? LENS_TERMS[k][ar ? 1 : 0] : '–'}</span>;
 export const Pill = ({ kind, children }) => <span class={'pill ' + (kind || '')}>{children}</span>;
 export function Kpi({ label, value, sub, kind }) {
   return <div class={'kpi ' + (kind || '')}><div class="l">{label}</div><div class="v">{value ?? '–'}</div>{sub && <div class="s">{sub}</div>}</div>;
