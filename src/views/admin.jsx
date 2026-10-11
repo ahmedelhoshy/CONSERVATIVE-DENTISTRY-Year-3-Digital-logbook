@@ -47,7 +47,9 @@ function ImportPast({ onClose }) {
       // Never import weeks that have not started yet (e.g. marks typed into the wrong column).
       const t = today(); const future = new Set();
       const started = (x) => { const w = PRACTICAL_WEEKS.find((p) => p.w === x.week); const ok = w && w.from <= t; if (!ok) future.add(`week ${x.week} · section ${x.section}`); return ok; };
-      r.records = r.records.filter(started); r.teeth = (r.teeth || []).filter(started); r.grades = (r.grades || []).filter(started);
+      const lecDone = (x) => { const L1 = LECTURES.find((l) => l.n === x.lecture); const ok = L1 && L1.date <= t; if (!ok) future.add(`lecture ${x.lecture}`); return ok; };
+      r.lectures = r.records.filter((x) => x.lecture).filter(lecDone);
+      r.records = r.records.filter((x) => !x.lecture).filter(started); r.teeth = (r.teeth || []).filter(started); r.grades = (r.grades || []).filter(started);
       r.future = [...future];
       setRes(r);
     } catch (x) { toast('Could not read: ' + x.message); }
@@ -58,6 +60,8 @@ function ImportPast({ onClose }) {
   for (const r of res?.grades || []) { const k = `${r.section}|${r.week}`; const g = groups[k] = groups[k] || { section: r.section, week: r.week, present: 0, absent: 0, teeth: 0, withTeeth: 0 }; g.graded = (g.graded || 0) + 1; g.gsum = (g.gsum || 0) + r.grade; }
   for (const r of res?.teeth || []) { const k = `${r.section}|${r.week}`; const g = groups[k] = groups[k] || { section: r.section, week: r.week, present: 0, absent: 0, teeth: 0, withTeeth: 0 }; g.teeth += r.teeth; g.withTeeth++; }
   const list = Object.values(groups).sort((a, b) => a.week - b.week || a.section - b.section);
+  const lecG = {}; for (const r of res?.lectures || []) { const g = lecG[r.lecture] = lecG[r.lecture] || { no: r.lecture, present: 0, absent: 0 }; r.present ? g.present++ : g.absent++; }
+  const lecList = Object.values(lecG).sort((a, b) => a.no - b.no);
   const run = async () => {
     const S = store(); let n = 0, sess = 0; const u = me();
     for (const g of list) {
@@ -97,18 +101,39 @@ function ImportPast({ onClose }) {
       if (prev) { if (prev.review?.grade !== r.grade) await S.update('entries', id, { review, updatedAt: Date.now() }); continue; }
       await S.set('entries', id, { uid: r.st.uid, code: r.st.code || '', name: r.st.name, section: r.section, week: r.week, rubricId: task?.rubric || null, taskLabel: task ? '' : (w?.topic || ''), tooth: task?.teeth?.[r.req - 1] || task?.teeth?.[0] || '', date: r.date || w?.from || today(), status: 'reviewed', self: null, ai: null, review, photos: [], createdAt: Date.now(), updatedAt: Date.now(), history: [], practice: false, stage: 'full', source: 'paper', reqNo: r.req });
     }
-    await audit('attendance.import', 'past', null, `${n} present records in ${sess} lab sessions; ${tw} weekly teeth counts; ${gn} graded teeth`, 'Imported from paper registers / grade sheets');
-    toast(`${n} attendance records, ${tw} teeth counts and ${gn} grades imported`); onClose();
+    let ln = 0;
+    for (const lec of lecList) {
+      const L1 = LECTURES.find((l) => l.n === lec.no); if (!L1) continue;
+      const sid = `lec-${L1.n}`;
+      const cur = await S.get('sessions', sid);
+      const endMs = new Date(`${L1.date}T13:00:00+03:00`).getTime();
+      // Recorded on paper: the lecture counts as held, and students not on the list count as absent.
+      if (!cur) await S.set('sessions', sid, { type: 'lecture', lectureNo: L1.n, title: L1.title, lecturer: L1.lecturer, date: L1.date, start: '12:00', end: '13:00', status: 'closed', closesAt: endMs, attendanceRequired: L1.attendanceRequired !== false, source: 'paper' });
+      else if (cur.status !== 'closed') await S.update('sessions', sid, { status: 'closed', closesAt: cur.closesAt || endMs, source: 'paper' });
+      const recs = res.lectures.filter((r) => r.lecture === lec.no && r.present);
+      let i = 0;
+      for (const r of recs) {
+        setBusy(`Lecture ${lec.no}… ${++i}/${recs.length}`);
+        const id = `${sid}_${r.st.uid}`;
+        if (await S.get('attendance', id)) continue; // a QR check-in or earlier import is never overwritten
+        await S.set('attendance', id, { sid, uid: r.st.uid, code: r.st.code || '', name: r.st.name, section: r.st.section || null, type: 'lecture', date: L1.date, week: null, at: endMs, status: 'confirmed', method: 'paper', by: u.uid, byName: u.name, decidedAt: Date.now(), reason: 'Imported from paper lecture register' });
+        ln++;
+      }
+    }
+    await audit('attendance.import', 'past', null, `${n} present records in ${sess} lab sessions; ${ln} lecture attendance records; ${tw} weekly teeth counts; ${gn} graded teeth`, 'Imported from paper registers / grade sheets');
+    toast(`${n} lab and ${ln} lecture attendance records, ${tw} teeth counts and ${gn} grades imported`); onClose();
   };
   return <Sheet onClose={onClose}><h2>Import registers and grade sheets</h2>
     <p class="muted">For labs held before the platform. Choose the faculty register (Excel with one tab per section and W1, W2… “Attend” columns: 1 = present, 0 = absent), sheets with “W1 Attend” columns, or exports from the previous platform (CSV). You can choose several files at once. Students are matched by student number, or by name within the section.</p>
+    <p class="faint">Lecture registers: a sheet with “Lecture N” in its title and an “Attend” column (1/0) records that lecture's attendance for all sections. The lecture is marked as held, so students not marked present count as absent. QR check-ins already recorded are kept.</p>
     <p class="faint">Grade sheets (Student ID, Requirement 1 grade, Requirement 2 grade, with “Section N” and “Week N” at the top) create one graded tooth per grade; importing a corrected sheet updates the grade. </p><p class="faint">Each week's register is recorded in that section's first lab of the week, which is marked as held. Students marked 0 count as absent; blank cells are skipped. The “Req” column is imported as the number of teeth each student completed that week and counts toward requirements. Existing attendance records are never overwritten; teeth counts are updated to the latest register.</p>
     <label class="btn primary" style={{ alignSelf: 'flex-start' }}>Choose files<input id="past-files" type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" multiple hidden onChange={onFiles} /></label>
     {busy && <p class="faint">{busy}</p>}
     {res && <>
-      <div class="state info"><b>{res.records.filter((r) => r.present).length} present · {res.records.filter((r) => !r.present).length} absent · {list.length} section-weeks</b>{res.future?.length > 0 && <p>Skipped because the week has not started yet: {res.future.join('; ')}. Check that these marks are in the right column.</p>}{res.unmatched.length > 0 && <p>{res.unmatched.length} row(s) not matched to the roster and skipped: {res.unmatched.slice(0, 8).join('; ')}{res.unmatched.length > 8 ? '…' : ''}</p>}</div>
-      <div class="tablewrap"><table><thead><tr><th>Week</th><th>Section</th><th>Present</th><th>Absent</th><th>Teeth done (Req)</th><th>Graded teeth</th></tr></thead><tbody>{list.map((g) => <tr><td>{g.week}</td><td>{g.section}</td><td>{g.present}</td><td>{g.absent}</td><td>{g.withTeeth ? `${g.teeth} by ${g.withTeeth} students` : '—'}</td><td>{g.graded ? `${g.graded} · mean ${(g.gsum / g.graded).toFixed(1)}` : '—'}</td></tr>)}</tbody></table></div>
-      <div class="row"><button class="btn primary" disabled={!list.length || !!busy} onClick={run}>{busy || 'Import'}</button><button class="btn" onClick={onClose}>Cancel</button></div></>}
+      <div class="state info"><b>{list.length > 0 && `${res.records.filter((r) => r.present).length} present · ${res.records.filter((r) => !r.present).length} absent · ${list.length} section-weeks`}{list.length > 0 && lecList.length > 0 && ' · '}{lecList.length > 0 && `${lecList.length} lecture register(s)`}</b>{res.future?.length > 0 && <p>Skipped because the week has not started yet: {res.future.join('; ')}. Check that these marks are in the right column.</p>}{res.unmatched.length > 0 && <p>{res.unmatched.length} row(s) not matched to the roster and skipped: {res.unmatched.slice(0, 8).join('; ')}{res.unmatched.length > 8 ? '…' : ''}</p>}</div>
+      {lecList.length > 0 && <div class="tablewrap"><table><thead><tr><th>Lecture</th><th>Date</th><th>Present</th><th>Not on the list (absent)</th></tr></thead><tbody>{lecList.map((g) => { const L1 = LECTURES.find((l) => l.n === g.no); return <tr><td>Lecture {g.no} — {L1?.title || ''}</td><td>{L1 ? fmtDate(L1.date) : ''}</td><td>{g.present}</td><td>{g.absent}</td></tr>; })}</tbody></table></div>}
+      {list.length > 0 && <div class="tablewrap"><table><thead><tr><th>Week</th><th>Section</th><th>Present</th><th>Absent</th><th>Teeth done (Req)</th><th>Graded teeth</th></tr></thead><tbody>{list.map((g) => <tr><td>{g.week}</td><td>{g.section}</td><td>{g.present}</td><td>{g.absent}</td><td>{g.withTeeth ? `${g.teeth} by ${g.withTeeth} students` : '—'}</td><td>{g.graded ? `${g.graded} · mean ${(g.gsum / g.graded).toFixed(1)}` : '—'}</td></tr>)}</tbody></table></div>}
+      <div class="row"><button class="btn primary" disabled={(!list.length && !lecList.length) || !!busy} onClick={run}>{busy || 'Import'}</button><button class="btn" onClick={onClose}>Cancel</button></div></>}
   </Sheet>;
 }
 
