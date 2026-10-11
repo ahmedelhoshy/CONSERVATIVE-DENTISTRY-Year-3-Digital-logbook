@@ -791,3 +791,21 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Posted', id);
   }
 }
+
+// Sun 11 Oct 16:06: student survey extended to Thu 15 Oct 18:00 Cairo. Updates the reopen announcement. No names.
+{
+  const sm = db.doc('config/seededAnnouncements'); const sd = new Set((await sm.get()).data()?.ids || []);
+  const id = 'survey-extend-thu-2026-10-15';
+  if (!sd.has(id)) {
+    await db.doc('announcements/survey-reopen-2026-10-11').set({
+      title: '⏳ الاستبيان مفتوح لآخر مرة لحد الخميس ٦ مساءً · Survey open until Thursday 6 pm',
+      body: 'تم مد استبيان الطلاب الإلزامي لآخر مرة، لحد يوم الخميس ١٥ أكتوبر الساعة ٦ مساءً.\nلو الاستبيان ظهر لك أول ما فتحت المنصة، يبقى لسه ما جاوبتش: جاوب دلوقتي (٥ أسئلة، دقيقتين، مجهول الهوية). ملء الاستبيان مرتبط بسجل حضور المعمل.\n\nThe mandatory student survey has been extended one last time, until Thursday 15 October, 6:00 pm.\nIf the survey pops up when you open the platform, you have not answered yet: please answer now (5 questions, 2 minutes, anonymous). Completing it is linked to your lab attendance record.\n\nProf. Dr. Ahmed El-Hoshy · Course Director',
+      audience: 'students', sections: [], pinned: true, imageUrl: null, imagePath: null,
+      publishAt: Date.now(), expiresAt: Date.parse('2026-10-15T18:00:00+03:00'), by: 'ahmed.elhoshy@dentistry.cu.edu.eg', byName: 'Prof. Dr. Ahmed El-Hoshy',
+    });
+    const r = db.doc('announcements/survey-mandatory-2026-10-09'); const d = (await r.get()).data();
+    if (d) await r.update({ body: d.body.replace('الأحد ١١ أكتوبر الساعة ٧ مساءً', 'الخميس ١٥ أكتوبر الساعة ٦ مساءً').replace('Sunday 11 October, 7:00 pm', 'Thursday 15 October, 6:00 pm') });
+    await sm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('Posted', id);
+  }
+}
