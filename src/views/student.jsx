@@ -89,7 +89,7 @@ export function Attend() {
   const ready = chosen && code.length === 6;
   const reasons = {
     closed: L('This session is not open for attendance now. Ask the lecturer or demonstrator.', 'الجلسة غير مفتوحة للحضور الآن. اسأل المحاضر أو المعيد.'),
-    'bad-code': L('The code is wrong or has expired (it changes every 30 seconds). Type the code shown now.', 'الكود خاطئ أو انتهت صلاحيته (يتغير كل ٣٠ ثانية). اكتب الكود المعروض الآن.'),
+    'bad-code': L('The code is wrong or has expired (it changes every few seconds). Type the code shown now.', 'الكود خاطئ أو انتهت صلاحيته (يتغير كل بضع ثوانٍ). اكتب الكود المعروض الآن.'),
     'wrong-section': L('This lab session is for another section.', 'هذه الجلسة لسكشن آخر.'),
     rejected: L('The server refused this check-in: the code expired, the window closed, or the session is for another section. Tell the lecturer or demonstrator now, while you are present.', 'رفض الخادم التسجيل: انتهى الكود أو أُغلقت النافذة أو الجلسة لسكشن آخر. أبلغ المحاضر أو المعيد الآن أثناء وجودك.'),
     'not-qr': L('That is not the attendance QR. Scan the QR shown on the lecture or lab screen.', 'هذا ليس QR الحضور. امسح الـQR المعروض على شاشة المحاضرة أو اللاب.'),
@@ -114,7 +114,7 @@ export function Attend() {
       {sessions.length > 0 && !ready && <details open={sessions.some((x) => x.type === 'lecture')}><summary class="faint">{L("Sitting far, or camera not working? Type the 6-digit code shown on the screen", 'بعيد عن الشاشة أو الكاميرا لا تعمل؟ اكتب الكود (٦ أرقام) المعروض على الشاشة')}</summary>
         {sessions.length > 1 && <label class="fld">{L('Session', 'الجلسة')}<select id="att-session" value={sid} onChange={(e) => setSid(e.target.value)}><option value="">{L('Choose the announced session', 'اختر الجلسة المعلنة')}</option>{sessions.map((s) => <option value={s.id}>{s.type === 'lecture' ? `Lecture ${s.lectureNo} — ${s.title}` : `${labTitle(s)} · ${s.start}`}</option>)}</select></label>}
         <label class="fld">{L('6-digit code shown now', 'الكود المعروض الآن (٦ أرقام)')}<input id="att-code" class="codebox" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" value={code} onInput={(e) => setCode(e.target.value.replace(/\D/g, ''))} /></label></details>}
-      <p class="faint">{L('Student number', 'الرقم الجامعي')}: <span class="mono">{u.code}</span> · {L("Never check in for another student or forward the QR. It changes every 30 seconds and counts only after staff confirm you are in the room.", 'لا تسجل لطالب آخر ولا ترسل الـQR لأحد. يتغير كل ٣٠ ثانية ولا يُحتسب إلا بعد تأكيد فريق التدريس لوجودك.')}</p>
+      <p class="faint">{L('Student number', 'الرقم الجامعي')}: <span class="mono">{u.code}</span> · {L("Never check in for another student or forward the QR. It changes every 30 seconds and counts only after staff confirm you are in the room.", 'لا تسجل لطالب آخر ولا ترسل الـQR لأحد. يتغير كل بضع ثوانٍ ولا يُحتسب إلا بعد تأكيد فريق التدريس لوجودك.')}</p>
     </form>
     <section class="card"><h2>{L('My attendance', 'سجل حضوري')}</h2>
       <div class="list">{(hist.rows || []).length ? hist.rows.map((a) => { const [t, k] = attLabel(a.status); return <div class="item"><div class="grow"><b>{a.type === 'lecture' ? L('Lecture', 'محاضرة') : labTitle(a, false)}</b> <span class="faint">{fmtDate(a.date)} · {fmtTime(a.at)}</span>{a.reason && <div class="faint">{a.reason}</div>}</div><Pill kind={a._pending ? 'warn' : k}>{a._pending ? L('Pending', 'قيد الإرسال') : t}</Pill></div>; }) : <Empty>{L('No attendance yet.', 'لا يوجد حضور بعد.')}</Empty>}</div></section>

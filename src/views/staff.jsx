@@ -92,7 +92,9 @@ export function Projector({ session, onClose }) {
   const code = useDoc('codes', session.id);
   const now = useNow(1000);
   const [qr, setQr] = useState('');
-  const [bigCode, setBigCode] = useState(false); // code only, very large, for students sitting far from the screen
+  // Lectures show the code only (no QR): a QR photo is too easy to forward outside the hall.
+  const codeOnly = session.type === 'lecture';
+  const [bigCode, setBigCode] = useState(codeOnly); // code only, very large, for students sitting far from the screen
   const s = useDoc('sessions', session.id) || session;
   useEffect(() => {
     let wake = null;
@@ -100,7 +102,7 @@ export function Projector({ session, onClose }) {
     const t = setInterval(() => { if (sessionIsOpen(s)) rotateCode(session.id); }, PERIOD * 1000);
     return () => { clearInterval(t); wake && wake.release && wake.release(); };
   }, [session.id]);
-  useEffect(() => { if (!code) return; const url = `${location.origin}${location.pathname}?s=${encodeURIComponent(session.id)}&c=${code.cur}`; QRCode.toDataURL(url, { margin: 1, width: 600, errorCorrectionLevel: 'M' }).then(setQr); }, [code && code.cur]);
+  useEffect(() => { if (!code || codeOnly) return; const url = `${location.origin}${location.pathname}?s=${encodeURIComponent(session.id)}&c=${code.cur}`; QRCode.toDataURL(url, { margin: 1, width: 600, errorCorrectionLevel: 'M' }).then(setQr); }, [code && code.cur]);
   const open = sessionIsOpen(s, now);
   const cyc = code ? Math.max(0, PERIOD - Math.floor((now - code.at) / 1000)) : PERIOD;
   const left = s.closesAt ? Math.max(0, Math.round((s.closesAt - now) / 1000)) : 0;
@@ -111,9 +113,9 @@ export function Projector({ session, onClose }) {
       <div class="big" style={bigCode ? { fontSize: 'min(22vw, 40vh)', letterSpacing: '.08em', lineHeight: 1 } : null}>{code ? code.cur : '······'}</div>
       {bigCode && <div style={{ fontSize: '1.6rem' }}>Type this code in the logbook: Attendance → type the code · اكتب الكود في صفحة الحضور</div>}
       <div class="timer" aria-hidden="true"><i style={{ width: (cyc / PERIOD) * 100 + '%' }} /></div>
-      <div>Scan with the phone camera, or in the logbook: Attendance → Scan the QR code, then tap Confirm attendance. New code in {cyc}s · window closes in {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</div>
+      <div>{codeOnly ? 'Type the code, then tap Confirm attendance.' : 'Scan with the phone camera, or in the logbook: Attendance → Scan the QR code, then tap Confirm attendance.'} New code in {cyc}s · window closes in {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</div>
     </> : <div class="big" style={{ fontSize: '2.4rem', letterSpacing: 0 }}>Attendance closed</div>}
-    <div class="row" style={{ justifyContent: 'center' }}>{open && <button class="btn" onClick={() => setBigCode(!bigCode)}>{bigCode ? 'Show QR' : 'Large code for back rows'}</button>}<button class="btn" onClick={() => extendSession(session.id, 5)}>+5 min</button><button class="btn" onClick={onClose}>Back to list</button></div>
+    <div class="row" style={{ justifyContent: 'center' }}>{open && !codeOnly && <button class="btn" onClick={() => setBigCode(!bigCode)}>{bigCode ? 'Show QR' : 'Large code for back rows'}</button>}<button class="btn" onClick={() => extendSession(session.id, 5)}>+5 min</button><button class="btn" onClick={onClose}>Back to list</button></div>
   </div>;
 }
 
