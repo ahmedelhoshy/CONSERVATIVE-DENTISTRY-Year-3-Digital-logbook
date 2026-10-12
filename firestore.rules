@@ -154,6 +154,15 @@ service cloud.firestore {
       allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
       allow write: if isEditor();
     }
+    // Practical exams and marks (from the supervisors' mark sheets). Students see only their own released marks.
+    match /exams/{id} {
+      allow read: if known();
+      allow write: if isEditor();
+    }
+    match /examMarks/{id} {
+      allow read: if isLeader() || isTeacher() || (isStudent() && resource.data.uid == myUid() && resource.data.released == true);
+      allow write: if isEditor();
+    }
     match /usage/{id} {
       allow read, write: if false;
     }

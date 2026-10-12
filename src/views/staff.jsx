@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'preact/hooks';
 import QRCode from 'qrcode';
+import { StudentExams } from './exams.jsx';
 import { me, store, today, openSession, closeSession, extendSession, rotateCode, sessionIsOpen, setAttendance, confirmAllRecorded, reviewEntry, submitEntry, rubricFor, isDemo, canEditCourse, currentWeek } from '../lib/logic.js';
 import { SurveyCard } from './survey.jsx';
 import { L, useQuery, useDoc, useNow, Pill, Band, Kpi, Sheet, Empty, Confirm, fmtDate, fmtTime, fmtDT, ago, toast, Bar , labTitle, LensVerdict } from '../lib/ui.jsx';
@@ -266,9 +267,10 @@ export function StudentSheet({ s, onClose }) {
   const [tab, setTab] = useState('work');
   return <Sheet onClose={onClose} label="Student">
     <div class="row between"><div><span class="eyebrow">Section {s.section} · {s.status || ''}</span><h2>{s.name}</h2><p class="mono faint">{s.code}</p></div><button class="btn sm" onClick={onClose}>Close</button></div>
-    <div class="seg" style={{ alignSelf: 'flex-start' }}>{[['work', 'Logbook'], ['att', 'Attendance'], ['msg', 'Messages']].map(([k, l]) => <button class={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
+    <div class="seg" style={{ alignSelf: 'flex-start' }}>{[['work', 'Logbook'], ['att', 'Attendance'], ['exams', 'Exams'], ['msg', 'Messages']].map(([k, l]) => <button class={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
     {tab === 'work' && <div class="tablewrap"><table><thead><tr><th>Wk</th><th>Exercise</th><th>Tooth</th><th class="n">Self</th><th class="n">AI</th><th class="n">Official</th><th>Status</th></tr></thead><tbody>{(ents.rows || []).map((e) => <tr class="click" onClick={() => setRev(e.id)}><td class="n">{e.week}</td><td>{rubricFor(e)?.title || e.taskLabel}</td><td class="mono">#{e.tooth}</td><td class="n">{e.self?.grade ?? '–'}</td><td class="n">{e.ai?.score ?? '–'}</td><td class="n">{e.review?.grade ?? '–'}</td><td>{e.review?.status || e.status}</td></tr>)}</tbody></table></div>}
     {tab === 'att' && <div class="list">{(att.rows || []).map((a) => <div class="item"><div class="grow">{a.type === 'lecture' ? 'Lecture' : labTitle(a, false)} · {fmtDate(a.date)} {fmtTime(a.at)}{a.reason && <div class="faint">{a.reason}</div>}</div><Pill kind={{ confirmed: 'good', recorded: 'warn', rejected: 'bad' }[a.status]}>{a.status}</Pill></div>)}</div>}
+    {tab === 'exams' && <StudentExams s={s} />}
     {tab === 'msg' && <Thread studentUid={s.uid} section={s.section} />}
     {rev && <ReviewSheet id={rev} onClose={() => setRev(null)} />}
   </Sheet>;

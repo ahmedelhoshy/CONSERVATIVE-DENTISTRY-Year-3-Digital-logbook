@@ -13,6 +13,7 @@ import { Today, ReviewQueue, Students } from './views/staff.jsx';
 import { SessionsAdmin, Content, Announcements, People, Settings, AuditLog } from './views/admin.jsx';
 import { Dashboard, Reports } from './views/dash.jsx';
 import { Projects } from './views/projects.jsx';
+import { Exams } from './views/exams.jsx';
 import { Login } from './views/login.jsx';
 import { Rules, VERSION, COPYRIGHT } from './views/rules.jsx';
 import { firebaseConfig } from './firebase-config.js';
@@ -26,10 +27,10 @@ const NAV = {
   student: [['home', 'Home', 'الرئيسية', 'home'], ['attend', 'Attendance', 'الحضور', 'qr'], ['learn', 'Learn', 'التعلم', 'book'], ['lab', 'My lab', 'اللاب', 'tooth'], ['chat', 'Help', 'مساعدة', 'chat']],
   demonstrator: [['today', 'Today'], ['review', 'Review queue'], ['students', 'My students'], ['projects', 'Projects'], ['messages', 'Messages'], ['learn', 'Materials'], ['assistant', 'Course assistant']],
   lecturer: [['today', 'My sessions'], ['review', 'Review queue'], ['students', 'My students'], ['projects', 'Projects'], ['messages', 'Messages'], ['learn', 'Materials'], ['assistant', 'Course assistant']],
-  director: [['dash', 'Dashboard'], ['today', 'Today'], ['sessions', 'Sessions'], ['review', 'Reviews'], ['students', 'Students'], ['projects', 'Projects'], ['content', 'Materials'], ['announce', 'Announcements'], ['messages', 'Messages'], ['reports', 'Reports'], ['people', 'People'], ['settings', 'Settings'], ['audit', 'Audit log']],
-  hod: [['dash', 'Dashboard'], ['students', 'Students'], ['projects', 'Projects'], ['review', 'Reviews'], ['messages', 'Messages'], ['reports', 'Reports'], ['audit', 'Audit log']],
-  vicedean: [['dash', 'Dashboard'], ['projects', 'Projects'], ['messages', 'Messages'], ['reports', 'Reports']],
-  dean: [['dash', 'Dashboard'], ['projects', 'Projects'], ['messages', 'Messages'], ['reports', 'Reports']],
+  director: [['dash', 'Dashboard'], ['today', 'Today'], ['sessions', 'Sessions'], ['review', 'Reviews'], ['students', 'Students'], ['exams', 'Exams'], ['projects', 'Projects'], ['content', 'Materials'], ['announce', 'Announcements'], ['messages', 'Messages'], ['reports', 'Reports'], ['people', 'People'], ['settings', 'Settings'], ['audit', 'Audit log']],
+  hod: [['dash', 'Dashboard'], ['students', 'Students'], ['exams', 'Exams'], ['projects', 'Projects'], ['review', 'Reviews'], ['messages', 'Messages'], ['reports', 'Reports'], ['audit', 'Audit log']],
+  vicedean: [['dash', 'Dashboard'], ['exams', 'Exams'], ['projects', 'Projects'], ['messages', 'Messages'], ['reports', 'Reports']],
+  dean: [['dash', 'Dashboard'], ['exams', 'Exams'], ['projects', 'Projects'], ['messages', 'Messages'], ['reports', 'Reports']],
 };
 for (const r of ['demonstrator', 'lecturer', 'director', 'hod', 'vicedean', 'dean']) NAV[r].push(['rules', 'Rules & terms']);
 NAV.admin = NAV.director;
@@ -58,6 +59,7 @@ function View({ route, go }) {
     case 'dash': return <Dashboard {...common} />;
     case 'reports': return <Reports {...common} />;
     case 'projects': return <Projects {...common} />;
+    case 'exams': return <Exams {...common} />;
     case 'rules': return <Rules {...common} />;
     default: return <p>Not found</p>;
   }
