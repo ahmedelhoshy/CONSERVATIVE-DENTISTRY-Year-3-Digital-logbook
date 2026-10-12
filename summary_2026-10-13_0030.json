@@ -1,0 +1,90 @@
+{
+ "generatedAt": 1791839360883,
+ "previousBackupAt": 1791752898004,
+ "documents": 7366,
+ "collections": {
+  "announcements": 14,
+  "attendance": 2322,
+  "audit": 273,
+  "codes": 49,
+  "config": 4,
+  "entries": 2796,
+  "jobs": 107,
+  "materials": 52,
+  "messages": 8,
+  "projects": 18,
+  "reports": 1,
+  "research": 211,
+  "roster": 536,
+  "sessions": 517,
+  "surveys": 433,
+  "usage": 25
+ },
+ "changedSincePrevious": {
+  "announcements": 0,
+  "attendance": 151,
+  "audit": 25,
+  "codes": 7,
+  "config": 0,
+  "entries": 328,
+  "jobs": 5,
+  "materials": 6,
+  "messages": 1,
+  "projects": 0,
+  "reports": 1,
+  "research": 50,
+  "roster": 0,
+  "sessions": 0,
+  "surveys": 11,
+  "usage": 0
+ },
+ "people": {
+  "student": 510,
+  "director": 1,
+  "vicedean": 1,
+  "lecturer": 9,
+  "demonstrator": 12,
+  "dean": 1,
+  "hod": 1,
+  "admin": 1
+ },
+ "attendance": {
+  "byType": {
+   "lab": 2032,
+   "lecture": 290
+  },
+  "byMethod": {
+   "paper": 1106,
+   "manual": 171,
+   "qr": 1045
+  },
+  "byStatus": {
+   "confirmed": 2298,
+   "recorded": 24
+  }
+ },
+ "teeth": {
+  "byStatus": {
+   "reviewed": 2142,
+   "submitted": 172,
+   "draft": 231,
+   "redo": 2
+  },
+  "withPhotos": 761,
+  "practiceAnalyses": 249
+ },
+ "surveys": {
+  "pilot-2026-10:student": 431,
+  "pilot-2026-10:demonstrator": 2
+ },
+ "materials": 52,
+ "announcements": 14,
+ "messages": 8,
+ "auditEvents": 273,
+ "files": {
+  "total": 2162,
+  "totalMB": 393,
+  "newSincePrevious": 426,
+  "newMB": 65.9
+ }
+}
