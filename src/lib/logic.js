@@ -5,7 +5,8 @@ import { rubricById } from '../data/rubrics.js';
 
 const _qp = typeof location !== 'undefined' ? new URLSearchParams(location.search) : new URLSearchParams();
 // Deep link from a lecture/lab QR code: ?s=<sessionId>&c=<code>
-export const deepLink = { sid: _qp.get('s'), code: _qp.get('c') };
+export const deepLink = { sid: _qp.get('s'), code: _qp.get('c'), show: _qp.get('show') };
+// ?show=<sessionId>: staff link (e.g. on a lecture slide) that opens that session's live code screen.
 
 let S = null;
 let ME = null;

@@ -43,7 +43,7 @@ function SessionRow({ s, onOpen }) {
   return <div class="item click" onClick={onOpen}><div class="grow"><b>{s.type === 'lecture' ? `Lecture ${s.lectureNo}` : labTitle(s)}</b> <span class="faint">{fmtDate(s.date)} · {s.start}–{s.end}</span><div class="muted" style={{ fontSize: '.86rem' }}>{s.title}</div></div>{st}</div>;
 }
 
-export function SessionPanel({ id, onClose }) {
+export function SessionPanel({ id, onClose, autoShow }) {
   const s = useDoc('sessions', id);
   const u = me();
   const now = useNow(1000);
@@ -53,6 +53,7 @@ export function SessionPanel({ id, onClose }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [ask, setAsk] = useState(null);
+  useEffect(() => { if (autoShow && s && sessionIsOpen(s)) setProj(true); }, [autoShow, !!s]);
   if (!s) return <Sheet onClose={onClose}><p>Loading…</p></Sheet>;
   const isOpen = sessionIsOpen(s, now);
   const recs = {}; for (const a of att.rows || []) recs[a.uid] = a;
@@ -68,7 +69,7 @@ export function SessionPanel({ id, onClose }) {
     {canManage && <div class="card flat">
       {isOpen ? <><div class="row between"><div><Pill kind="good">Attendance open</Pill> <span class="mono">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span> left</div></div>
         <div class="row"><button class="btn primary" onClick={() => setProj(true)}>Show code & QR</button><button class="btn" onClick={() => extendSession(s.id, 5)}>+5 min</button><button class="btn danger" onClick={() => closeSession(s.id)}>Close attendance</button></div></>
-        : <><p class="muted">{s.status === 'closed' ? 'Attendance is closed. You can still confirm, reject or add students manually with a reason.' : 'Opens a 15-minute window with a code that changes every 30 seconds.'}</p>
+        : <><p class="muted">{s.status === 'closed' ? 'Attendance is closed. You can still confirm, reject or add students manually with a reason.' : (s.type === 'lecture' ? 'Opens a 15-minute window with a code that changes every 20 seconds.' : 'Opens a 15-minute window with a code that changes every 30 seconds.')}</p>
           {s.date === today() ? <div class="row"><button class="btn primary" onClick={async () => { await openSession(s.id); setProj(true); }}>{s.status === 'closed' ? 'Reopen attendance' : 'Open attendance'}</button></div>
             : <p class="faint">{s.date > today() ? `Attendance opens on the day of the session (${fmtDate(s.date)}).` : 'This session has passed. Add or correct students manually below, with a reason.'}</p>}</>}
     </div>}
@@ -87,6 +88,7 @@ export function SessionPanel({ id, onClose }) {
 }
 
 export function Projector({ session, onClose }) {
+  const PERIOD = session.type === 'lecture' ? 20 : 30; // seconds between codes
   const code = useDoc('codes', session.id);
   const now = useNow(1000);
   const [qr, setQr] = useState('');
@@ -95,12 +97,12 @@ export function Projector({ session, onClose }) {
   useEffect(() => {
     let wake = null;
     try { navigator.wakeLock && navigator.wakeLock.request('screen').then((w) => (wake = w)).catch(() => {}); } catch (e) { /* ignore */ }
-    const t = setInterval(() => { if (sessionIsOpen(s)) rotateCode(session.id); }, 30000);
+    const t = setInterval(() => { if (sessionIsOpen(s)) rotateCode(session.id); }, PERIOD * 1000);
     return () => { clearInterval(t); wake && wake.release && wake.release(); };
   }, [session.id]);
   useEffect(() => { if (!code) return; const url = `${location.origin}${location.pathname}?s=${encodeURIComponent(session.id)}&c=${code.cur}`; QRCode.toDataURL(url, { margin: 1, width: 600, errorCorrectionLevel: 'M' }).then(setQr); }, [code && code.cur]);
   const open = sessionIsOpen(s, now);
-  const cyc = code ? Math.max(0, 30 - Math.floor((now - code.at) / 1000)) : 30;
+  const cyc = code ? Math.max(0, PERIOD - Math.floor((now - code.at) / 1000)) : PERIOD;
   const left = s.closesAt ? Math.max(0, Math.round((s.closesAt - now) / 1000)) : 0;
   return <div class="projector" role="dialog" aria-label="Attendance code">
     <div style={{ opacity: .8 }}>{session.type === 'lecture' ? `Lecture ${session.lectureNo} · ${session.title}` : labTitle(session)}</div>
@@ -108,7 +110,7 @@ export function Projector({ session, onClose }) {
       {!bigCode && <div class="qr">{qr ? <img src={qr} alt="Attendance QR code" /> : null}</div>}
       <div class="big" style={bigCode ? { fontSize: 'min(22vw, 40vh)', letterSpacing: '.08em', lineHeight: 1 } : null}>{code ? code.cur : '······'}</div>
       {bigCode && <div style={{ fontSize: '1.6rem' }}>Type this code in the logbook: Attendance → type the code · اكتب الكود في صفحة الحضور</div>}
-      <div class="timer" aria-hidden="true"><i style={{ width: (cyc / 30) * 100 + '%' }} /></div>
+      <div class="timer" aria-hidden="true"><i style={{ width: (cyc / PERIOD) * 100 + '%' }} /></div>
       <div>Scan with the phone camera, or in the logbook: Attendance → Scan the QR code, then tap Confirm attendance. New code in {cyc}s · window closes in {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</div>
     </> : <div class="big" style={{ fontSize: '2.4rem', letterSpacing: 0 }}>Attendance closed</div>}
     <div class="row" style={{ justifyContent: 'center' }}>{open && <button class="btn" onClick={() => setBigCode(!bigCode)}>{bigCode ? 'Show QR' : 'Large code for back rows'}</button>}<button class="btn" onClick={() => extendSession(session.id, 5)}>+5 min</button><button class="btn" onClick={onClose}>Back to list</button></div>

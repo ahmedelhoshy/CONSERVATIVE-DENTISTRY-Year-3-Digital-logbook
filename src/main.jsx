@@ -9,7 +9,7 @@ import { DEMO_TODAY } from './lib/demo-seed.js';
 import { StudentHome, Attend, MyLab } from './views/student.jsx';
 import { Learn } from './views/learn.jsx';
 import { Messages, Assistant, ChatHub } from './views/chat.jsx';
-import { Today, ReviewQueue, Students } from './views/staff.jsx';
+import { Today, ReviewQueue, Students, SessionPanel } from './views/staff.jsx';
 import { SessionsAdmin, Content, Announcements, People, Settings, AuditLog } from './views/admin.jsx';
 import { Dashboard, Reports } from './views/dash.jsx';
 import { Projects } from './views/projects.jsx';
@@ -90,6 +90,7 @@ function Shell({ onSignOut, onSwitch }) {
   const go = (r) => { setRoute(r); window.scrollTo(0, 0); };
   useEffect(() => { if (!nav.find((n) => n[0] === route)) setRoute(nav[0][0]); }, [u.role]);
   const student = u.role === 'student';
+  const [showSid, setShowSid] = useState(deepLink.show || null);
   return <div class="app">
     <header class="topbar">
       <img class="crest" src="/cu-logo.png" alt="Faculty of Dentistry, Cairo University" />
@@ -102,6 +103,7 @@ function Shell({ onSignOut, onSwitch }) {
     {!student && <nav class="staffnav noprint" aria-label="Sections">{nav.map(([k, l]) => <button class={route === k ? 'on' : ''} onClick={() => go(k)}>{l}</button>)}</nav>}
     <main id="main"><View route={route} go={go} />
       <footer class="legal noprint"><button class="linkbtn" onClick={() => replayWelcome()}>{L('🔊 Welcome', '🔊 الترحيب')}</button> · <button class="linkbtn" onClick={() => go('rules')}>{L('Rules, terms & limitations', 'القواعد وشروط الاستخدام')}</button> · {COPYRIGHT} · {L('Version', 'الإصدار')} {VERSION}</footer></main>
+    {!student && showSid && <SessionPanel id={showSid} autoShow onClose={() => { setShowSid(null); try { history.replaceState(null, '', location.pathname); } catch (e) { /* ignore */ } }} />}
     {student && <nav class="tabbar noprint" aria-label="Sections">{nav.map(([k, en, ar, ic]) => <button class={route === k ? 'on' : ''} onClick={() => go(k)}><Icon n={ic} /><span>{L(en, ar)}</span></button>)}</nav>}
   </div>;
 }
