@@ -100,7 +100,7 @@ export function parsePastAttendance(sheets, students, weekForDate) {
     const nameC = H.findIndex((c) => /student ?name|^name|namear|الاسم/.test(c));
     const secC = H.findIndex((c) => /^section|السكشن|^group/.test(c));
     const cols = {}; const reqCols = {}; const gradeCols = {}; let lastRow = hi;
-    H.forEach((c, j) => { const g = /^(requirement|req|tooth)\s*(\d)\b.*grade/.exec(c); if (g) gradeCols[j] = Number(g[2]); if ((sheetWeek || sheetLec) && /^(attendance|attend|حضور)\b/.test(c)) cols[j] = sheetLec ? 'L' + sheetLec : sheetWeek; });
+    H.forEach((c, j) => { const g = /^(requirement|req|tooth)\s*(\d)\b.*grade/.exec(c); if (g) gradeCols[j] = Number(g[2]); if ((sheetWeek || sheetLec) && /^(attendance|attend|حضور)\b/.test(c)) cols[j] = sheetLec ? 'L' + sheetLec : sheetWeek; const lb = /^lab\s*([12])\b.*attend/.exec(c); if (sheetWeek && lb) cols[j] = sheetWeek + '#' + lb[1]; });
     const width = Math.max(...R.slice(hi, hi + 3).map((r) => r.length));
     let curW = null;
     for (let j = 0; j < width; j++) {
@@ -123,11 +123,12 @@ export function parsePastAttendance(sheets, students, weekForDate) {
       const teeth = Object.entries(reqCols).map(([j, w]) => [w, String(r[j]).trim() === '' ? null : Number(r[j])]).filter(([, v]) => v !== null && Number.isFinite(v) && v >= 0 && v <= 20);
       let grades = Object.entries(gradeCols).map(([j, k]) => [k, String(r[j]).trim() === '' ? null : Number(String(r[j]).replace(',', '.'))]).filter(([, v]) => v !== null && Number.isFinite(v) && v >= 0 && v <= 10);
       // An absent student has no teeth: a 0 typed in the grade cells of an absent row is not a grade.
-      if (vals.length && vals.every(([, v]) => v === false)) grades = [];
+      const lab1 = vals.filter(([w]) => !String(w).includes('#2'));
+      if (lab1.length && lab1.every(([, v]) => v === false)) grades = [];
       if (!vals.length && !teeth.length && !grades.length) continue;
       const st = find(code, name, sec);
       if (!st) { unmatched.push(`${code} ${name}${sec ? ' (section ' + sec + ')' : ''}`.trim()); continue; }
-      for (const [w, v] of vals) out.push(String(w).startsWith('L') ? { st, section: st.section, lecture: Number(String(w).slice(1)), present: v, source: sh.name } : { st, section: st.section, week: w, present: v, source: sh.name, date: sheetDate || undefined });
+      for (const [w, v] of vals) out.push(String(w).startsWith('L') ? { st, section: st.section, lecture: Number(String(w).slice(1)), present: v, source: sh.name } : String(w).includes('#') ? { st, section: st.section, week: Number(String(w).split('#')[0]), lab: Number(String(w).split('#')[1]), present: v, source: sh.name } : { st, section: st.section, week: w, present: v, source: sh.name, date: sheetDate || undefined });
       for (const [w, n] of teeth) out.push({ st, section: st.section, week: w, teeth: n, source: sh.name });
       for (const [k, g] of grades) out.push({ st, section: st.section, week: sheetWeek, req: k, grade: g, source: sh.name, date: sheetDate || undefined });
     }
@@ -135,7 +136,7 @@ export function parsePastAttendance(sheets, students, weekForDate) {
   // one attendance value per student and week (a later "present" wins over "absent"); teeth counts kept separately
   const m = {}, tm = {}, gm = {};
   for (const o of out) {
-    const k = o.st.uid + '|' + (o.lecture ? 'L' + o.lecture : o.week);
+    const k = o.st.uid + '|' + (o.lecture ? 'L' + o.lecture : o.week) + (o.lab ? '#' + o.lab : '');
     if (o.grade != null) { gm[k + '|' + o.req] = o; continue; }
     if (o.teeth != null) { tm[k] = o; continue; }
     if (!m[k] || (o.present && !m[k].present)) m[k] = o;

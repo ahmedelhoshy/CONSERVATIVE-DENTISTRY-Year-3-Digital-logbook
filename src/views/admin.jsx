@@ -68,15 +68,19 @@ function ImportPast({ onClose }) {
       setBusy(`Week ${g.week} · section ${g.section}…`);
       const w = PRACTICAL_WEEKS.find((x) => x.w === g.week); if (!w) continue;
       const dates = labDatesForWeek(w, g.section); if (!dates.length) continue;
-      const recs = res.records.filter((r) => r.section === g.section && r.week === g.week);
-      if (!recs.length) continue; // teeth counts only — no attendance for this section-week
+      const all = res.records.filter((r) => r.section === g.section && r.week === g.week);
+      if (!all.length) continue; // teeth counts only — no attendance for this section-week
+      // "Lab 1 / Lab 2 attendance" columns go to that lab of the week; other registers go to the lab on the sheet's date (or the first lab).
+      for (const lab of [...new Set(all.map((r) => r.lab || 0))]) {
+      const recs = all.filter((r) => (r.lab || 0) === lab);
       const want = recs.find((r) => r.date)?.date;
-      const i = Math.max(0, dates.findIndex((d) => d.date === want));
+      const i = lab ? lab - 1 : Math.max(0, dates.findIndex((d) => d.date === want));
+      if (!dates[i]) continue;
       const sid = `lab-w${w.w}-s${g.section}-${i + 1}`;
       const d = dates[i];
       const cur = await S.get('sessions', sid);
       const endMs = new Date(`${d.date}T${d.end}:00+03:00`).getTime();
-      if (!cur) await S.set('sessions', sid, { type: 'lab', section: g.section, week: w.w, date: d.date, start: d.start, end: d.end, title: w.topic, status: 'closed', closesAt: endMs, req: w.req, source: 'paper' });
+      if (!cur) await S.set('sessions', sid, { type: 'lab', section: g.section, week: w.w, date: d.date, start: d.start, end: d.end, title: w.topic, status: 'closed', closesAt: endMs, req: i === 0 ? w.req : 0, source: 'paper' });
       else if (cur.status !== 'closed') await S.update('sessions', sid, { status: 'closed', closesAt: cur.closesAt || endMs, source: 'paper' });
       sess++;
       for (const r of recs.filter((x) => x.present)) {
@@ -84,6 +88,7 @@ function ImportPast({ onClose }) {
         if (await S.get('attendance', id)) continue;
         await S.set('attendance', id, { sid, uid: r.st.uid, code: r.st.code || '', name: r.st.name, section: g.section, type: 'lab', date: d.date, week: w.w, at: endMs, status: 'confirmed', method: 'paper', by: u.uid, byName: u.name, decidedAt: Date.now(), reason: 'Imported from paper register' });
         n++;
+      }
       }
     }
     let tw = 0;
