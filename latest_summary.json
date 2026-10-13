@@ -1,41 +1,43 @@
 {
- "generatedAt": 1791883014848,
- "previousBackupAt": 1791839360883,
- "documents": 7709,
+ "generatedAt": 1791901327750,
+ "previousBackupAt": 1791883014848,
+ "documents": 7911,
  "collections": {
   "announcements": 14,
-  "attendance": 2441,
-  "audit": 289,
-  "codes": 53,
+  "attendance": 2500,
+  "audit": 299,
+  "codes": 55,
   "config": 4,
-  "entries": 2977,
-  "jobs": 109,
+  "duplicates": 282,
+  "entries": 2817,
+  "jobs": 112,
   "materials": 52,
   "messages": 8,
   "projects": 18,
   "reports": 1,
-  "research": 227,
+  "research": 231,
   "roster": 536,
   "sessions": 517,
-  "surveys": 437,
+  "surveys": 439,
   "usage": 26
  },
  "changedSincePrevious": {
   "announcements": 0,
-  "attendance": 119,
-  "audit": 16,
-  "codes": 4,
+  "attendance": 59,
+  "audit": 10,
+  "codes": 2,
   "config": 0,
-  "entries": 359,
-  "jobs": 2,
+  "duplicates": 1,
+  "entries": 134,
+  "jobs": 3,
   "materials": 0,
   "messages": 0,
   "projects": 0,
-  "reports": 1,
-  "research": 18,
+  "reports": 0,
+  "research": 4,
   "roster": 0,
   "sessions": 0,
-  "surveys": 5,
+  "surveys": 2,
   "usage": 0
  },
  "people": {
@@ -50,42 +52,42 @@
  },
  "attendance": {
   "byType": {
-   "lab": 2151,
+   "lab": 2210,
    "lecture": 290
   },
   "byMethod": {
    "paper": 1106,
-   "manual": 185,
-   "qr": 1150
+   "manual": 192,
+   "qr": 1202
   },
   "byStatus": {
-   "confirmed": 2416,
+   "confirmed": 2475,
    "recorded": 24,
    "rejected": 1
   }
  },
  "teeth": {
   "byStatus": {
-   "reviewed": 2417,
-   "draft": 278,
-   "submitted": 18,
-   "redo": 2
+   "reviewed": 2193,
+   "draft": 293,
+   "submitted": 61,
+   "redo": 3
   },
-  "withPhotos": 882,
-  "practiceAnalyses": 262
+  "withPhotos": 986,
+  "practiceAnalyses": 267
  },
  "surveys": {
-  "pilot-2026-10:student": 435,
+  "pilot-2026-10:student": 437,
   "pilot-2026-10:demonstrator": 2
  },
  "materials": 52,
  "announcements": 14,
  "messages": 8,
- "auditEvents": 289,
+ "auditEvents": 299,
  "files": {
-  "total": 2460,
-  "totalMB": 443.7,
-  "newSincePrevious": 304,
-  "newMB": 51.4
+  "total": 2693,
+  "totalMB": 485.6,
+  "newSincePrevious": 235,
+  "newMB": 42.2
  }
 }
