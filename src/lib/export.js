@@ -3,6 +3,22 @@
 import * as XLSX from 'xlsx';
 import { me } from './logic.js';
 
+// Standard explanations for report columns (used when a report gives no specific definition).
+const COLUMN_DEFS = {
+  'Student number': 'University student ID (code).', 'Name': 'Student name as in the faculty roster.', 'Section': 'Lab section (1–18).',
+  'Status': 'Attendance status: confirmed = present and confirmed by staff; recorded = checked in, awaiting staff confirmation; rejected = check-in rejected by staff; no record = no check-in (counts as absent once the session is held).',
+  'Check-in time': 'Date and time the student checked in (Cairo time).',
+  'Method': 'How attendance was recorded: qr = student entered or scanned the live code; manual = added by staff; paper = imported from a paper register.',
+  'Decided by': 'Staff member who confirmed, rejected or added the record.', 'Reason': 'Reason given by staff for a manual addition, rejection or correction.',
+  'Week': 'Practical week of the course.', 'Date': 'Date (Cairo time).', 'Due': 'Requirement teeth due for weeks that have ended.', 'Requirements due': 'Requirement teeth due for weeks that have ended.',
+  'Done': 'Requirement teeth graded Completed.', 'Requirements done': 'Requirement teeth graded Completed.', 'Requirements completed': 'Requirement teeth graded Completed.',
+  'Missing': 'Due minus completed (never below 0).', 'Awaiting review': 'Teeth submitted by the student and not yet graded.', 'To correct': 'Teeth returned to the student to redo.',
+  'Lab attendance %': 'Confirmed lab attendances ÷ lab sessions held.', 'Lab att. %': 'Confirmed lab attendances ÷ lab sessions held.',
+  'Lecture attendance %': 'Confirmed lecture attendances ÷ lectures held.', 'Lecture att. %': 'Confirmed lecture attendances ÷ lectures held.',
+  'Mean grade': 'Mean demonstrator grade (0–10).', 'Mean official grade': 'Mean demonstrator grade (0–10).', 'Official grade': 'Grade given by the demonstrator or supervisor (0–10).',
+  'Demonstrator official grade': 'Grade given by the demonstrator or supervisor (0–10).', 'Self grade': "Student's own grade in the self-assessment (0–10).", 'Student self-grade': "Student's own grade in the self-assessment (0–10).",
+  'Exercise': 'Preparation exercise (rubric).', 'Tooth': 'Tooth number (FDI).', 'Demonstrator': 'Staff member who graded.', 'Reasons': 'Why the student needs follow-up.',
+};
 export function exportXlsx({ title, range = '', filters = '', columns, rows, definitions = {} , fileName }) {
   const u = me();
   const head = [
@@ -17,7 +33,7 @@ export function exportXlsx({ title, range = '', filters = '', columns, rows, def
   ws['!cols'] = columns.map((c) => ({ wch: Math.max(10, Math.min(48, (c.label || '').length + 4, c.w || 16)) }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Report');
-  const defs = columns.map((c) => [c.label, definitions[c.key] || c.def || '']);
+  const defs = columns.map((c) => [c.label, definitions[c.key] || definitions[c.label] || c.def || COLUMN_DEFS[c.label] || '']);
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Column', 'Definition'], ...defs]), 'Column definitions');
   const name = (fileName || title).replace(/[^\w\- ]+/g, '').replace(/\s+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.xlsx';
   XLSX.writeFile(wb, name);
