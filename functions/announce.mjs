@@ -853,3 +853,17 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Helpful link added:', id);
   }
 }
+
+// Helpful link (Course Director, 13 Oct): 2-minute GV Black classification game.
+{
+  const id = 'link-gv-black-game';
+  const pm = db.doc('config/seededMaterials'); const done = new Set((await pm.get()).data()?.ids || []);
+  if (!done.has(id)) {
+    await db.doc(`materials/${id}`).set({ kind: 'link', lectureNo: null, path: null, week: null, category: null, order: Date.now(),
+      title: '🎮 2-minute game: GV Black Challenge (6 cases) · لعبة دقيقتين: تحدي تصنيف بلاك',
+      description: 'Six short clinical cases: pick the GV Black class and get instant feedback. Play it anytime to revise cavity classification. · ٦ حالات قصيرة: اختار تصنيف بلاك وشوف الإجابة فورًا.',
+      url: site + '/guides/GV_Black_Challenge.html', updatedAt: Date.now(), updatedBy: byName });
+    await pm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('Helpful link added:', id);
+  }
+}

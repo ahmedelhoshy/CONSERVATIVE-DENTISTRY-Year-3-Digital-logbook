@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GV Black Challenge</title>
+<style>
+:root{--bg:#F6F4EF;--card:#fff;--ink:#1C2B30;--mute:#5B6B70;--teal:#0E3F4A;--gold:#C8862A;--ok:#2E7D4F;--bad:#A23B2A;--line:#DCD8CE}
+@media (prefers-color-scheme:dark){:root{--bg:#10191C;--card:#18252A;--ink:#E8EEEC;--mute:#9DB0B3;--teal:#7FC3CF;--gold:#E2B868;--ok:#6CC08F;--bad:#E07A68;--line:#2A3A40}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+h1{font:700 26px Georgia,serif;color:var(--teal);margin:0 0 4px}.sub{color:var(--mute);margin:0 0 16px}
+.bar{display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--mute);margin-bottom:8px}
+.prog{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-bottom:16px}.prog i{display:block;height:100%;background:var(--gold);transition:width .3s}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.case{font:600 13px system-ui;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
+.q{margin:6px 0 14px;font-size:17px}.ar{direction:rtl;color:var(--mute);font-size:15px;margin-top:-6px;margin-bottom:14px}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:12px 0;font-weight:700;font-size:18px}
+button:disabled{cursor:default}button.ok{background:var(--ok);color:#fff;border-color:var(--ok)}button.bad{background:var(--bad);color:#fff;border-color:var(--bad)}
+.fb{margin-top:14px;padding:12px;border-radius:10px;display:none}.fb.ok{display:block;background:color-mix(in srgb,var(--ok) 14%,transparent)}.fb.bad{display:block;background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.next{margin-top:14px;width:100%;background:var(--teal);color:var(--bg);border:0;display:none;font-size:16px}
+.end{text-align:center}.big{font:700 54px Georgia,serif;color:var(--teal)}
+.ref{margin-top:18px;font-size:14px;color:var(--mute)}.ref b{color:var(--ink)}
+</style>
+</head>
+<body><main>
+<h1>GV Black Challenge</h1>
+<p class="sub">6 cases · 2 minutes · choose the class for each lesion · <span dir="rtl">تحدي تصنيف بلاك في دقيقتين</span></p>
+<div class="bar"><span id="count"></span><span id="time">⏱ 0:00</span></div>
+<div class="prog"><i id="pg" style="width:0"></i></div>
+<div class="card" id="box"></div>
+<div class="ref" id="ref" hidden><b>Quick reminder:</b> I pits &amp; fissures (and lingual pits of incisors) · II proximal, posterior · III proximal, anterior, incisal angle intact · IV proximal, anterior, incisal angle involved · V gingival third, facial or lingual · VI incisal edges and cusp tips.</div>
+</main>
+<script>
+const C=[
+{t:'The hidden pit',q:'A carious lingual pit on tooth 12 (maxillary right lateral incisor). No other surface is involved.',ar:'تسوس في الـ lingual pit لسن ١٢ (الثنية الجانبية العلوية اليمنى)، ومفيش أسطح تانية.',a:'I',why:'Pits and fissures, including the lingual pits of incisors, are Class I.'},
+{t:'The posterior proximal',q:'A bitewing shows a radiolucency on the distal surface of tooth 46 (mandibular right first molar), into dentin. The occlusal surface looks intact.',ar:'أشعة bitewing بتبين تسوس على السطح الـ distal لسن ٤٦ واصل للعاج، والسطح الإطباقي سليم.',a:'II',why:'Proximal surfaces of premolars and molars are Class II.'},
+{t:'The anterior proximal',q:'Caries on the mesial surface of tooth 32 (mandibular left lateral incisor). The incisal angle is sound.',ar:'تسوس على السطح الـ mesial لسن ٣٢ (الثنية الجانبية السفلية اليسرى)، والزاوية القاطعة سليمة.',a:'III',why:'Proximal surfaces of anterior teeth without the incisal angle are Class III.'},
+{t:'The trauma case',q:'After a sports injury, the mesio-incisal angle of tooth 11 (maxillary right central incisor) is fractured, exposing dentin.',ar:'بعد إصابة رياضية، الزاوية الـ mesio-incisal لسن ١١ مكسورة والعاج ظاهر.',a:'IV',why:'Proximal surfaces of anterior teeth involving the incisal angle are Class IV.'},
+{t:'The cervical notch',q:'A deep notch on the gingival third of the buccal surface of tooth 46, needing restoration.',ar:'حفرة عميقة في الثلث اللثوي للسطح الخدي لسن ٤٦ ومحتاجة حشو.',a:'V',why:'The gingival third of facial or lingual surfaces of any tooth is Class V.'},
+{t:'The worn cusps',q:'Localized defects on the cusp tip of the maxillary canine and the buccal cusp tips of the first molar.',ar:'عيوب موضعية على قمة ناب الفك العلوي وقمم الـ buccal cusps للضرس الأول.',a:'VI',why:'Incisal edges of anterior teeth and cusp tips of posterior teeth are Class VI.'}];
+const O=['I','II','III','IV','V','VI'];let i=0,score=0,t0=Date.now(),tm;
+const $=(id)=>document.getElementById(id);
+function tick(){const s=Math.floor((Date.now()-t0)/1000);$('time').textContent='⏱ '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+function show(){const c=C[i];$('count').textContent='Case '+(i+1)+' of '+C.length+' · score '+score;$('pg').style.width=(i/C.length*100)+'%';
+$('box').innerHTML='<div class="case">Case '+(i+1)+' · '+c.t+'</div><p class="q">'+c.q+'</p><p class="ar">'+c.ar+'</p><div class="opts">'+O.map(o=>'<button data-o="'+o+'">'+o+'</button>').join('')+'</div><div class="fb" id="fb"></div><button class="next" id="nx">'+(i<C.length-1?'Next case →':'See my score')+'</button>';
+document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>pick(b))}
+function pick(b){const c=C[i],ok=b.dataset.o===c.a;if(ok)score++;
+document.querySelectorAll('[data-o]').forEach(x=>{x.disabled=true;if(x.dataset.o===c.a)x.classList.add('ok')});if(!ok)b.classList.add('bad');
+const f=$('fb');f.className='fb '+(ok?'ok':'bad');f.innerHTML=(ok?'<b>Correct ✓</b> ':'<b>Not quite: it is Class '+c.a+'.</b> ')+c.why;$('nx').style.display='block';$('nx').onclick=()=>{i++;i<C.length?show():end()};
+$('count').textContent='Case '+(i+1)+' of '+C.length+' · score '+score}
+function end(){clearInterval(tm);$("ref").hidden=false;tick();$('pg').style.width='100%';const s=Math.floor((Date.now()-t0)/1000);
+const msg=score===6?'Perfect! 🏆':score>=4?'Well done 👏':'Review the reminder below and try again 💪';
+$('box').innerHTML='<div class="end"><div class="case">Your result</div><div class="big">'+score+' / 6</div><p>'+msg+'</p><p class="sub">Time: '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+'</p><button class="next" style="display:block" id="again">Play again</button></div>';
+$("again").onclick=()=>{$("ref").hidden=true;i=0;score=0;t0=Date.now();tm=setInterval(tick,1000);show()}}
+tm=setInterval(tick,1000);show();
+</script>
+</body></html>
