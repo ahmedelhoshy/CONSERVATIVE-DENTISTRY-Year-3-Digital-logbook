@@ -839,3 +839,17 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Dedupe: moved', moved, 'paper copies for', students, 'students', secW);
   } else console.log('Dedupe: nothing to do');
 }
+
+// Helpful link (Course Director, 13 Oct): digital step-by-step preparation trainer — idea for student projects.
+{
+  const id = 'link-vr-inlay-prep-2025';
+  const pm = db.doc('config/seededMaterials'); const done = new Set((await pm.get()).data()?.ids || []);
+  if (!done.has(id)) {
+    await db.doc(`materials/${id}`).set({ kind: 'link', lectureNo: null, path: null, week: null, category: null, order: Date.now(),
+      title: 'Idea for your projects: a digital step-by-step preparation trainer (BMC Medical Education 2025) · فكرة لمشروعاتكم: مدرّب رقمي للتحضير خطوة بخطوة',
+      description: 'Students practised an inlay preparation step by step on a 3D molar, choosing depth, extent, bur and retention form at each step before the lab; over 70% were satisfied. Use it as a model for your group project: turn one preparation from our course into a short interactive step-by-step module. · طلاب تدربوا على تحضير inlay خطوة بخطوة على ضرس ثلاثي الأبعاد قبل المعمل. استخدموه كنموذج لمشروع المجموعة: حوّلوا تحضير من المقرر لموديول تفاعلي قصير.',
+      url: 'https://link.springer.com/article/10.1186/s12909-025-08138-y', updatedAt: Date.now(), updatedBy: byName });
+    await pm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('Helpful link added:', id);
+  }
+}
