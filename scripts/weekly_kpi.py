@@ -123,7 +123,7 @@ for r in secrows:
 h.append('</table>')
 # ---------- Wi-Fi / network impact (always reported) ----------
 import re as _re
-NET = _re.compile(r'network|connection|internet|wi-?fi|\bnet\b|data|failed response|signal|شبك|نت|انترنت|إنترنت', _re.I)
+NET = _re.compile(r'netw[eo]rk|connection|internet|wi-?fi|\bnet\b|data|failed response|signal|شبك|نت|انترنت|إنترنت', _re.I)
 SIGN = _re.compile(r'log ?in|sign ?in|email|e-mail|password|account|ايميل|إيميل|باسورد', _re.I)
 def wk_of(a):
     s_ = S.get(a.get('sid'), {})
