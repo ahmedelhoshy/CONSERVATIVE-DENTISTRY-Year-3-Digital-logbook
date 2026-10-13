@@ -809,3 +809,33 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Posted', id);
   }
 }
+
+// Remove duplicate teeth: a student-week graded live on the phone AND imported from a paper sheet.
+// The live grade (photos, defects, demonstrator) is kept; matching paper copies are moved to `duplicates` (restorable) and removed from `entries`.
+// Idempotent: runs on every deploy and only acts when both exist.
+{
+  const all = (await db.collection('entries').get()).docs.map((d) => ({ id: d.id, ...d.data() })).filter((e) => !e.practice && e.week);
+  const by = new Map();
+  for (const e of all) { const k = `${e.uid}|${e.week}`; if (!by.has(k)) by.set(k, []); by.get(k).push(e); }
+  let moved = 0, students = 0; const secW = {};
+  for (const [, list] of by) {
+    const live = list.filter((e) => e.source !== 'paper' && e.review?.source !== 'paper' && e.status === 'reviewed');
+    let paper = list.filter((e) => e.source === 'paper' || e.review?.source === 'paper');
+    if (!live.length || !paper.length) continue;
+    // drop as many paper copies as there are live teeth; prefer the copy whose tooth number matches a live tooth, then requirement order
+    const liveTeeth = live.map((e) => String(e.tooth));
+    paper.sort((a, b) => (liveTeeth.includes(String(b.tooth)) - liveTeeth.includes(String(a.tooth))) || ((a.reqNo || 9) - (b.reqNo || 9)));
+    const drop = paper.slice(0, Math.min(live.length, paper.length));
+    for (const p of drop) {
+      const { id, ...data } = p;
+      await db.doc(`duplicates/${id}`).set({ ...data, removedAt: Date.now(), removedReason: 'Duplicate of a live phone grade for the same student and week', keptLive: live.map((e) => e.id) });
+      await db.doc(`entries/${id}`).delete();
+      moved++;
+    }
+    students++; const k = `S${list[0].section} W${list[0].week}`; secW[k] = (secW[k] || 0) + 1;
+  }
+  if (moved) {
+    await db.collection('audit').add({ at: Date.now(), by: 'system', byName: 'Duplicate clean-up', byRole: 'system', action: 'entries.dedupe', target: 'entries', before: `${moved} paper copies`, after: 'moved to duplicates', reason: `Kept live phone grades; ${students} students: ${Object.entries(secW).map(([k, v]) => k + ' (' + v + ')').join(', ')}` });
+    console.log('Dedupe: moved', moved, 'paper copies for', students, 'students', secW);
+  } else console.log('Dedupe: nothing to do');
+}

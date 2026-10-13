@@ -99,9 +99,13 @@ function ImportPast({ onClose }) {
       setBusy(`Teeth counts… ${++tw}/${res.teeth.length}`);
       await S.set('paperwork', `w${r.week}_${r.st.uid}`, { uid: r.st.uid, code: r.st.code || '', name: r.st.name, section: r.section, week: r.week, teeth: r.teeth, source: 'paper register', by: u.uid, byName: u.name, at: Date.now() });
     }
-    let gn = 0;
+    let gn = 0, skipped = 0; const liveCache = {};
     for (const r of res.grades || []) {
       setBusy(`Grades… ${++gn}/${res.grades.length}`);
+      // A tooth already graded live on the phone that week is not entered again from paper (no double counting).
+      const lk = r.st.uid + '|' + r.week;
+      if (!(lk in liveCache)) liveCache[lk] = (await S.query('entries', [['uid', '==', r.st.uid]])).filter((x) => x.week === r.week && !x.practice && x.status === 'reviewed' && x.source !== 'paper' && x.review?.source !== 'paper').length;
+      if (liveCache[lk] >= r.req) { skipped++; continue; }
       const w = PRACTICAL_WEEKS.find((x) => x.w === r.week); const task = w?.tasks.find((t) => t.rubric);
       const id = `paper-w${r.week}-${r.st.uid}-${r.req}`;
       const prev = await S.get('entries', id);
@@ -128,8 +132,8 @@ function ImportPast({ onClose }) {
         ln++;
       }
     }
-    await audit('attendance.import', 'past', null, `${n} present records in ${sess} lab sessions; ${ln} lecture attendance records; ${tw} weekly teeth counts; ${gn} graded teeth`, 'Imported from paper registers / grade sheets');
-    toast(`${n} lab and ${ln} lecture attendance records, ${tw} teeth counts and ${gn} grades imported`); onClose();
+    await audit('attendance.import', 'past', null, `${n} present records in ${sess} lab sessions; ${ln} lecture attendance records; ${tw} weekly teeth counts; ${gn - skipped} graded teeth; ${skipped} skipped as already graded live`, 'Imported from paper registers / grade sheets');
+    toast(`${n} lab and ${ln} lecture attendance records, ${tw} teeth counts and ${gn - skipped} grades imported${skipped ? ` · ${skipped} skipped (already graded live)` : ''}`); onClose();
   };
   return <Sheet onClose={onClose}><h2>Import registers and grade sheets</h2>
     <p class="muted">For labs held before the platform. Choose the faculty register (Excel with one tab per section and W1, W2… “Attend” columns: 1 = present, 0 = absent), sheets with “W1 Attend” columns, or exports from the previous platform (CSV). You can choose several files at once. Students are matched by student number, or by name within the section.</p>
