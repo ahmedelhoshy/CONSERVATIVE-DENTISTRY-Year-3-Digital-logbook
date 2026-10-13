@@ -121,6 +121,39 @@ h.append(f'<table style="width:100%;border-collapse:collapse;margin-top:12px;bac
 for r in secrows:
     h.append(f'<tr><td {td}>{r["s"]}</td><td {td}>{r["n"]}</td><td {td}>{bar(r["att"], C["red"] if (r["att"] or 0) < 70 else C["teal"])}</td><td {td}>{bar(r["comp"], C["gold"])}</td><td {td}>{fmt(r["mean"])}</td><td {td}>{r["wait"] or ""}</td></tr>')
 h.append('</table>')
+# ---------- Wi-Fi / network impact (always reported) ----------
+import re as _re
+NET = _re.compile(r'network|connection|internet|wi-?fi|\bnet\b|data|failed response|signal|شبك|نت|انترنت|إنترنت', _re.I)
+SIGN = _re.compile(r'log ?in|sign ?in|email|e-mail|password|account|ايميل|إيميل|باسورد', _re.I)
+def wk_of(a):
+    s_ = S.get(a.get('sid'), {})
+    return a.get('week') or s_.get('week')
+labatt = [a for a in att if a.get('type') == 'lab' or str(a.get('sid', '')).startswith('lab-')]
+man = [a for a in labatt if a.get('method') == 'manual']
+def net_stats(week=None):
+    A_ = [a for a in labatt if week is None or wk_of(a) == week]
+    M_ = [a for a in man if week is None or wk_of(a) == week]
+    n_ = [a for a in M_ if NET.search(a.get('reason') or '')]
+    g_ = [a for a in M_ if not NET.search(a.get('reason') or '') and SIGN.search(a.get('reason') or '')]
+    secs_ = collections.Counter(a.get('section') for a in n_)
+    return dict(total=len(A_), manual=len(M_), net=len(n_), sign=len(g_), secs=secs_)
+nw, na = net_stats(wk), net_stats()
+paper_w = sum(1 for a in labatt if a.get('method') == 'paper' and wk_of(a) == wk)
+h.append(f'<h3 style="font:600 16px Arial;color:{C["red"]};margin:18px 0 4px">Wi-Fi and network: daily problem in labs and lecture hall</h3>')
+h.append('<table style="width:100%;border-collapse:collapse"><tr>')
+h.append(tile(nw['net'], f'check-ins added by hand, week {wk}', 'reason: network failure', C['red']))
+h.append(tile(nw['sign'], f'sign-in / email failures, week {wk}', 'added by hand', C['red']))
+h.append(tile(na['net'], 'network failures to date', f'{na["manual"]} hand additions in total', C['red']))
+h.append(tile(paper_w, f'attendance on paper, week {wk}', 'when the platform could not be used', C['red']))
+h.append('</tr></table>')
+if nw['secs']:
+    h.append(f'<div style="font:13px Arial;margin:6px 0">Sections affected in week {wk}: ' + ', '.join(f'Section {k} ({v})' for k, v in sorted(nw['secs'].items(), key=lambda x: -x[1]) if k) + '.</div>')
+h.append(f'<div style="background:#fff;border-left:4px solid {C["red"]};padding:10px 12px;font:13px Arial;line-height:1.6">'
+         'Every lab day, students cannot check in or upload photos because there is no Wi-Fi and the mobile signal is weak inside the labs and the lecture hall. '
+         'Staff then add students by hand, use paper sheets, and re-enter grades later, which doubles the workload and delays feedback. '
+         '<b>Request:</b> Wi-Fi coverage for the preclinical labs and the lecture hall, and IT support for student university email sign-in.'
+         '<div dir="rtl" style="margin-top:6px">نعاني يوميًا من ضعف الشبكة وعدم وجود Wi-Fi داخل المعامل وقاعة المحاضرات، مما يمنع الطلاب من تسجيل الحضور ورفع الصور، ويضطر المعيدين للإضافة اليدوية والكشوف الورقية وإعادة إدخال الدرجات. '
+         '<b>المطلوب:</b> توفير شبكة Wi-Fi للمعامل قبل الإكلينيكية وقاعة المحاضرات، ودعم فني لتسجيل دخول الطلاب بالإيميل الجامعي.</div></div>')
 h.append(f'<h3 style="font:600 16px Arial;color:{C["gold"]};margin:18px 0 4px">Demonstrators</h3><table style="width:100%;border-collapse:collapse"><tr>')
 h.append(tile(f'{sum(r["signed"] for r in drows)}/{len(drows)}', 'demonstrators signed in'))
 h.append(tile(active, f'grading on the phone, week {wk}'))
