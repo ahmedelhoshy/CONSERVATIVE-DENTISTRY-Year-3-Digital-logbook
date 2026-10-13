@@ -45,12 +45,25 @@ export function StudentHome({ go }) {
       <section class="card"><h2>{L('Announcements', 'الإعلانات')}</h2>
         <div class="list">{visibleAnn.length ? visibleAnn.slice(0, 4).map((a) => <details class="item" open={a.pinned}><summary>{a.pinned && <Pill kind="gold">{L('Pinned', 'مثبت')}</Pill>} {a.title}{a.imageUrl ? ' 🖼' : ''}{a.videoUrl ? ' ▶' : ''}</summary>{a.imageUrl && <a href={a.imageUrl} target="_blank" rel="noopener"><img src={a.imageUrl} alt={a.title} loading="lazy" style={{ display: 'block', maxWidth: '100%', maxHeight: 420, objectFit: 'contain', borderRadius: 12, marginTop: 8 }} /></a>}{a.videoUrl && <video controls playsInline preload="none" poster={a.videoUrl.replace(/\.mp4$/, '.jpg')} src={a.videoUrl} style={{ display: 'block', width: '100%', maxHeight: 420, borderRadius: 12, marginTop: 8, background: '#10262d' }} />}{a.body && <div style={{ marginTop: 6 }}>{a.body.split('\n').map((l) => <p dir="auto" style={{ margin: '0 0 4px', minHeight: '0.7em' }}>{l}</p>)}</div>}{a.linkUrl && <a class="btn primary" href={a.linkUrl} target="_blank" rel="noopener" style={{ marginTop: 8, display: 'inline-block' }}>{a.linkLabel || 'Open link'}</a>}<p class="faint">{a.byName} · {fmtDate(a.publishAt, { day: 'numeric', month: 'short' })}</p></details>) : <Empty>{L('No announcements.', 'لا توجد إعلانات.')}</Empty>}</div></section>
     </div>
+    <Games />
     <MyExams />
     <MyProject section={u.section} />
     <section class="card"><div class="row between"><h2>{L('Latest feedback', 'آخر تقييمات')}</h2><button class="btn ghost" onClick={() => go('lab')}>{L('My lab', 'اللاب')}</button></div>
       {fresh.length ? <div class="list">{fresh.map((e) => <div class="item"><div class="grow"><b>{rubricById[e.rubricId]?.title || e.taskLabel}</b> <span class="mono">#{e.tooth}</span><div class="faint">{L('Week', 'أسبوع')} {e.week} · {e.review.byName}</div><p class="muted" style={{ fontSize: '.88rem' }}>{e.review.feedback}</p></div><div class="stack" style={{ alignItems: 'flex-end', gap: 4 }}><span class="faint">{L('Self', 'ذاتي')} <b class="mono">{e.self?.grade ?? '–'}</b></span><span>{L('Official', 'الرسمي')} <b class="mono">{e.review.grade}</b></span></div></div>)}</div> : <Empty>{L('No reviewed teeth yet.', 'لا توجد تقييمات بعد.')}</Empty>}
     </section>
   </>;
+}
+
+// 2-minute learning games: any helpful link whose title starts with 🎮 (added by staff in Materials → Helpful links).
+function Games() {
+  const links = useQuery('materials', [['kind', '==', 'link']]);
+  const games = (links.rows || []).filter((m) => String(m.title || '').trim().startsWith('🎮')).sort((a, b) => (a.order || 0) - (b.order || 0));
+  if (!games.length) return null;
+  const name = (t) => t.replace(/^🎮\s*/, '').replace(/^2-minute game:\s*/i, '');
+  return <section class="card"><h2>{L('🎮 2-minute games', '🎮 ألعاب الدقيقتين')}</h2>
+    <p class="faint">{L('Short challenges to revise while you wait. Not graded.', 'تحديات قصيرة للمراجعة في أي وقت. بدون درجات.')}</p>
+    <div class="list">{games.map((g) => <a class="item click" href={g.url} target="_blank" rel="noopener"><div class="grow"><b>{name(g.title)}</b>{g.description && <div class="faint">{g.description}</div>}</div><span class="btn sm primary">{L('Play', 'العب')}</span></a>)}</div>
+  </section>;
 }
 
 export function Attend() {
