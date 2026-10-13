@@ -169,12 +169,14 @@ export function ReviewSheet({ id, onClose }) {
   const sugg = rub ? suggestGrade(rub, full) : null;
   const weekAtt = (attended.rows || []).filter((a) => a.week === e.week && a.status === 'confirmed').length;
   const attOk = weekAtt > 0 || boss;
-  const markPresent = async () => {
+  const [why, setWhy] = useState('');
+  const markPresent = async (staffReason) => {
     try {
       const ss = (await store().query('sessions', [['section', '==', e.section]])).filter((x) => x.type === 'lab' && Number(x.week) === Number(e.week)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
       const s = ss.find((x) => x.date === e.date) || ss[0];
       if (!s) { toast('No lab session found for this week.'); return; }
-      await setAttendance(s, { uid: e.uid, code: e.code, name: e.name, section: e.section }, 'confirmed', 'Admitted by the Course Director');
+      await setAttendance(s, { uid: e.uid, code: e.code, name: e.name, section: e.section }, 'confirmed', staffReason ? 'Attended but could not sign in: ' + staffReason : 'Admitted by the Course Director');
+      if (attended.reload) attended.reload();
       toast('Marked present');
     } catch (x) { toast('Could not mark present: ' + x.message); }
   };
@@ -189,7 +191,9 @@ export function ReviewSheet({ id, onClose }) {
   };
   return <Sheet onClose={onClose} label="Review">
     <div class="row between"><div><span class="eyebrow">Section {e.section} · week {e.week} · {fmtDate(e.date)}</span><h2>{e.name} <span class="mono faint">{e.code}</span></h2><p class="muted">{rub?.title} · <span class="mono">#{e.tooth}</span></p></div><button class="btn sm" onClick={onClose}>Close</button></div>
-    {weekAtt === 0 && !readOnly && !boss && <div class="state failed"><b>No confirmed lab attendance this week</b><p>Official grades need physical attendance. Confirm the student's attendance for this week's lab first (Today → the lab → Confirm or Mark present), then grade the tooth.</p></div>}
+    {weekAtt === 0 && !readOnly && !boss && <div class="state failed"><b>No confirmed lab attendance this week</b><p>Official grades need physical attendance. If the student attended this week's lab but could not sign in or check in, mark them present below with the reason. Your name and the reason are recorded in the audit log.</p>
+      <div class="row" style={{ alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px' }}><label class="fld" style={{ flex: 1, minWidth: '220px' }}>Reason<input id="att-why" placeholder="e.g. network problem / could not sign in" value={why} onInput={(x) => setWhy(x.target.value)} /></label>
+      <button class="btn sm" disabled={why.trim().length < 3} onClick={() => markPresent(why.trim())}>Mark present: attended but could not sign in</button></div></div>}
     {weekAtt === 0 && boss && <div class="state pending" style={{ display: 'block' }}><b>No confirmed lab attendance this week</b> — as Course Director you can still grade. <button class="btn sm" onClick={markPresent}>Mark present (Course Director)</button></div>}
     {e.status === 'draft' && boss && <div class="state pending" style={{ display: 'block' }}><b>Not submitted by the student yet.</b> Saving a grade admits the tooth on the student's behalf.</div>}
     {e.photos?.length ? <div class="thumbs">{e.photos.map((p) => <a href={p.url} target="_blank" rel="noopener"><img class="photo" src={p.url} alt={`${p.view} view`} /></a>)}</div> : <p class="faint">No photos attached.</p>}
