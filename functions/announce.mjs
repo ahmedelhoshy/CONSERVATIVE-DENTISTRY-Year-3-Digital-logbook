@@ -885,3 +885,26 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Game added:', id);
   }
 }
+
+// Games follow the current subjects (Course Director, 13 Oct): non-carious lesions, cariology, Class I and II practical.
+// Instrument and amalgam games are taken off the dashboard until those topics are taught (files kept in /guides).
+{
+  const pm = db.doc('config/seededMaterials'); const done = new Set((await pm.get()).data()?.ids || []);
+  const id0 = 'games-by-subject-2026-10-13';
+  if (!done.has(id0)) {
+    for (const old of ['game-bur-match', 'game-comp-vs-am']) await db.doc(`materials/${old}`).delete();
+    const NEW = [
+      ['game-non-carious', 'Game_Non_Carious_Lesions.html', '🎮 2-minute game: Name the Lesion (non-carious defects) · اسم الآفة: آفات غير تسوسية', 'Lecture 2 · eight short cases: attrition, abrasion, erosion, abfraction, fluorosis or hypoplasia? · محاضرة ٢ · ثماني حالات قصيرة.'],
+      ['game-cariology', 'Game_Cariology.html', '🎮 2-minute game: Cariology Challenge · تحدي علم التسوس', 'Lectures 3–5 · eight questions on how caries starts, progresses and stops. · محاضرات ٣–٥ · ثمانية أسئلة عن التسوس.'],
+    ];
+    let n = 0;
+    for (const [id, file, title, description] of NEW) await db.doc(`materials/${id}`).set({ kind: 'link', lectureNo: null, path: null, week: null, category: null, order: 1 + n++, title, description, url: site + '/guides/' + file, updatedAt: Date.now(), updatedBy: byName });
+    // order on the dashboard: lectures first, then practical
+    const ORDER = { 'link-gv-black-game': 3, 'game-prep-steps': 4, 'game-spot-error': 5 };
+    for (const [id, o] of Object.entries(ORDER)) { const r = db.doc(`materials/${id}`); if ((await r.get()).exists) await r.update({ order: o }); }
+    const t = { 'game-prep-steps': '🎮 2-minute game: Prep Steps in Order (Class I and II) · رتّب خطوات التحضير', 'game-spot-error': '🎮 2-minute game: Spot the Preparation Error (Class I and II) · اكتشف الخطأ في التحضير' };
+    for (const [id, title] of Object.entries(t)) { const r = db.doc(`materials/${id}`); if ((await r.get()).exists) await r.update({ title }); }
+    await pm.set({ ids: FieldValue.arrayUnion(id0) }, { merge: true });
+    console.log('Games aligned to subjects');
+  }
+}
