@@ -26,7 +26,7 @@ button:disabled{cursor:default}button.ok{background:var(--ok);color:#fff;border-
 </head>
 <body><main>
 <h1>GV Black Challenge</h1>
-<p class="sub">6 cases · 2 minutes · choose the class for each lesion · <span dir="rtl">تحدي تصنيف بلاك في دقيقتين</span></p>
+<p class="sub">6 cases · 2 minutes · choose the class for each lesion</p>
 <div class="bar"><span id="count"></span><span id="time">⏱ 0:00</span></div>
 <div class="prog"><i id="pg" style="width:0"></i></div>
 <div class="card" id="box"></div>
@@ -34,17 +34,17 @@ button:disabled{cursor:default}button.ok{background:var(--ok);color:#fff;border-
 </main>
 <script>
 const C=[
-{t:'The hidden pit',q:'A carious lingual pit on tooth 12 (maxillary right lateral incisor). No other surface is involved.',ar:'تسوس في الـ lingual pit لسن ١٢ (الثنية الجانبية العلوية اليمنى)، ومفيش أسطح تانية.',a:'I',why:'Pits and fissures, including the lingual pits of incisors, are Class I.'},
-{t:'The posterior proximal',q:'A bitewing shows a radiolucency on the distal surface of tooth 46 (mandibular right first molar), into dentin. The occlusal surface looks intact.',ar:'أشعة bitewing بتبين تسوس على السطح الـ distal لسن ٤٦ واصل للعاج، والسطح الإطباقي سليم.',a:'II',why:'Proximal surfaces of premolars and molars are Class II.'},
-{t:'The anterior proximal',q:'Caries on the mesial surface of tooth 32 (mandibular left lateral incisor). The incisal angle is sound.',ar:'تسوس على السطح الـ mesial لسن ٣٢ (الثنية الجانبية السفلية اليسرى)، والزاوية القاطعة سليمة.',a:'III',why:'Proximal surfaces of anterior teeth without the incisal angle are Class III.'},
-{t:'The trauma case',q:'After a sports injury, the mesio-incisal angle of tooth 11 (maxillary right central incisor) is fractured, exposing dentin.',ar:'بعد إصابة رياضية، الزاوية الـ mesio-incisal لسن ١١ مكسورة والعاج ظاهر.',a:'IV',why:'Proximal surfaces of anterior teeth involving the incisal angle are Class IV.'},
-{t:'The cervical notch',q:'A deep notch on the gingival third of the buccal surface of tooth 46, needing restoration.',ar:'حفرة عميقة في الثلث اللثوي للسطح الخدي لسن ٤٦ ومحتاجة حشو.',a:'V',why:'The gingival third of facial or lingual surfaces of any tooth is Class V.'},
-{t:'The worn cusps',q:'Localized defects on the cusp tip of the maxillary canine and the buccal cusp tips of the first molar.',ar:'عيوب موضعية على قمة ناب الفك العلوي وقمم الـ buccal cusps للضرس الأول.',a:'VI',why:'Incisal edges of anterior teeth and cusp tips of posterior teeth are Class VI.'}];
+{t:'The hidden pit',q:'A carious lingual pit on tooth 12 (maxillary right lateral incisor). No other surface is involved.',a:'I',why:'Pits and fissures, including the lingual pits of incisors, are Class I.'},
+{t:'The posterior proximal',q:'A bitewing shows a radiolucency on the distal surface of tooth 46 (mandibular right first molar), into dentin. The occlusal surface looks intact.',a:'II',why:'Proximal surfaces of premolars and molars are Class II.'},
+{t:'The anterior proximal',q:'Caries on the mesial surface of tooth 32 (mandibular left lateral incisor). The incisal angle is sound.',a:'III',why:'Proximal surfaces of anterior teeth without the incisal angle are Class III.'},
+{t:'The trauma case',q:'After a sports injury, the mesio-incisal angle of tooth 11 (maxillary right central incisor) is fractured, exposing dentin.',a:'IV',why:'Proximal surfaces of anterior teeth involving the incisal angle are Class IV.'},
+{t:'The cervical notch',q:'A deep notch on the gingival third of the buccal surface of tooth 46, needing restoration.',a:'V',why:'The gingival third of facial or lingual surfaces of any tooth is Class V.'},
+{t:'The worn cusps',q:'Localized defects on the cusp tip of the maxillary canine and the buccal cusp tips of the first molar.',a:'VI',why:'Incisal edges of anterior teeth and cusp tips of posterior teeth are Class VI.'}];
 const O=['I','II','III','IV','V','VI'];let i=0,score=0,t0=Date.now(),tm;
 const $=(id)=>document.getElementById(id);
 function tick(){const s=Math.floor((Date.now()-t0)/1000);$('time').textContent='⏱ '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
 function show(){const c=C[i];$('count').textContent='Case '+(i+1)+' of '+C.length+' · score '+score;$('pg').style.width=(i/C.length*100)+'%';
-$('box').innerHTML='<div class="case">Case '+(i+1)+' · '+c.t+'</div><p class="q">'+c.q+'</p><p class="ar">'+c.ar+'</p><div class="opts">'+O.map(o=>'<button data-o="'+o+'">'+o+'</button>').join('')+'</div><div class="fb" id="fb"></div><button class="next" id="nx">'+(i<C.length-1?'Next case →':'See my score')+'</button>';
+$('box').innerHTML='<div class="case">Case '+(i+1)+' · '+c.t+'</div><p class="q">'+c.q+'</p><div class="opts">'+O.map(o=>'<button data-o="'+o+'">'+o+'</button>').join('')+'</div><div class="fb" id="fb"></div><button class="next" id="nx">'+(i<C.length-1?'Next case →':'See my score')+'</button>';
 document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>pick(b))}
 function pick(b){const c=C[i],ok=b.dataset.o===c.a;if(ok)score++;
 document.querySelectorAll('[data-o]').forEach(x=>{x.disabled=true;if(x.dataset.o===c.a)x.classList.add('ok')});if(!ok)b.classList.add('bad');

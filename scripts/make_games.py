@@ -1,3 +1,4 @@
+import re
 import json
 CSS=""":root{--bg:#F6F4EF;--card:#fff;--ink:#1C2B30;--mute:#5B6B70;--teal:#0E3F4A;--gold:#C8862A;--ok:#2E7D4F;--bad:#A23B2A;--line:#DCD8CE}
 @media (prefers-color-scheme:dark){:root{--bg:#10191C;--card:#18252A;--ink:#E8EEEC;--mute:#9DB0B3;--teal:#7FC3CF;--gold:#E2B868;--ok:#6CC08F;--bad:#E07A68;--line:#2A3A40}}
@@ -33,6 +34,7 @@ $('box').innerHTML='<div class="end"><div class="case">Your result</div><div cla
 $('again').onclick=()=>{$('ref').hidden=true;i=0;score=0;max=0;t0=Date.now();tm=setInterval(tick,1000);show()}}
 tm=setInterval(tick,1000);show();"""
 def page(fn,title,sub,ref,G):
+    G=[{k:v for k,v in g.items() if k!='ar'} for g in G]; sub=re.sub(r'\s*·\s*<span dir="rtl">.*?</span>','',sub)
     open(fn,'w').write(f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{title}</title><style>{CSS}</style></head><body><main>
 <h1>{title}</h1><p class="sub">{sub}</p><div class="bar"><span id="count"></span><span id="time">⏱ 0:00</span></div><div class="prog"><i id="pg" style="width:0"></i></div>
 <div class="card" id="box"></div><div class="ref" id="ref" hidden><b>Summary:</b> {ref}</div></main><script>const G={json.dumps(G,ensure_ascii=False)};{JS}</script></body></html>""")

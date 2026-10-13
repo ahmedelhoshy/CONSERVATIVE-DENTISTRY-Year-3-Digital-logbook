@@ -908,3 +908,18 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Games aligned to subjects');
   }
 }
+
+// Games in English only (Course Director, 14 Oct): drop the Arabic part of the game titles and descriptions.
+{
+  const pm = db.doc('config/seededMaterials'); const done = new Set((await pm.get()).data()?.ids || []);
+  const id0 = 'games-english-only-2026-10-14';
+  if (!done.has(id0)) {
+    for (const d of (await db.collection('materials').where('kind', '==', 'link').get()).docs) {
+      const m = d.data(); if (!String(m.title || '').startsWith('🎮')) continue;
+      const en = (t) => String(t || '').split(' · ').filter((x) => !/[؀-ۿ]/.test(x)).join(' · ');
+      await d.ref.update({ title: en(m.title), description: en(m.description) });
+    }
+    await pm.set({ ids: FieldValue.arrayUnion(id0) }, { merge: true });
+    console.log('Games: English only');
+  }
+}
