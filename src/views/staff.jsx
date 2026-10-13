@@ -156,6 +156,7 @@ export function ReviewSheet({ id, onClose }) {
   const [rejectPhoto, setRejectPhoto] = useState('');
   const [showAI, setShowAI] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [why, setWhy] = useState('');
   const attended = useQuery('attendance', e ? [['uid', '==', e.uid], ['type', '==', 'lab']] : null, {}, [e && e.uid]);
   useEffect(() => { if (e && picks === null) { setPicks(e.review?.picks || {}); setGrade(e.review?.grade ?? ''); setStatus(e.review?.status || 'Completed'); setFeedback(e.review?.feedback || ''); } }, [e]);
   if (!e) return <Sheet onClose={onClose}><p>Loading…</p></Sheet>;
@@ -167,9 +168,8 @@ export function ReviewSheet({ id, onClose }) {
   const full = rub ? Object.fromEntries(rub.criteria.map((c) => [c.id, (picks && picks[c.id]) || 'A'])) : {};
   const defects = rub ? rub.criteria.filter((c) => full[c.id] !== 'A') : [];
   const sugg = rub ? suggestGrade(rub, full) : null;
-  const weekAtt = (attended.rows || []).filter((a) => a.week === e.week && a.status === 'confirmed').length;
+  const weekAtt = (attended.rows || []).filter((a) => Number(a.week) === Number(e.week) && (a.status === 'confirmed' || a.status === 'recorded')).length;
   const attOk = weekAtt > 0 || boss;
-  const [why, setWhy] = useState('');
   const markPresent = async (staffReason) => {
     try {
       const ss = (await store().query('sessions', [['section', '==', e.section]])).filter((x) => x.type === 'lab' && Number(x.week) === Number(e.week)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
