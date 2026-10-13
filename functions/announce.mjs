@@ -867,3 +867,21 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Helpful link added:', id);
   }
 }
+
+// 2-minute games (Course Director, 13 Oct): shown on the student dashboard because the titles start with 🎮.
+{
+  const GAMES = [
+    ['game-prep-steps', 'Game_Prep_Steps.html', '🎮 2-minute game: Prep Steps in Order · رتّب خطوات التحضير', 'Tap the steps of a Class I and a compound Class II composite preparation in the right order. · رتّب خطوات تحضير Class I و Class II للكومبوزيت.'],
+    ['game-bur-match', 'Game_Bur_Match.html', '🎮 2-minute game: Match the Instrument · اختار الأداة المناسبة', 'Six jobs: pick the right bur or hand instrument for each. · ست مهام: اختار البور أو الأداة المناسبة.'],
+    ['game-spot-error', 'Game_Spot_The_Error.html', '🎮 2-minute game: Spot the Preparation Error · اكتشف الخطأ في التحضير', 'Six preparations with one mistake each: find it. · ست تحضيرات في كل واحد غلطة: اكتشفها.'],
+    ['game-comp-vs-am', 'Game_Composite_vs_Amalgam.html', '🎮 2-minute game: Composite or Amalgam? · كومبوزيت ولا أملجم؟', 'Eight design features: composite, amalgam or both? · ثماني خصائص في تصميم التحضير: كومبوزيت، أملجم، ولا الاتنين؟'],
+  ];
+  const pm = db.doc('config/seededMaterials'); const done = new Set((await pm.get()).data()?.ids || []);
+  let n = 0;
+  for (const [id, file, title, description] of GAMES) {
+    if (done.has(id)) continue;
+    await db.doc(`materials/${id}`).set({ kind: 'link', lectureNo: null, path: null, week: null, category: null, order: Date.now() + n++, title, description, url: site + '/guides/' + file, updatedAt: Date.now(), updatedBy: byName });
+    await pm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('Game added:', id);
+  }
+}
