@@ -173,7 +173,8 @@ export function ReviewSheet({ id, onClose }) {
   const markPresent = async (staffReason) => {
     try {
       const ss = (await store().query('sessions', [['section', '==', e.section]])).filter((x) => x.type === 'lab' && Number(x.week) === Number(e.week)).sort((a, b) => String(a.date).localeCompare(String(b.date)));
-      const s = ss.find((x) => x.date === e.date) || ss[0];
+      // Teeth belong to the requirements lab (Lab 1) of the week, even when uploaded later in the week.
+      const s = ss.find((x) => x.date === e.date && (x.req || 0) > 0) || ss.find((x) => (x.req || 0) > 0) || ss.find((x) => x.date === e.date) || ss[0];
       if (!s) { toast('No lab session found for this week.'); return; }
       await setAttendance(s, { uid: e.uid, code: e.code, name: e.name, section: e.section }, 'confirmed', staffReason ? 'Attended but could not sign in: ' + staffReason : 'Admitted by the Course Director');
       if (attended.reload) attended.reload();
