@@ -98,6 +98,17 @@ service cloud.firestore {
     }
 
     // Prep Lens numeric scores for research — leadership only.
+    // Game plays (2-minute games): a student records their own plays; staff read them for the engagement record.
+    match /plays/{id} {
+      allow create: if isStudent() && request.resource.data.uid == myUid() && id.matches(myUid() + '_.*');
+      allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
+    }
+    // Individual project participation, marked by supervisors (active / partial / none).
+    match /projectWork/{id} {
+      allow read: if isStaff() || (isStudent() && resource.data.uid == myUid());
+      allow write: if isTeacher();
+    }
+
     match /research/{id} {
       allow read: if isLeader();
       allow write: if false;

@@ -29,7 +29,7 @@ if(picked.length===c.order.length){let ok=0;[...$('seq').children].forEach((x,n)
 const f=$('fb');f.className='fb '+(ok===c.order.length?'ok':'bad');f.innerHTML='<b>'+ok+' of '+c.order.length+' in the right place.</b> Correct order:<ol class="seq">'+c.order.map(s=>'<li>'+s+'</li>').join('')+'</ol>'+(c.why||'');nextBtn()}})}
 else{max+=1;document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const ok=b.dataset.o===c.a;if(ok)score++;document.querySelectorAll('[data-o]').forEach(x=>{x.disabled=true;if(x.dataset.o===c.a)x.classList.add('ok')});if(!ok)b.classList.add('bad');
 const f=$('fb');f.className='fb '+(ok?'ok':'bad');f.innerHTML=(ok?'<b>Correct ✓</b> ':'<b>Not quite: '+c.a+'.</b> ')+c.why;head();nextBtn()})}}
-function end(){clearInterval(tm);tick();$('pg').style.width='100%';$('ref').hidden=false;const s=Math.floor((Date.now()-t0)/1000),p=score/max;
+function end(){clearInterval(tm);tick();try{const k='cu_game_plays',a=JSON.parse(localStorage.getItem(k)||'[]');a.push({game:location.pathname.split('/').pop().replace('.html',''),score:score,max:max,at:Date.now()});localStorage.setItem(k,JSON.stringify(a.slice(-50)))}catch(e){}$('pg').style.width='100%';$('ref').hidden=false;const s=Math.floor((Date.now()-t0)/1000),p=score/max;
 $('box').innerHTML='<div class="end"><div class="case">Your result</div><div class="big">'+score+' / '+max+'</div><p>'+(p===1?'Perfect! 🏆':p>=.7?'Well done 👏':'Review the summary below and try again 💪')+'</p><p class="sub">Time: '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+'</p><button class="next" style="display:block" id="again">Play again</button></div>';
 $('again').onclick=()=>{$('ref').hidden=true;i=0;score=0;max=0;t0=Date.now();tm=setInterval(tick,1000);show()}}
 tm=setInterval(tick,1000);show();"""

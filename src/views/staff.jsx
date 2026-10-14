@@ -243,6 +243,12 @@ export function Students() {
   const sess = useQuery('sessions', [['section', '==', Number(sec)]]);
   const paper = useQuery('paperwork', [['section', '==', Number(sec)]]);
   const lecs = useQuery('sessions', [['type', '==', 'lecture']]);
+  const plays = useQuery('plays', [['section', '==', Number(sec)]]);
+  const pw = useQuery('projectWork', [['section', '==', Number(sec)]]);
+  const pwBy = {}; for (const x of pw.rows || []) pwBy[String(x.uid)] = x;
+  const projMarked = (pw.rows || []).length > 0;
+  const setProject = async (s, status) => { try { await store().set('projectWork', String(s.uid), { uid: s.uid, code: s.code || '', name: s.name, section: s.section, status, by: u.uid, byName: u.name, at: Date.now() }); } catch (x) { toast('Could not save: ' + x.message); } };
+  const canMark = !['hod', 'vicedean', 'dean'].includes(u.role);
   const surveys = useQuery('surveys', isLeader(u) ? [['role', '==', 'student']] : null);
   const t = today();
   const withRec = new Set((att.rows || []).map((a) => a.sid));
@@ -260,15 +266,15 @@ export function Students() {
     const done = e.filter((x) => x.review.status === 'Completed').length + (paper.rows || []).filter((p) => p.uid === s.uid && past.has(p.week)).reduce((a, p) => a + (Number(p.teeth) || 0), 0);
     const labPres = new Set((att.rows || []).filter((a) => a.uid === s.uid && a.type === 'lab' && a.status === 'confirmed' && heldSet.has(a.sid)).map((a) => a.sid)).size;
     const mean = e.length ? e.reduce((a, x) => a + x.review.grade, 0) / e.length : null;
-    const eng = engagement({ s, ents: ents.rows || [], att: att.rows || [], labsHeld: labsHeld.length, labPres, lecsHeld, due, answered: surveyed ? surveyed.has(String(s.uid)) : null });
+    const eng = engagement({ s, ents: ents.rows || [], att: att.rows || [], labsHeld: labsHeld.length, labPres, lecsHeld, due, answered: surveyed ? surveyed.has(String(s.uid)) : null, games: (plays.rows || []).filter((p) => String(p.uid) === String(s.uid)), project: projMarked ? (pwBy[String(s.uid)]?.status || 'none') : null });
     return { ...s, done, due, eng, labAtt: labsHeld.length ? Math.round((labPres / labsHeld.length) * 100) : null, mean: mean == null ? null : Math.round(mean * 10) / 10, pending: (ents.rows || []).filter((x) => x.uid === s.uid && x.status === 'submitted').length };
   }).sort((a, b) => String(a.code).localeCompare(String(b.code)));
   return <>
-    <section class="hero"><h1>Students</h1><p class="muted">Section roster with attendance, requirements and grades.</p><p class="faint">Engagement is a factual one-line record of participation across the year (labs, lectures, teeth uploaded, self-assessment, self-training, Prep Lens, survey). It is not a grade; it supports the course committee's judgement in borderline cases. Points: labs ≥90% 2, ≥75% 1 · lectures ≥75% 2, ≥50% 1 · teeth uploaded ≥80% of due 2, ≥50% 1 · self-assessment on most uploads 1 · any self-training tooth 1 · Prep Lens used 1 · survey answered 1. Highly engaged 7+, Engaged 4–6, Limited 2–3, Minimal 0–1.</p></section>
+    <section class="hero"><h1>Students</h1><p class="muted">Section roster with attendance, requirements and grades.</p><p class="faint">Engagement is a factual one-line record of participation across the year (labs, lectures, teeth uploaded, self-assessment, self-training, Prep Lens, games, project, survey). It is not a grade; it supports the course committee's judgement in borderline cases. Points: labs ≥90% 2, ≥75% 1 · lectures ≥75% 2, ≥50% 1 · teeth uploaded ≥80% of due 2, ≥50% 1 · self-assessment on most uploads 1 · any self-training tooth 1 · Prep Lens used 1 · survey answered 1 · 3 or more different games played 1 · project participation (marked by supervisors) active 2, partial 1. Only items that apply so far count; the level is the share of available points: Highly engaged 70%+, Engaged 40–69%, Limited 20–39%, Minimal below 20%.</p></section>
     <div class="row"><label class="fld" style={{ maxWidth: 220 }}>Section<select id="st-section" value={sec} onChange={(e) => setSec(e.target.value)}>{secs.map((s) => <option value={s}>Section {s}</option>)}</select></label>
       <button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => exportXlsx({ title: `Section ${sec} progress`, filters: `Section ${sec}`, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 34 }, { label: 'Lab attendance %', key: 'labAtt' }, { label: 'Requirements completed', key: 'done' }, { label: 'Requirements due', key: 'due' }, { label: 'Mean official grade', key: 'mean' }, { label: 'Awaiting review', key: 'pending' }, { label: 'Engagement level', get: (r) => r.eng.level, w: 16 }, { label: 'Engagement note', get: (r) => r.eng.line, w: 70 }], rows, definitions: { labAtt: 'Confirmed lab attendances ÷ lab sessions held', done: 'Teeth reviewed with status Completed', due: 'Sum of weekly requirements for completed weeks', mean: 'Mean demonstrator grade (0–10)' } })}>Export (Excel)</button></div>
-    <div class="tablewrap"><table><thead><tr><th>Number</th><th>Name</th><th class="n">Lab att.</th><th class="n">Req.</th><th class="n">Mean</th><th>Flags</th><th>Engagement (one line)</th></tr></thead><tbody>
-      {rows.map((r) => <tr class="click" onClick={() => setOpen(r)}><td class="mono">{r.code}</td><td>{r.name}</td><td class="n">{r.labAtt ?? '–'}%</td><td class="n">{r.done}/{r.due}</td><td class="n">{r.mean ?? '–'}</td><td>{r.labAtt != null && r.labAtt < 75 && <Pill kind="bad">attendance</Pill>} {r.mean != null && r.mean < 6 && <Pill kind="bad">below 6</Pill>} {r.done < r.due * 0.7 && <Pill kind="warn">behind</Pill>} {r.pending > 0 && <Pill kind="info">{r.pending} to review</Pill>}</td><td><Pill kind={r.eng.kind}>{r.eng.level}</Pill> <span class="faint">{r.eng.line}</span></td></tr>)}
+    <div class="tablewrap"><table><thead><tr><th>Number</th><th>Name</th><th class="n">Lab att.</th><th class="n">Req.</th><th class="n">Mean</th><th>Flags</th><th>Project</th><th>Engagement (one line)</th></tr></thead><tbody>
+      {rows.map((r) => <tr class="click" onClick={() => setOpen(r)}><td class="mono">{r.code}</td><td>{r.name}</td><td class="n">{r.labAtt ?? '–'}%</td><td class="n">{r.done}/{r.due}</td><td class="n">{r.mean ?? '–'}</td><td>{r.labAtt != null && r.labAtt < 75 && <Pill kind="bad">attendance</Pill>} {r.mean != null && r.mean < 6 && <Pill kind="bad">below 6</Pill>} {r.done < r.due * 0.7 && <Pill kind="warn">behind</Pill>} {r.pending > 0 && <Pill kind="info">{r.pending} to review</Pill>}</td><td onClick={(e) => e.stopPropagation()}>{canMark ? <div class="seg" title="Individual participation in the group project">{[['active', '✓'], ['partial', '½'], ['none', '✗']].map(([k, l]) => <button class={pwBy[String(r.uid)]?.status === k ? 'on' : ''} onClick={() => setProject(r, k)}>{l}</button>)}</div> : (pwBy[String(r.uid)]?.status || '–')}</td><td><Pill kind={r.eng.kind}>{r.eng.level}</Pill> <span class="faint">{r.eng.line}</span></td></tr>)}
     </tbody></table></div>
     {open && <StudentSheet s={open} onClose={() => setOpen(null)} />}
   </>;
@@ -291,7 +297,7 @@ export function StudentSheet({ s, onClose }) {
 }
 
 // One-line engagement record (not a grade). Same rule for every student; the points are shown on the Students page.
-export function engagement({ s, ents, att, labsHeld, labPres, lecsHeld, due, answered }) {
+export function engagement({ s, ents, att, labsHeld, labPres, lecsHeld, due, answered, games = [], project = null }) {
   const mine = ents.filter((e) => e.uid === s.uid);
   const real = mine.filter((e) => !e.practice && e.source !== 'paper' && (e.photos || []).length && e.status !== 'draft');
   const practice = mine.filter((e) => e.practice && (e.photos || []).length).length;
@@ -301,18 +307,26 @@ export function engagement({ s, ents, att, labsHeld, labPres, lecsHeld, due, ans
   const lecPres = new Set(att.filter((a) => a.uid === s.uid && a.type === 'lecture' && a.status === 'confirmed' && lecIds.has(a.sid)).map((a) => a.sid)).size;
   const excused = att.filter((a) => a.uid === s.uid && a.method === 'manual' && a.status === 'confirmed').length;
   const pct = (a, b) => (b ? a / b : null);
-  let pts = 0;
-  const lp = pct(labPres, labsHeld); if (lp != null) pts += lp >= 0.9 ? 2 : lp >= 0.75 ? 1 : 0;
-  const cp = pct(lecPres, lecsHeld.length); if (cp != null) pts += cp >= 0.75 ? 2 : cp >= 0.5 ? 1 : 0;
-  const up = pct(real.length, due); if (up != null) pts += up >= 0.8 ? 2 : up >= 0.5 ? 1 : 0;
-  if (real.length && selfN / real.length >= 0.5) pts += 1;
-  if (practice) pts += 1;
-  if (lens) pts += 1;
-  if (answered) pts += 1;
-  const level = pts >= 7 ? 'Highly engaged' : pts >= 4 ? 'Engaged' : pts >= 2 ? 'Limited' : 'Minimal';
-  const kind = pts >= 7 ? 'good' : pts >= 4 ? 'info' : pts >= 2 ? 'warn' : 'bad';
+  // Points are counted only for items that apply so far; the level is the share of available points.
+  let pts = 0, avail = 0;
+  const add = (p, m) => { pts += p; avail += m; };
+  const lp = pct(labPres, labsHeld); if (lp != null) add(lp >= 0.9 ? 2 : lp >= 0.75 ? 1 : 0, 2);
+  const cp = pct(lecPres, lecsHeld.length); if (cp != null) add(cp >= 0.75 ? 2 : cp >= 0.5 ? 1 : 0, 2);
+  const up = pct(real.length, due); if (up != null) add(up >= 0.8 ? 2 : up >= 0.5 ? 1 : 0, 2);
+  add(real.length && selfN / real.length >= 0.5 ? 1 : 0, 1);
+  add(practice ? 1 : 0, 1);
+  add(lens ? 1 : 0, 1);
+  if (answered != null) add(answered ? 1 : 0, 1);
+  const gN = games.length, gKinds = new Set(games.map((g) => g.game)).size;
+  add(gKinds >= 3 ? 1 : 0, 1);
+  if (project != null) add(project === 'active' ? 2 : project === 'partial' ? 1 : 0, 2);
+  const share = avail ? pts / avail : 0;
+  const level = share >= 0.7 ? 'Highly engaged' : share >= 0.4 ? 'Engaged' : share >= 0.2 ? 'Limited' : 'Minimal';
+  const kind = share >= 0.7 ? 'good' : share >= 0.4 ? 'info' : share >= 0.2 ? 'warn' : 'bad';
   const parts = [`labs ${labPres}/${labsHeld}`, `lectures ${lecPres}/${lecsHeld.length}`, `${real.length} teeth uploaded`, `self-assessed ${selfN}`, practice ? `${practice} self-training` : 'no self-training', lens ? `Prep Lens ${lens}` : 'no Prep Lens'];
+  parts.push(gN ? `${gN} games played (${gKinds} different)` : 'no games');
+  if (project != null) parts.push(project === 'active' ? 'project ✓' : project === 'partial' ? 'project ½' : 'project ✗');
   if (answered != null) parts.push(answered ? 'survey ✓' : 'survey ✗');
   if (excused) parts.push(`${excused} added by staff`);
-  return { pts, level, kind, line: parts.join(' · ') };
+  return { pts, avail, level, kind, line: `${pts}/${avail} pts · ` + parts.join(' · ') };
 }

@@ -50,7 +50,7 @@ function pick(b){const c=C[i],ok=b.dataset.o===c.a;if(ok)score++;
 document.querySelectorAll('[data-o]').forEach(x=>{x.disabled=true;if(x.dataset.o===c.a)x.classList.add('ok')});if(!ok)b.classList.add('bad');
 const f=$('fb');f.className='fb '+(ok?'ok':'bad');f.innerHTML=(ok?'<b>Correct ✓</b> ':'<b>Not quite: it is Class '+c.a+'.</b> ')+c.why;$('nx').style.display='block';$('nx').onclick=()=>{i++;i<C.length?show():end()};
 $('count').textContent='Case '+(i+1)+' of '+C.length+' · score '+score}
-function end(){clearInterval(tm);$("ref").hidden=false;tick();$('pg').style.width='100%';const s=Math.floor((Date.now()-t0)/1000);
+function end(){clearInterval(tm);try{const k='cu_game_plays',a=JSON.parse(localStorage.getItem(k)||'[]');a.push({game:location.pathname.split('/').pop().replace('.html',''),score:score,max:C.length,at:Date.now()});localStorage.setItem(k,JSON.stringify(a.slice(-50)))}catch(e){}$("ref").hidden=false;tick();$('pg').style.width='100%';const s=Math.floor((Date.now()-t0)/1000);
 const msg=score===6?'Perfect! 🏆':score>=4?'Well done 👏':'Review the reminder below and try again 💪';
 $('box').innerHTML='<div class="end"><div class="case">Your result</div><div class="big">'+score+' / 6</div><p>'+msg+'</p><p class="sub">Time: '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+'</p><button class="next" style="display:block" id="again">Play again</button></div>';
 $("again").onclick=()=>{$("ref").hidden=true;i=0;score=0;t0=Date.now();tm=setInterval(tick,1000);show()}}
