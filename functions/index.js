@@ -274,3 +274,18 @@ export const reportFeed = onRequest({ timeoutSeconds: 120, memory: '1GiB', invok
     res.json(out);
   } catch (x) { console.error(x); res.status(500).json({ error: String(x.message || x).slice(0, 200) }); }
 });
+
+// Close finished sessions automatically: a lab or lecture still marked "open" after its scheduled end time
+// and after its check-in window (closesAt / syncUntil) is set to "closed". Check-ins were already refused after that window.
+export async function closeFinishedSessions(now = Date.now()) {
+  const snap = await db.collection('sessions').where('status', '==', 'open').get();
+  let n = 0;
+  for (const d of snap.docs) {
+    const s = d.data();
+    const window = Math.max(s.closesAt || 0, s.syncUntil || 0);
+    const end = s.date && s.end ? new Date(`${s.date}T${s.end}:00+03:00`).getTime() : 0;
+    if (window && now > window && now > end) { await d.ref.update({ status: 'closed', autoClosedAt: now }); n++; }
+  }
+  return n;
+}
+export const autoCloseSessions = onSchedule({ schedule: 'every 30 minutes', timeZone: 'Africa/Cairo', timeoutSeconds: 120 }, async () => { const n = await closeFinishedSessions(); if (n) console.log('Auto-closed sessions:', n); });

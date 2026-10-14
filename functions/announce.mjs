@@ -923,3 +923,14 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Games: English only');
   }
 }
+
+// Close sessions left "open" after their scheduled end and check-in window (same rule as the autoCloseSessions job).
+{
+  const now = Date.now(); let n = 0;
+  for (const d of (await db.collection('sessions').where('status', '==', 'open').get()).docs) {
+    const s = d.data(); const w = Math.max(s.closesAt || 0, s.syncUntil || 0);
+    const end = s.date && s.end ? new Date(`${s.date}T${s.end}:00+03:00`).getTime() : 0;
+    if (w && now > w && now > end) { await d.ref.update({ status: 'closed', autoClosedAt: now }); n++; }
+  }
+  console.log('Closed finished sessions:', n);
+}
