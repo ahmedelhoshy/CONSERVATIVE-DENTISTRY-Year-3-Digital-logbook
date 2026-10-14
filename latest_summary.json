@@ -1,43 +1,47 @@
 {
- "generatedAt": 1791926352117,
- "previousBackupAt": 1791901327750,
- "documents": 8005,
+ "generatedAt": 1792012849097,
+ "previousBackupAt": 1791926352117,
+ "documents": 8735,
  "collections": {
   "announcements": 14,
-  "attendance": 2522,
-  "audit": 324,
-  "codes": 55,
+  "attendance": 2710,
+  "audit": 352,
+  "codes": 62,
   "config": 4,
-  "duplicates": 334,
-  "entries": 2792,
-  "jobs": 116,
-  "materials": 60,
+  "duplicates": 383,
+  "entries": 2897,
+  "jobs": 117,
+  "materials": 64,
   "messages": 8,
+  "paperwork": 307,
+  "plays": 11,
   "projects": 18,
   "reports": 1,
-  "research": 236,
+  "research": 258,
   "roster": 536,
   "sessions": 517,
-  "surveys": 441,
-  "usage": 27
+  "surveys": 447,
+  "usage": 29
  },
  "changedSincePrevious": {
   "announcements": 0,
-  "attendance": 22,
-  "audit": 25,
-  "codes": 0,
+  "attendance": 184,
+  "audit": 28,
+  "codes": 7,
   "config": 0,
-  "duplicates": 0,
-  "entries": 43,
-  "jobs": 5,
-  "materials": 8,
+  "duplicates": 102,
+  "entries": 168,
+  "jobs": 3,
+  "materials": 9,
   "messages": 0,
+  "paperwork": 307,
+  "plays": 11,
   "projects": 0,
   "reports": 1,
-  "research": 5,
+  "research": 22,
   "roster": 0,
   "sessions": 0,
-  "surveys": 2,
+  "surveys": 6,
   "usage": 0
  },
  "people": {
@@ -52,42 +56,42 @@
  },
  "attendance": {
   "byType": {
-   "lab": 2232,
+   "lab": 2420,
    "lecture": 290
   },
   "byMethod": {
-   "paper": 1106,
-   "manual": 214,
-   "qr": 1202
+   "paper": 1113,
+   "manual": 228,
+   "qr": 1369
   },
   "byStatus": {
-   "confirmed": 2497,
+   "confirmed": 2685,
    "recorded": 24,
    "rejected": 1
   }
  },
  "teeth": {
   "byStatus": {
-   "reviewed": 2156,
-   "draft": 303,
-   "submitted": 58,
+   "reviewed": 2260,
+   "draft": 330,
+   "submitted": 11,
    "redo": 3
   },
-  "withPhotos": 996,
-  "practiceAnalyses": 272
+  "withPhotos": 1027,
+  "practiceAnalyses": 293
  },
  "surveys": {
-  "pilot-2026-10:student": 439,
+  "pilot-2026-10:student": 445,
   "pilot-2026-10:demonstrator": 2
  },
- "materials": 60,
+ "materials": 64,
  "announcements": 14,
  "messages": 8,
- "auditEvents": 324,
+ "auditEvents": 352,
  "files": {
-  "total": 2721,
-  "totalMB": 491.4,
-  "newSincePrevious": 30,
-  "newMB": 6.3
+  "total": 2851,
+  "totalMB": 514.7,
+  "newSincePrevious": 130,
+  "newMB": 23.4
  }
 }
