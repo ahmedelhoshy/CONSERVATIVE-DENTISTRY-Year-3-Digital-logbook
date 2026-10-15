@@ -957,3 +957,15 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
   }
   console.log('Thursday lab sessions created:', made);
 }
+
+// Lecture 5 (Sat 17 Oct): code accepted only 12:00–12:15 (Course Director, 15 Oct), check-ins saved offline accepted until 12:20.
+{
+  const sm = db.doc('config/seededAnnouncements'); const sd = new Set((await sm.get()).data()?.ids || []);
+  const id = 'lec5-window-1215';
+  if (!sd.has(id)) {
+    const opensAt = Date.parse('2026-10-17T12:00:00+03:00'), closesAt = Date.parse('2026-10-17T12:15:00+03:00');
+    await db.doc('sessions/lec-5').set({ status: 'open', opensAt, openedAt: opensAt, closesAt, syncUntil: closesAt + 300000 }, { merge: true });
+    await sm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('Lecture 5 window set to 12:00–12:15');
+  }
+}
