@@ -988,3 +988,19 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Posted', id);
   }
 }
+
+// Question-bank games for Lectures 3–5 (Course Director, 15 Oct): on the dashboard because the titles start with 🎮.
+{
+  const pm = db.doc('config/seededMaterials'); const done = new Set((await pm.get()).data()?.ids || []);
+  const G = [
+    ['game-qb-lec3', 'Game_QB_Lecture3.html', '🎮 Lecture 3 quiz: Classification of Dental Caries', '8 random MCQs from the Lecture 3 question bank, new questions every play.', 6],
+    ['game-qb-lec4', 'Game_QB_Lecture4.html', '🎮 Lecture 4 quiz: Histopathology & Diagnosis', '8 random MCQs from the Lecture 4 question bank, new questions every play.', 7],
+    ['game-qb-lec5', 'Game_QB_Lecture5.html', '🎮 Lecture 5 quiz: Etiology of Dental Caries', '8 random MCQs from the Lecture 5 question bank, new questions every play.', 8],
+  ];
+  for (const [id, file, title, description, order] of G) {
+    if (done.has(id)) continue;
+    await db.doc(`materials/${id}`).set({ kind: 'link', lectureNo: null, path: null, week: null, category: null, order, title, description, url: site + '/guides/' + file, updatedAt: Date.now(), updatedBy: byName });
+    await pm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('Game added:', id);
+  }
+}

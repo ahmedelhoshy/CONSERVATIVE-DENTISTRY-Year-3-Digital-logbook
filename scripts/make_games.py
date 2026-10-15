@@ -31,13 +31,13 @@ else{max+=1;document.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{cons
 const f=$('fb');f.className='fb '+(ok?'ok':'bad');f.innerHTML=(ok?'<b>Correct ✓</b> ':'<b>Not quite: '+c.a+'.</b> ')+c.why;head();nextBtn()})}}
 function end(){clearInterval(tm);tick();try{const k='cu_game_plays',a=JSON.parse(localStorage.getItem(k)||'[]');a.push({game:location.pathname.split('/').pop().replace('.html',''),score:score,max:max,at:Date.now()});localStorage.setItem(k,JSON.stringify(a.slice(-50)))}catch(e){}$('pg').style.width='100%';$('ref').hidden=false;const s=Math.floor((Date.now()-t0)/1000),p=score/max;
 $('box').innerHTML='<div class="end"><div class="case">Your result</div><div class="big">'+score+' / '+max+'</div><p>'+(p===1?'Perfect! 🏆':p>=.7?'Well done 👏':'Review the summary below and try again 💪')+'</p><p class="sub">Time: '+Math.floor(s/60)+':'+String(s%60).padStart(2,'0')+'</p><button class="next" style="display:block" id="again">Play again</button></div>';
-$('again').onclick=()=>{$('ref').hidden=true;i=0;score=0;max=0;t0=Date.now();tm=setInterval(tick,1000);show()}}
+$('again').onclick=()=>{$('ref').hidden=true;if(typeof ALL!=='undefined')G=ALL.slice().sort(()=>Math.random()-.5).slice(0,PICK);i=0;score=0;max=0;t0=Date.now();tm=setInterval(tick,1000);show()}}
 tm=setInterval(tick,1000);show();"""
-def page(fn,title,sub,ref,G):
+def page(fn,title,sub,ref,G,pick=None):
     G=[{k:v for k,v in g.items() if k!='ar'} for g in G]; sub=re.sub(r'\s*·\s*<span dir="rtl">.*?</span>','',sub)
     open(fn,'w').write(f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{title}</title><style>{CSS}</style></head><body><main>
 <h1>{title}</h1><p class="sub">{sub}</p><div class="bar"><span id="count"></span><span id="time">⏱ 0:00</span></div><div class="prog"><i id="pg" style="width:0"></i></div>
-<div class="card" id="box"></div><div class="ref" id="ref" hidden><b>Summary:</b> {ref}</div></main><script>const G={json.dumps(G,ensure_ascii=False)};{JS}</script></body></html>""")
+<div class="card" id="box"></div><div class="ref" id="ref" hidden><b>Summary:</b> {ref}</div></main><script>{(('const ALL='+json.dumps(G,ensure_ascii=False)+';const PICK='+str(pick)+';let G=ALL.slice().sort(()=>Math.random()-.5).slice(0,PICK);') if pick else ('const G='+json.dumps(G,ensure_ascii=False)+';'))}{JS}</script></body></html>""")
 D='/home/claude/conservative-dentistry-year-3-digital-logbook/public/guides/'
 page(D+'Game_Prep_Steps.html','Prep Steps in Order','2 rounds · tap the steps in the right order · <span dir="rtl">رتّب خطوات التحضير</span>',
  'Assess → protect → enter at the right spot → extend at the right depth → remove remaining caries → refine the walls and margins → check with the probe and clean.',
@@ -93,3 +93,13 @@ page(D+'Game_Cariology.html','Cariology Challenge','8 questions · how caries st
   {'q':'Which of these protects teeth from caries through buffering and supplying calcium and phosphate?','ar':'أنهي حاجة بتحمي الأسنان من التسوس عن طريق الـ buffering وتوفير الكالسيوم والفوسفات؟','o':['Saliva','Sucrose','Dental plaque','Lactobacilli'],'a':'Saliva','why':'Saliva clears sugars, buffers acids and supplies minerals for remineralization; low salivary flow raises caries risk.'},
   {'q':'Caries found at the margin of an existing restoration is called:','ar':'التسوس اللي بيظهر عند حافة حشو موجود اسمه:','o':['Recurrent (secondary) caries','Primary caries','Arrested caries','Rampant caries'],'a':'Recurrent (secondary) caries','why':'Recurrent caries develops at the tooth–restoration interface.'},
   {'q':'Which four factors must all be present for caries to develop?','ar':'إيه الأربع عوامل اللي لازم يكونوا موجودين علشان التسوس يحصل؟','o':['Susceptible tooth, plaque bacteria, fermentable sugar, time','Saliva, fluoride, sugar, time','Bacteria, calculus, protein, time','Tooth, saliva, fluoride, plaque'],'a':'Susceptible tooth, plaque bacteria, fermentable sugar, time','why':'This is the classic multifactorial model of caries (host, microflora, substrate, time).'}])
+
+# Question-bank games (Lectures 3–5): 8 random questions from each 16-question bank per play.
+import importlib.util as _iu, os as _os
+_qb=_os.path.join(_os.path.dirname(_os.path.abspath(__file__)),'question_banks.py')
+if _os.path.exists(_qb):
+    _sp=_iu.spec_from_file_location('qb',_qb);_m=_iu.module_from_spec(_sp);_sp.loader.exec_module(_m)
+    for n,(t1,t2,qs) in _m.Q.items():
+        G=[{'t':t2,'q':q,'o':o,'a':o[a],'why':'Answer: '+o[a]+'.'} for q,o,a in qs]
+        page(D+f'Game_QB_Lecture{n}.html',f'{t1} · Quick Quiz',f'8 random questions from the {t2} question bank · new questions every play',
+             f'This quiz draws 8 of the {len(qs)} questions in the Lecture {n} question bank each time you play.',G,pick=8)
