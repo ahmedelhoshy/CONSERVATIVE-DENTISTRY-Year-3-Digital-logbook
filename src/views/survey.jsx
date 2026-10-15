@@ -6,7 +6,9 @@ import { store, isDemo } from '../lib/logic.js';
 
 export const SURVEY = { id: 'pilot-2026-10', opens: Date.parse('2026-10-03T00:00:00+03:00'), closes: Date.parse('2026-10-08T23:59:00+03:00'), roles: ['student', 'demonstrator', 'lecturer'], label: 'Pilot week (students + staff)', studentCloses: Date.parse('2026-10-15T19:00:00+03:00') }; // staff: Thu 8 Oct 23:59; students: final deadline Thu 15 Oct 19:00 Cairo
 
-// After the pilot: a staff-only round every 3 weeks, open Saturday 00:00 → Thursday 23:59 (Cairo).
+// Staff rounds on the platform are closed (15 Oct 2026): staff answered the department Google Form instead.
+const STAFF_ROUNDS = false;
+// (Was) after the pilot: a staff-only round every 3 weeks, open Saturday 00:00 → Thursday 23:59 (Cairo).
 const DAY = 86400000;
 // Cairo midnight for a calendar date (Egypt summer time UTC+3 until the last Friday of Oct, then UTC+2 until the last Friday of Apr).
 const cairo = (ymd) => Date.parse(ymd + 'T00:00:00' + (ymd >= '2026-10-30' && ymd < '2027-04-30' ? '+02:00' : '+03:00'));
@@ -14,7 +16,7 @@ const addDays = (ymd, n) => new Date(Date.parse(ymd + 'T12:00:00Z') + n * DAY).t
 const fmtD = (t) => new Date(t).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Africa/Cairo' });
 export function surveyRounds(upto = Date.now()) {
   const out = [SURVEY];
-  for (let k = 0; k < 20; k++) {
+  for (let k = 0; STAFF_ROUNDS && k < 20; k++) {
     const d = addDays('2026-10-24', 21 * k); // Saturdays: 24 Oct, 14 Nov, 5 Dec, 26 Dec …
     const opens = cairo(d);
     if (opens > upto) break;
@@ -113,7 +115,7 @@ export function SurveyResults() {
   return <section class="card">
     <div class="row between"><h2>Survey results</h2>
       {rounds.length > 1 && <select value={rid} onChange={(e) => { setRid(e.target.value); setShow(false); }}>{rounds.map((r) => <option value={r.id}>{r.label}</option>)}</select>}</div>
-    <p class="faint">Anonymous totals · {Date.now() <= closesFor(cur, 'student') ? (cur.studentCloses ? `students open until ${fmtD(cur.studentCloses)} 19:00 · staff until ${fmtD(cur.closes)} 23:59 · updates live` : `open until ${fmtD(cur.closes)} 23:59 · updates live`) : `closed ${fmtD(closesFor(cur, 'student'))}`} · next staff round every 3 weeks from Sat 24 Oct</p>
+    <p class="faint">Anonymous totals · {Date.now() <= closesFor(cur, 'student') ? (cur.studentCloses ? `students open until ${fmtD(cur.studentCloses)} 19:00 · staff until ${fmtD(cur.closes)} 23:59 · updates live` : `open until ${fmtD(cur.closes)} 23:59 · updates live`) : `closed ${fmtD(closesFor(cur, 'student'))}`}</p>
     {q.error ? <p class="faint">Could not load the survey answers.</p> : q.rows == null ? <p class="faint">Loading…</p> : <div class="stack">
       {cur.roles.includes('student') && block('Students', group(true), Q_STUDENT)}
       {block('Demonstrators and supervisors', group(false), Q_STAFF)}
