@@ -1,47 +1,47 @@
 {
- "generatedAt": 1792083048373,
- "previousBackupAt": 1792012849097,
- "documents": 8934,
+ "generatedAt": 1792099320901,
+ "previousBackupAt": 1792083048373,
+ "documents": 8953,
  "collections": {
   "announcements": 14,
   "attendance": 2762,
-  "audit": 362,
+  "audit": 363,
   "codes": 62,
   "config": 4,
   "duplicates": 390,
-  "entries": 2930,
+  "entries": 2946,
   "jobs": 120,
   "materials": 68,
   "messages": 8,
   "paperwork": 307,
-  "plays": 28,
+  "plays": 29,
   "projects": 18,
   "reports": 1,
-  "research": 271,
+  "research": 272,
   "roster": 537,
   "sessions": 573,
   "surveys": 449,
   "usage": 30
  },
  "changedSincePrevious": {
-  "announcements": 1,
-  "attendance": 52,
-  "audit": 10,
+  "announcements": 0,
+  "attendance": 0,
+  "audit": 1,
   "codes": 0,
   "config": 0,
   "duplicates": 0,
-  "entries": 60,
-  "jobs": 3,
-  "materials": 7,
+  "entries": 18,
+  "jobs": 0,
+  "materials": 0,
   "messages": 0,
   "paperwork": 0,
-  "plays": 17,
+  "plays": 1,
   "projects": 0,
   "reports": 1,
-  "research": 13,
+  "research": 1,
   "roster": 0,
   "sessions": 0,
-  "surveys": 2,
+  "surveys": 0,
   "usage": 0
  },
  "people": {
@@ -72,13 +72,13 @@
  },
  "teeth": {
   "byStatus": {
-   "reviewed": 2269,
-   "draft": 323,
-   "submitted": 26,
+   "reviewed": 2282,
+   "draft": 321,
+   "submitted": 29,
    "redo": 3
   },
-  "withPhotos": 1063,
-  "practiceAnalyses": 309
+  "withPhotos": 1066,
+  "practiceAnalyses": 311
  },
  "surveys": {
   "pilot-2026-10:student": 447,
@@ -87,11 +87,11 @@
  "materials": 68,
  "announcements": 14,
  "messages": 8,
- "auditEvents": 362,
+ "auditEvents": 363,
  "files": {
-  "total": 2969,
-  "totalMB": 534.5,
-  "newSincePrevious": 118,
-  "newMB": 19.7
+  "total": 2982,
+  "totalMB": 537.7,
+  "newSincePrevious": 13,
+  "newMB": 3.2
  }
 }
