@@ -969,3 +969,22 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Lecture 5 window set to 12:00–12:15');
   }
 }
+
+// Thu 15 Oct 12:30: final survey call, deadline today 19:00 Cairo (replaces the Thursday 6 pm notice). No names.
+{
+  const sm = db.doc('config/seededAnnouncements'); const sd = new Set((await sm.get()).data()?.ids || []);
+  const id = 'survey-final-7pm-2026-10-15';
+  if (!sd.has(id)) {
+    const closes = Date.parse('2026-10-15T19:00:00+03:00');
+    await db.doc('announcements/survey-reopen-2026-10-11').set({
+      title: '⏰ آخر فرصة للاستبيان: النهارده الساعة ٧ مساءً · Survey closes today at 7 pm',
+      body: 'لسه حوالي ٦٠ طالب ما ملوش استبيان الطلاب الإلزامي.\nالاستبيان إلزامي لكل الطلاب، وإجاباتكم هي اللي بنطوّر بيها المنصة والخدمات اللي بتقدمها لكم.\nآخر موعد: **النهارده الخميس ١٥ أكتوبر الساعة ٧ مساءً**. بعدها الاستبيان هيتقفل نهائيًا، وملء الاستبيان مرتبط بسجل الحضور.\nلو الاستبيان ظهر لك أول ما فتحت المنصة، يبقى لسه ما جاوبتش: جاوب دلوقتي (٥ أسئلة، دقيقتين، مجهول الهوية).\n\nAbout 60 students have not yet answered the mandatory student survey.\nThe survey is mandatory for all students, and your answers are how we improve the platform and the services it gives you.\nDeadline: **today, Thursday 15 October, 7:00 pm**. After that the survey closes for good, and completing it is linked to your attendance record.\nIf the survey pops up when you open the platform, you have not answered yet: please answer now (5 questions, 2 minutes, anonymous).\n\nProf. Dr. Ahmed El-Hoshy · Course Director',
+      audience: 'students', sections: [], pinned: true, imageUrl: null, imagePath: null,
+      publishAt: Date.now(), expiresAt: closes, by: 'ahmed.elhoshy@dentistry.cu.edu.eg', byName: 'Prof. Dr. Ahmed El-Hoshy',
+    });
+    const r = db.doc('announcements/survey-mandatory-2026-10-09'); const d = (await r.get()).data();
+    if (d) await r.update({ body: d.body.replace('الخميس ١٥ أكتوبر الساعة ٦ مساءً', 'الخميس ١٥ أكتوبر الساعة ٧ مساءً').replace('Thursday 15 October, 6:00 pm', 'Thursday 15 October, 7:00 pm') });
+    await sm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('Posted', id);
+  }
+}
