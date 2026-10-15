@@ -1027,3 +1027,14 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Added to roster: maha.elbaz (admin)');
   }
 }
+
+// Prof. Dr. Maha El-Baz: view-only (sees everything, cannot change anything) — Course Director, 15 Oct. Uses the leadership view-only role.
+{
+  const pm = db.doc('config/seededStaff'); const done = new Set((await pm.get()).data()?.ids || []);
+  const id = 'maha-elbaz-viewonly';
+  if (!done.has(id)) {
+    await db.doc('roster/maha.elbaz@dentistry.cu.edu.eg').set({ role: 'hod', title: 'View-only (collaboration)' }, { merge: true });
+    await pm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('maha.elbaz set to view-only');
+  }
+}
