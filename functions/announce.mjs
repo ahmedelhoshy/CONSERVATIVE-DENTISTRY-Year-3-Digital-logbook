@@ -934,3 +934,26 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
   }
   console.log('Closed finished sessions:', n);
 }
+
+// Thursday labs (Sections 7, 9, 10 Lab 2) were missing because practical weeks ended on Wednesday.
+// Weeks now run Saturday–Thursday; create any missing Thursday lab sessions (idempotent, never overwrites).
+{
+  const { PRACTICAL_WEEKS, LAB_SLOTS } = await import('./shared/course.js');
+  const DAYN = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  let made = 0;
+  for (const w of PRACTICAL_WEEKS) {
+    for (const [secS, slots] of Object.entries(LAB_SLOTS || {})) {
+      const sec = Number(secS); const out = [];
+      for (const [day, st, en] of slots) for (let d = new Date(w.from + 'T12:00:00Z'); d <= new Date(w.to + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 1)) if (d.getUTCDay() === DAYN[day]) out.push({ date: d.toISOString().slice(0, 10), start: st, end: en, day });
+      out.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+      for (let i = 0; i < out.length; i++) {
+        if (out[i].day !== 'Thu') continue;
+        const id = `lab-w${w.w}-s${sec}-${i + 1}`; const r = db.doc(`sessions/${id}`);
+        if ((await r.get()).exists) continue;
+        await r.set({ type: 'lab', section: sec, week: w.w, date: out[i].date, start: out[i].start, end: out[i].end, labNo: i + 1, req: i === 0 ? (w.req || 0) : 0, title: i === 0 ? w.topic : 'Discussion and group project (no requirement)', status: 'scheduled' });
+        made++;
+      }
+    }
+  }
+  console.log('Thursday lab sessions created:', made);
+}
