@@ -25,7 +25,7 @@ export function Games() {
   const games = (links.rows || []).filter((m) => String(m.title || '').trim().startsWith('🎮')).sort((a, b) => (a.order || 0) - (b.order || 0));
   if (!games.length) return null;
   const name = (t) => t.replace(/^🎮\s*/, '').replace(/^2-minute game:\s*/i, '');
-  return <section class="card"><h2>{L('🎮 2-minute games', '🎮 ألعاب الدقيقتين')}</h2>
+  return <section class="card" data-k="game"><h2>{L('🎮 2-minute games', '🎮 ألعاب الدقيقتين')}</h2>
     <p class="faint">{isStu ? L('Short challenges to revise while you wait. Not graded; the games you play count in your engagement record.', 'تحديات قصيرة للمراجعة في أي وقت. بدون درجات، والألعاب اللي بتلعبها بتتحسب في سجل مشاركتك.') : L('The same games students see on their home page. Plays by staff are not recorded.', 'نفس الألعاب اللي بتظهر للطلاب. لعب أعضاء هيئة التدريس لا يُسجَّل.')}</p>
     <div class="list">{games.map((g) => <a class="item click" href={g.url} target="_blank" rel="noopener"><div class="grow"><b>{name(g.title)}</b>{g.description && <div class="faint">{g.description}</div>}</div><span class="btn sm primary">{L('Play', 'العب')}</span></a>)}</div>
   </section>;

@@ -16,6 +16,7 @@ import { Projects } from './views/projects.jsx';
 import { Exams } from './views/exams.jsx';
 import { Login } from './views/login.jsx';
 import { Rules, VERSION, COPYRIGHT } from './views/rules.jsx';
+import { track, installLinkTracking } from './lib/activity.js';
 import { firebaseConfig } from './firebase-config.js';
 
 const cfg = firebaseConfig;
@@ -89,6 +90,7 @@ function Shell({ onSignOut, onSwitch }) {
   const [route, setRoute] = useState(() => (deepLink.sid && u.role === 'student' ? 'attend' : nav[0][0]));
   const go = (r) => { setRoute(r); window.scrollTo(0, 0); };
   useEffect(() => { if (!nav.find((n) => n[0] === route)) setRoute(nav[0][0]); }, [u.role]);
+  useEffect(() => { if (u.role === 'student') { installLinkTracking(); track('page', route); } }, [route]);
   const student = u.role === 'student';
   const [showSid, setShowSid] = useState(deepLink.show || null);
   return <div class="app">

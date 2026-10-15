@@ -7,6 +7,7 @@ import { PRACTICAL_WEEKS, COURSE } from '../data/course.js';
 import { RUBRICS, rubricById } from '../data/rubrics.js';
 import { useProjects, lab2Time } from './projects.jsx';
 import { Games } from './games.jsx';
+import { StudentKpiBoard } from './kpiboard.jsx';
 
 // Loads statistics: live mode reads the nightly aggregate (one document); demo mode computes on the fly.
 function useStats() {
@@ -80,6 +81,7 @@ export function Dashboard({ go } = {}) {
       <p class="faint">Period: term start – {fmtDate(st.today, { day: 'numeric', month: 'short', year: 'numeric' })} · Last updated {fmtDT(st.generatedAt)}{isDemo() ? ' (demo, computed live)' : ' · refreshes daily 19:00'}</p></div>
       {full && <button class="btn noprint" onClick={refresh}>Refresh now</button>}</section>
     {['director', 'admin', 'hod', 'vicedean'].includes(u.role) && !isDemo() && <ComplianceKpi />}
+    {['director', 'admin', 'hod', 'vicedean', 'dean'].includes(u.role) && !isDemo() && <StudentKpiBoard />}
     <div class="kpis">
       <Kpi label="Students enrolled" value={T.enrolled} kind="info" sub="18 sections" />
       <Kpi label="Lecture attendance" value={T.lectureAttendance != null ? T.lectureAttendance + '%' : '–'} kind={kindPct(T.lectureAttendance)} sub={`${T.lecturesHeld} lectures counted`} />

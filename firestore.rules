@@ -175,7 +175,15 @@ service cloud.firestore {
       allow write: if isEditor();
     }
     match /usage/{id} {
-      allow read, write: if false;
+      allow read: if isLeader();
+      allow write: if false;
+    }
+    // Student activity log (pages visited, resources opened), one doc per student per day.
+    match /activity/{id} {
+      allow read: if isLeader() || isTeacher();
+      allow create: if isStudent() && request.resource.data.uid == myUid() && id == myUid() + '_' + request.resource.data.day;
+      allow update: if isStudent() && resource.data.uid == myUid() && request.resource.data.uid == myUid() && request.resource.data.day == resource.data.day;
+      allow delete: if false;
     }
   }
 }
