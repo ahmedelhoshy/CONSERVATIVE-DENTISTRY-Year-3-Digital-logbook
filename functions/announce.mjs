@@ -1004,3 +1004,17 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Game added:', id);
   }
 }
+
+// Lecture 5 question bank PDF (Course Director's Drive, 15 Oct).
+{
+  const pm = db.doc('config/seededMaterials'); const done = new Set((await pm.get()).data()?.ids || []);
+  const id = 'lec5-question-bank';
+  if (!done.has(id)) {
+    await db.doc(`materials/${id}`).set({ kind: 'lecture', lectureNo: 5, path: null, week: null, category: null, order: Date.now(),
+      title: 'Lecture 5 — Question bank: Etiology of Dental Caries (16 MCQs with answer key)',
+      description: 'Practise with 16 MCQs; the answer key is on the last page. You can also play the 🎮 Lecture 5 quiz on your dashboard.',
+      url: 'https://drive.google.com/file/d/1I3OcpJZyoJnURJ_hwmP5ICcOizneQmrp/view?usp=sharing', updatedAt: Date.now(), updatedBy: byName });
+    await pm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('Material added:', id);
+  }
+}
