@@ -1018,3 +1018,12 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('Material added:', id);
   }
 }
+
+// Full access for Prof. Dr. Maha El-Baz (Course Director's request, 15 Oct: collaboration on future expansion). Added once; a role changed later on the People page is kept.
+{
+  const r = db.doc('roster/maha.elbaz@dentistry.cu.edu.eg');
+  if (!(await r.get()).exists) {
+    await r.set({ uid: 'maha.elbaz@dentistry.cu.edu.eg', email: 'maha.elbaz@dentistry.cu.edu.eg', name: 'Prof. Dr. Maha El-Baz', role: 'admin', sections: [], lectures: [] });
+    console.log('Added to roster: maha.elbaz (admin)');
+  }
+}
