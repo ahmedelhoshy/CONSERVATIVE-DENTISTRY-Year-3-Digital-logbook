@@ -8,6 +8,7 @@ import { exportXlsx } from '../lib/export.js';
 import { suggestGrade } from '../data/rubrics.js';
 import { TOOTH_STATUS, PRACTICAL_WEEKS } from '../data/course.js';
 import { Thread } from './chat.jsx';
+import { Games } from './games.jsx';
 
 const mySections = (u) => (['director', 'admin', 'hod', 'vicedean', 'dean'].includes(u.role) ? Array.from({ length: 18 }, (_, i) => i + 1) : u.sections || []);
 
@@ -33,6 +34,7 @@ export function Today() {
     {(ann.rows || []).length > 0 && <section class="card"><h2>Staff announcements</h2><div class="list">{ann.rows.map((a) => <details class="item" open={a.pinned}><summary>{a.title} <span class="faint">· {fmtDate(a.publishAt, { day: 'numeric', month: 'short' })}</span></summary>{a.imageUrl && <a href={a.imageUrl} target="_blank" rel="noopener"><img src={a.imageUrl} alt={a.title} loading="lazy" style={{ display: 'block', maxWidth: '100%', maxHeight: 420, objectFit: 'contain', borderRadius: 12, marginTop: 8 }} /></a>}{a.videoUrl && <video controls playsInline preload="none" poster={a.videoUrl.replace(/\.mp4$/, '.jpg')} src={a.videoUrl} style={{ display: 'block', width: '100%', maxHeight: 420, borderRadius: 12, marginTop: 8, background: '#10262d' }} />}{a.body && <div style={{ marginTop: 6 }}>{a.body.split('\n').map((l) => <p dir="auto" style={{ margin: '0 0 4px', minHeight: '0.7em' }}>{l}</p>)}</div>}{a.linkUrl && <a class="btn primary" href={a.linkUrl} target="_blank" rel="noopener" style={{ marginTop: 8, display: 'inline-block' }}>{a.linkLabel || 'Open link'}</a>}</details>)}</div></section>}
     <section class="card lead"><h2>Today</h2><div class="list">{todays.length ? todays.map((s) => <SessionRow s={s} onOpen={() => setOpen(s.id)} />) : <Empty>No sessions today.</Empty>}</div></section>
     <section class="card"><h2>Next 7 days</h2><div class="list">{later.length ? later.slice(0, 30).map((s) => <SessionRow s={s} onOpen={() => setOpen(s.id)} />) : <Empty>Nothing scheduled.</Empty>}</div></section>
+    <Games />
     {open && <SessionPanel id={open} onClose={() => setOpen(null)} />}
   </>;
 }

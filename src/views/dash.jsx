@@ -7,6 +7,7 @@ import { PRACTICAL_WEEKS, COURSE } from '../data/course.js';
 import { RUBRICS, rubricById } from '../data/rubrics.js';
 import { useProjects, lab2Time } from './projects.jsx';
 import { SurveyResults } from './survey.jsx';
+import { Games } from './games.jsx';
 
 // Loads statistics: live mode reads the nightly aggregate (one document); demo mode computes on the fly.
 function useStats() {
@@ -110,6 +111,7 @@ export function Dashboard({ go } = {}) {
     </div>}
     {full && <CriterionVariation dist={st.critDist} />}
     <PrepLensValidation />
+    <Games />
   </>;
 }
 
