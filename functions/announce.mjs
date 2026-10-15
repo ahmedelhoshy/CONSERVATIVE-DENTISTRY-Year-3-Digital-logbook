@@ -947,7 +947,7 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
       for (const [day, st, en] of slots) for (let d = new Date(w.from + 'T12:00:00Z'); d <= new Date(w.to + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + 1)) if (d.getUTCDay() === DAYN[day]) out.push({ date: d.toISOString().slice(0, 10), start: st, end: en, day });
       out.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
       for (let i = 0; i < out.length; i++) {
-        if (out[i].day !== 'Thu') continue;
+        if (out[i].day !== 'Thu' || out[i].date === '2026-10-08') continue; // Thu 8 Oct: national holiday
         const id = `lab-w${w.w}-s${sec}-${i + 1}`; const r = db.doc(`sessions/${id}`);
         if ((await r.get()).exists) continue;
         await r.set({ type: 'lab', section: sec, week: w.w, date: out[i].date, start: out[i].start, end: out[i].end, labNo: i + 1, req: i === 0 ? (w.req || 0) : 0, title: i === 0 ? w.topic : 'Discussion and group project (no requirement)', status: 'scheduled' });
