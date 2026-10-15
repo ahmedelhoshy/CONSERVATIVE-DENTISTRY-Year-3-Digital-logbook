@@ -5,3 +5,4 @@ functions/shared
 functions/.env
 *.log
 .firebase
+__pycache__/
