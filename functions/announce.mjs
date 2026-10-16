@@ -1038,3 +1038,14 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('maha.elbaz set to view-only');
   }
 }
+
+// Group 16 project title and co-supervisor (from the supervisor, 16 Oct).
+{
+  const pm = db.doc('config/seededStaff'); const done = new Set((await pm.get()).data()?.ids || []);
+  const id = 'project-g16-title';
+  if (!done.has(id)) {
+    await db.doc('projects/g16').set({ group: 16, title: 'Adhesive Dentistry: Bonding Protocol Guide (Decision Tree)', demonstrator: 'Dr. Aya Osman', updatedAt: Date.now(), updatedBy: 'Prof. Ahmed El-Hoshy' }, { merge: true });
+    await pm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('project g16 title set');
+  }
+}
