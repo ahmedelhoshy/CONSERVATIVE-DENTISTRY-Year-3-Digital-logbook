@@ -1,9 +1,11 @@
 // Group projects (Lab 2): each of the 18 groups has one project, supervised by one lecturer and one demonstrator.
-// The platform keeps only the group number, the project title, the two supervisors and the group's Lab 2 time.
+// The platform keeps only the group number, the project title, the supervisor and co-supervisor(s) and the group's Lab 2 time.
+// Projects are a competition judged at the end of the year: no project details, files or links are kept here,
+// and a student can read only their own group's entry.
 import { useState } from 'preact/hooks';
 import * as XLSX from 'xlsx';
 import { me, store, canEditCourse } from '../lib/logic.js';
-import { L, useQuery, Sheet, Pill, toast } from '../lib/ui.jsx';
+import { L, useQuery, useDoc, Sheet, Pill, toast } from '../lib/ui.jsx';
 import { LAB_SLOTS } from '../data/course.js';
 
 const GROUPS = Array.from({ length: 18 }, (_, i) => i + 1);
@@ -22,12 +24,11 @@ export function useProjects() {
 
 // Card on the student's home page.
 export function MyProject({ section }) {
-  const by = useProjects();
+  const p = useDoc('projects', section ? 'g' + section : null);
   if (!section) return null;
-  const p = by[section];
   return <section class="card"><div class="row between"><h2>{L('My group project', 'مشروع مجموعتي')}</h2><Pill kind="info">{L(`Group ${section}`, `المجموعة ${section}`)}</Pill></div>
     {p && p.title ? <div class="list"><div class="item"><div class="grow"><b dir="auto">{p.title}</b>
-      <div class="faint" dir="auto">{L('Supervisors', 'الإشراف')}: {[p.lecturer, p.demonstrator].filter(Boolean).join(' · ') || '—'}</div>
+      <div class="faint" dir="auto">{L('Supervisor', 'المشرف')}: {p.lecturer || '—'}{p.demonstrator ? <> · {L('Co-supervisor', 'المشرف المشارك')}: {p.demonstrator}</> : null}</div>
       <div class="faint">{L('Project lab (Lab 2)', 'لاب المشروع (لاب ٢)')}: {lab2Time(section)}</div></div></div></div>
       : <div class="stack"><p class="faint">{L('Project titles will be announced on Saturday 10 October.', 'سيتم إعلان عناوين المشاريع يوم السبت ١٠ أكتوبر.')}</p>
         {p && p.lecturer && <div class="faint" dir="auto">{L('Supervisor', 'المشرف')}: {p.lecturer}</div>}
@@ -42,7 +43,7 @@ export function Projects() {
   const [open, setOpen] = useState(null);
   const filled = GROUPS.filter((g) => by[g] && by[g].title).length;
   const exportX = () => {
-    const rows = [['Group', 'Project title', 'Lecturer', 'Demonstrator', 'Lab 2 (project lab)'], ...GROUPS.map((g) => [g, by[g]?.title || '', by[g]?.lecturer || '', by[g]?.demonstrator || '', lab2Time(g)])];
+    const rows = [['Group', 'Project title', 'Supervisor', 'Co-supervisor(s)', 'Lab 2 (project lab)'], ...GROUPS.map((g) => [g, by[g]?.title || '', by[g]?.lecturer || '', by[g]?.demonstrator || '', lab2Time(g)])];
     const wb = XLSX.utils.book_new(); const ws = XLSX.utils.aoa_to_sheet(rows); ws['!cols'] = [{ wch: 8 }, { wch: 48 }, { wch: 28 }, { wch: 28 }, { wch: 22 }];
     XLSX.utils.book_append_sheet(wb, ws, 'Projects'); XLSX.writeFile(wb, 'Group_projects.xlsx');
   };
@@ -54,7 +55,7 @@ export function Projects() {
       const hi = rows.findIndex((r) => r.some((c) => /group/i.test(String(c))));
       const H = rows[hi].map((c) => String(c).toLowerCase());
       const col = (re) => H.findIndex((h) => re.test(h));
-      const cg = col(/group/), ct = col(/project|title/), cl = col(/lecturer/), cd = col(/demonstrator/);
+      const cg = col(/group/), ct = col(/project|title/), cl = col(/lecturer|^supervisor|main supervisor/), cd = col(/demonstrator|co-?supervisor/);
       let n = 0;
       for (const r of rows.slice(hi + 1)) {
         const g = Number(String(r[cg]).replace(/\D/g, '')); if (!g || g > 18) continue;
@@ -69,9 +70,9 @@ export function Projects() {
     <section class="hero"><h1>{L('Group projects', 'مشاريع المجموعات')}</h1>
       <p class="muted">{L('Lab 2 each week is for discussion and project preparation. Each of the 18 groups has one project, supervised by one lecturer and one demonstrator.', 'لاب ٢ كل أسبوع للمناقشة وتحضير المشروع. لكل مجموعة من الـ١٨ مشروع واحد بإشراف محاضر ومعيد.')}</p></section>
     <div class="row">{edit && <><label class="btn primary">Import from Excel<input type="file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" onChange={importX} hidden /></label></>}<button class="btn" onClick={exportX}>{edit && filled === 0 ? 'Download template (Excel)' : 'Download (Excel)'}</button><span class="faint">{filled} / 18 {L('groups filled', 'مجموعة مكتملة')}</span></div>
-    <section class="card"><div class="tablewrap"><table><thead><tr><th class="n">{L('Group', 'المجموعة')}</th><th>{L('Project', 'المشروع')}</th><th>{L('Lecturer', 'المحاضر')}</th><th>{L('Demonstrator', 'المعيد')}</th><th>{L('Project lab (Lab 2)', 'لاب المشروع')}</th>{edit && <th></th>}</tr></thead>
+    <section class="card"><div class="tablewrap"><table><thead><tr><th class="n">{L('Group', 'المجموعة')}</th><th>{L('Project', 'المشروع')}</th><th>{L('Supervisor', 'المشرف')}</th><th>{L('Co-supervisor(s)', 'المشرف المشارك')}</th><th>{L('Project lab (Lab 2)', 'لاب المشروع')}</th>{edit && <th></th>}</tr></thead>
       <tbody>{GROUPS.map((g) => { const p = by[g] || {}; return <tr><td class="n mono">{g}</td><td dir="auto">{p.title || <span class="faint">—</span>}</td><td dir="auto">{p.lecturer || <span class="faint">—</span>}</td><td dir="auto">{p.demonstrator || <span class="faint">—</span>}</td><td class="faint">{lab2Time(g)}</td>{edit && <td><button class="btn sm" onClick={() => setOpen(g)}>Edit</button></td>}</tr>; })}</tbody></table></div>
-      <p class="faint">{L('Group number = section number. Students see their own group\'s project on their home page.', 'رقم المجموعة = رقم السكشن. يرى كل طالب مشروع مجموعته في الصفحة الرئيسية.')}</p></section>
+      <p class="faint">{L('Group number = section number. Students see only their own group\'s title and supervisors. No project details, files or links are kept on the platform (the projects are a competition judged at the end of the year).', 'رقم المجموعة = رقم السكشن. يرى كل طالب عنوان مشروع مجموعته والمشرفين فقط، ولا تُحفظ أي تفاصيل أو ملفات للمشاريع على المنصة.')}</p></section>
     {open && <EditProject g={open} p={by[open] || {}} onClose={() => setOpen(null)} />}
   </>;
 }
@@ -82,7 +83,7 @@ function EditProject({ g, p, onClose }) {
   const save = async () => { await store().set('projects', 'g' + g, { group: g, title: f.title.trim(), lecturer: f.lecturer.trim(), demonstrator: f.demonstrator.trim(), updatedAt: Date.now(), updatedBy: me().name }); toast('Saved'); onClose(); };
   return <Sheet onClose={onClose} label="Edit project"><h2>Group {g}</h2><p class="faint">Project lab (Lab 2): {lab2Time(g)}</p>
     <label class="fld">Project title<input id="pj-title" dir="auto" value={f.title} onInput={set('title')} /></label>
-    <div class="grid2"><label class="fld">Lecturer<input id="pj-lec" dir="auto" value={f.lecturer} onInput={set('lecturer')} /></label>
-      <label class="fld">Demonstrator<input id="pj-dem" dir="auto" value={f.demonstrator} onInput={set('demonstrator')} /></label></div>
+    <div class="grid2"><label class="fld">Supervisor<input id="pj-lec" dir="auto" value={f.lecturer} onInput={set('lecturer')} /></label>
+      <label class="fld">Co-supervisor(s)<input id="pj-dem" dir="auto" value={f.demonstrator} onInput={set('demonstrator')} /></label></div>
     <div class="row"><button class="btn primary" onClick={save}>Save</button><button class="btn" onClick={onClose}>Cancel</button></div></Sheet>;
 }

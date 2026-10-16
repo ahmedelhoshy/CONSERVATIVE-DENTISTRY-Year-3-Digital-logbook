@@ -133,7 +133,8 @@ service cloud.firestore {
       allow write: if isEditor();
     }
     match /projects/{id} {
-      allow read: if known();
+      // Competition: a student can read only their own group's entry (group number = section number).
+      allow read: if isStaff() || (isStudent() && id == 'g' + string(mySec()));
       allow write: if isEditor();
     }
     match /materials/{id} {
