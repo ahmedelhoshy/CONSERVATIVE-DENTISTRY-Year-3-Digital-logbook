@@ -4,7 +4,7 @@
 // Marks come from the supervisors' paper mark sheets (Import mark sheet) and are visible to students only after release.
 import { useState } from 'preact/hooks';
 import * as XLSX from 'xlsx';
-import { me, store, today, audit, canEditCourse } from '../lib/logic.js';
+import { me, store, today, audit, canEditCourse, canSeeExams } from '../lib/logic.js';
 import { L, useQuery, Sheet, Pill, Empty, Confirm, Kpi, toast, fmtDate } from '../lib/ui.jsx';
 import { exportXlsx, readAllSheets } from '../lib/export.js';
 import { PRACTICAL_WEEKS } from '../data/course.js';
@@ -25,7 +25,13 @@ function examDate(exam, section) {
 // ---------- Course Director / leadership ----------
 export function Exams() {
   const u = me();
-  const edit = canEditCourse(u);
+  if (!canSeeExams(u)) return <Empty>Exam marks are confidential.</Empty>;
+  return <ExamsInner />;
+}
+
+function ExamsInner() {
+  const u = me();
+  const edit = canEditCourse(u) && canSeeExams(u);
   const exams = useQuery('exams', [], { orderBy: 'no' });
   const list = (exams.rows || []).slice().sort((a, b) => a.no - b.no);
   const [sel, setSel] = useState(null);
@@ -55,7 +61,7 @@ export function Exams() {
   const doExport = () => exportXlsx({ title: `${exam.title} — marks`, filters: sec === 'all' ? 'All sections' : `Section ${sec}`, columns: [{ label: 'Student number', key: 'code' }, { label: 'Name', key: 'name', w: 34 }, { label: 'Section', key: 'section' }, { label: 'Attendance', key: 'att' }, { label: `Grade (out of ${exam.max})`, key: 'grade' }], rows, definitions: { grade: `Exam mark out of ${exam.max}; blank = absent or not entered` } });
 
   return <>
-    <section class="hero"><h1>Exams</h1><p class="muted">Practical exams through the year. Supervisors fill the mark sheet in the exam lab; the Course Director imports it here. Students see their mark only after the results are released.</p></section>
+    <section class="hero"><h1>Exams</h1><p class="muted">Practical exams through the year. Supervisors fill the mark sheet in the exam lab; the Course Director imports it here. Marks are confidential: only the Course Director, the Head of Department, the Vice Dean and Dr. Yomna Sayed can see them, and students do not see marks on the platform.</p></section>
     <div class="row">
       {list.length > 0 && <label class="fld" style={{ maxWidth: 360 }}>Exam<select id="ex-sel" value={exam?.id} onChange={(e) => setSel(e.target.value)}>{list.map((e) => <option value={e.id}>{e.title}</option>)}</select></label>}
       {edit && <button class="btn" style={{ alignSelf: 'flex-end' }} onClick={() => setAdding(true)}>+ New exam</button>}
@@ -63,8 +69,8 @@ export function Exams() {
       {edit && exam && <button class="btn primary" style={{ alignSelf: 'flex-end' }} onClick={() => setImporting(true)}>Import mark sheet</button>}
     </div>
     {!exams.rows ? <p class="faint">Loading…</p> : !exam ? <Empty>No exams yet.{edit ? ' Tap “+ New exam” to add the first practical exam.' : ''}</Empty> : <>
-      <p class="faint">Week {exam.week} · out of {exam.max} · pass mark {passMark(exam.max)} (60 %) · <Pill kind={exam.released ? 'good' : 'warn'}>{exam.released ? 'Released to students' : 'Not released to students'}</Pill>
-        {edit && <> <button class="btn sm" onClick={() => setRelease(true)}>{exam.released ? 'Hide from students' : 'Release to students'}</button></>}</p>
+      <p class="faint">Week {exam.week} · out of {exam.max} · pass mark {passMark(exam.max)} (60 %) · <Pill kind="info">Confidential: visible only to the Course Director, Head of Department, Vice Dean and Dr. Yomna Sayed</Pill>
+</p>
       <div class="kpis">
         <Kpi label="Marks entered" value={`${tot.entered}/${tot.students}`} kind={tot.entered >= tot.students && tot.students ? 'good' : 'warn'} sub="Students with attendance or a mark" />
         <Kpi label="Present · absent" value={`${tot.present} · ${tot.absent}`} kind="info" />

@@ -171,9 +171,11 @@ service cloud.firestore {
       allow read: if known();
       allow write: if isEditor();
     }
+    // Exam marks are confidential: only the Course Director, Head of Department, Vice Dean and Dr. Yomna Sayed.
+    function examViewer() { return known() && em() in ['ahmed.elhoshy@dentistry.cu.edu.eg', 'heba.hamza@dentistry.cu.edu.eg', 'alaa.elbaz@dentistry.cu.edu.eg', 'yomna.sayed@dentistry.cu.edu.eg']; }
     match /examMarks/{id} {
-      allow read: if isLeader() || isTeacher() || (isStudent() && resource.data.uid == myUid() && resource.data.released == true);
-      allow write: if isEditor();
+      allow read: if examViewer();
+      allow write: if examViewer() && isEditor();
     }
     match /usage/{id} {
       allow read: if isLeader();

@@ -1049,3 +1049,15 @@ Prof. Dr. Ahmed El-Hoshy — Course Director` });
     console.log('project g16 title set');
   }
 }
+
+// Exam 1 record (no marks here: marks are imported by the Course Director from the mark sheet).
+{
+  const pm = db.doc('config/seededStaff'); const done = new Set((await pm.get()).data()?.ids || []);
+  const id = 'exam-1-created';
+  if (!done.has(id)) {
+    const ref = db.doc('exams/exam-1');
+    if (!(await ref.get()).exists) await ref.set({ no: 1, title: 'First practical exam', task: 'Class I cavity preparation for composite restoration on lower first molar', week: 5, max: 5, released: false, createdAt: Date.now(), by: 'ahmed.elhoshy@dentistry.cu.edu.eg' });
+    await pm.set({ ids: FieldValue.arrayUnion(id) }, { merge: true });
+    console.log('exam-1 created');
+  }
+}

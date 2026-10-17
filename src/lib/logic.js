@@ -267,3 +267,7 @@ export function labNo(s) {
   const m = /^lab-w\d+-s\d+-(\d+)$/.exec(s.id || s.sid || '');
   return m ? Number(m[1]) : null;
 }
+
+// Exam marks are confidential: only these people can see or import them (students do not see marks on the platform).
+export const EXAM_VIEWERS = ['ahmed.elhoshy@dentistry.cu.edu.eg', 'heba.hamza@dentistry.cu.edu.eg', 'alaa.elbaz@dentistry.cu.edu.eg', 'yomna.sayed@dentistry.cu.edu.eg'];
+export const canSeeExams = (u) => !!u && (isDemo() ? ['director', 'admin', 'hod', 'vicedean'].includes(u.role) : EXAM_VIEWERS.includes(String(u.email || u.uid || '').toLowerCase()));

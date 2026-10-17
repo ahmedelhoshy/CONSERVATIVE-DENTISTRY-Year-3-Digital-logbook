@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'preact/hooks';
 import { MyProject } from './projects.jsx';
 import { Games } from './games.jsx';
-import { MyExams } from './exams.jsx';
 import { me, store, today, currentWeek, checkIn, sessionIsOpen, createEntry, makeRequirement, addPhoto, saveSelf, submitEntry, requestAI, rubricFor, isDemo, sendMessage, deepLink, setStage, setProbeReading, labNo } from '../lib/logic.js';
 import { SurveyCard } from './survey.jsx';
 import { L, lang, useQuery, useDoc, Pill, Band, Kpi, Bar, Sheet, Empty, fmtDate, fmtTime, ago, toast, useNow , labTitle, LensVerdict } from '../lib/ui.jsx';
@@ -47,7 +46,6 @@ export function StudentHome({ go }) {
         <div class="list">{visibleAnn.length ? visibleAnn.slice(0, 4).map((a) => <details class="item" open={a.pinned}><summary>{a.pinned && <Pill kind="gold">{L('Pinned', 'مثبت')}</Pill>} {a.title}{a.imageUrl ? ' 🖼' : ''}{a.videoUrl ? ' ▶' : ''}</summary>{a.imageUrl && <a href={a.imageUrl} target="_blank" rel="noopener"><img src={a.imageUrl} alt={a.title} loading="lazy" style={{ display: 'block', maxWidth: '100%', maxHeight: 420, objectFit: 'contain', borderRadius: 12, marginTop: 8 }} /></a>}{a.videoUrl && <video controls playsInline preload="none" poster={a.videoUrl.replace(/\.mp4$/, '.jpg')} src={a.videoUrl} style={{ display: 'block', width: '100%', maxHeight: 420, borderRadius: 12, marginTop: 8, background: '#10262d' }} />}{a.body && <div style={{ marginTop: 6 }}>{a.body.split('\n').map((l) => <p dir="auto" style={{ margin: '0 0 4px', minHeight: '0.7em' }}>{l}</p>)}</div>}{a.linkUrl && <a class="btn primary" href={a.linkUrl} target="_blank" rel="noopener" style={{ marginTop: 8, display: 'inline-block' }}>{a.linkLabel || 'Open link'}</a>}<p class="faint">{a.byName} · {fmtDate(a.publishAt, { day: 'numeric', month: 'short' })}</p></details>) : <Empty>{L('No announcements.', 'لا توجد إعلانات.')}</Empty>}</div></section>
     </div>
     <Games />
-    <MyExams />
     <MyProject section={u.section} />
     <section class="card"><div class="row between"><h2>{L('Latest feedback', 'آخر تقييمات')}</h2><button class="btn ghost" onClick={() => go('lab')}>{L('My lab', 'اللاب')}</button></div>
       {fresh.length ? <div class="list">{fresh.map((e) => <div class="item"><div class="grow"><b>{rubricById[e.rubricId]?.title || e.taskLabel}</b> <span class="mono">#{e.tooth}</span><div class="faint">{L('Week', 'أسبوع')} {e.week} · {e.review.byName}</div><p class="muted" style={{ fontSize: '.88rem' }}>{e.review.feedback}</p></div><div class="stack" style={{ alignItems: 'flex-end', gap: 4 }}><span class="faint">{L('Self', 'ذاتي')} <b class="mono">{e.self?.grade ?? '–'}</b></span><span>{L('Official', 'الرسمي')} <b class="mono">{e.review.grade}</b></span></div></div>)}</div> : <Empty>{L('No reviewed teeth yet.', 'لا توجد تقييمات بعد.')}</Empty>}

@@ -2,7 +2,7 @@ import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import './styles.css';
 import { demoStore } from './lib/store-demo.js';
-import { setStore, setMe, me, isDemo, store, deepLink } from './lib/logic.js';
+import { setStore, setMe, me, isDemo, store, deepLink, canSeeExams } from './lib/logic.js';
 import { L, useLang, setLang, lang, Icon, toast } from './lib/ui.jsx';
 import { COURSE } from './data/course.js';
 import { DEMO_TODAY } from './lib/demo-seed.js';
@@ -86,7 +86,7 @@ function DemoBar({ users, onSwitch }) {
 function Shell({ onSignOut, onSwitch }) {
   useLang();
   const u = me();
-  const nav = NAV[u.role] || NAV.student;
+  const nav = (NAV[u.role] || NAV.student).filter((n) => n[0] !== 'exams' || canSeeExams(u));
   const [route, setRoute] = useState(() => (deepLink.sid && u.role === 'student' ? 'attend' : nav[0][0]));
   const go = (r) => { setRoute(r); window.scrollTo(0, 0); };
   useEffect(() => { if (!nav.find((n) => n[0] === route)) setRoute(nav[0][0]); }, [u.role]);
