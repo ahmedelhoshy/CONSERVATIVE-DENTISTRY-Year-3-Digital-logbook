@@ -1,46 +1,46 @@
 {
- "generatedAt": 1792185556644,
- "previousBackupAt": 1792099320901,
- "documents": 9103,
+ "generatedAt": 1792271739580,
+ "previousBackupAt": 1792185556644,
+ "documents": 9764,
  "collections": {
-  "activity": 74,
+  "activity": 371,
   "announcements": 14,
-  "attendance": 2762,
-  "audit": 364,
-  "codes": 62,
+  "attendance": 3020,
+  "audit": 382,
+  "codes": 65,
   "config": 4,
   "duplicates": 390,
-  "entries": 2974,
-  "jobs": 125,
+  "entries": 3009,
+  "jobs": 131,
   "materials": 68,
-  "messages": 8,
+  "messages": 10,
   "paperwork": 307,
-  "plays": 38,
+  "plays": 50,
   "projects": 18,
   "reports": 1,
-  "research": 302,
+  "research": 329,
   "roster": 537,
-  "sessions": 573,
+  "sessions": 574,
   "surveys": 449,
-  "usage": 33
+  "usage": 35
  },
  "changedSincePrevious": {
-  "activity": 74,
+  "activity": 301,
   "announcements": 0,
-  "attendance": 0,
-  "audit": 1,
-  "codes": 0,
+  "attendance": 258,
+  "audit": 18,
+  "codes": 4,
   "config": 0,
   "duplicates": 0,
-  "entries": 43,
-  "jobs": 5,
+  "entries": 41,
+  "jobs": 6,
   "materials": 0,
-  "messages": 0,
+  "messages": 2,
   "paperwork": 0,
-  "plays": 9,
-  "projects": 1,
+  "plays": 12,
+  "projects": 0,
   "reports": 1,
-  "research": 31,
+  "research": 30,
   "roster": 0,
   "sessions": 0,
   "surveys": 0,
@@ -58,16 +58,16 @@
  },
  "attendance": {
   "byType": {
-   "lab": 2472,
-   "lecture": 290
+   "lab": 2543,
+   "lecture": 477
   },
   "byMethod": {
    "paper": 1165,
-   "manual": 228,
-   "qr": 1369
+   "manual": 234,
+   "qr": 1621
   },
   "byStatus": {
-   "confirmed": 2737,
+   "confirmed": 2995,
    "recorded": 24,
    "rejected": 1
   }
@@ -75,12 +75,12 @@
  "teeth": {
   "byStatus": {
    "reviewed": 2274,
-   "draft": 319,
-   "submitted": 38,
+   "draft": 317,
+   "submitted": 40,
    "redo": 3
   },
-  "withPhotos": 1076,
-  "practiceAnalyses": 340
+  "withPhotos": 1077,
+  "practiceAnalyses": 375
  },
  "surveys": {
   "pilot-2026-10:student": 447,
@@ -88,12 +88,12 @@
  },
  "materials": 68,
  "announcements": 14,
- "messages": 8,
- "auditEvents": 364,
+ "messages": 10,
+ "auditEvents": 382,
  "files": {
-  "total": 3079,
-  "totalMB": 554.6,
-  "newSincePrevious": 97,
-  "newMB": 16.9
+  "total": 3159,
+  "totalMB": 567,
+  "newSincePrevious": 82,
+  "newMB": 12.5
  }
 }
